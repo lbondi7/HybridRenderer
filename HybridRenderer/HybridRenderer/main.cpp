@@ -25,6 +25,7 @@
 #include "GameObject.h"
 #include "Resources.h"
 #include "ShadowMap.h"
+#include "DebugLogger.h"
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -95,10 +96,7 @@ private:
     bool framebufferResized = false;
 
     struct {
-        std::vector<Buffer> scene;
-        std::vector<Buffer> scene2;
         std::vector<Buffer> offscreen;
-        std::vector<Buffer> offscreen2;
     } uniformBuffers;
 
     struct UBOS {
@@ -119,19 +117,13 @@ private:
         std::vector<VkDescriptorSet> offscreen2;
         std::vector<VkDescriptorSet> scene;
         std::vector<VkDescriptorSet> scene2;
-        std::vector<VkDescriptorSet> debug;
     } descriptorSets;
-
-    OffscreenPass offscreenPass;
-
-    UBOS uboVSscene1;
-    UBOS uboVSscene2;
 
     float timer = 0.0f;
     bool countUp = true;
 
     glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    //float lightFOV = 45.0f;
+    float lightFOV = 90.0f;
 
     void initWindow() {
         glfwInit();
@@ -153,10 +145,21 @@ private:
         setupDebugMessenger();
         createSurface();
         devices.SetupDevices(instance, surface);
+
+        loadResources();
+
+
         swapChain.Create(window, surface, &devices);
 
         renderPass.Create(&devices, &swapChain);
-        pipeline.Create(&devices, &swapChain, &renderPass, offscreenPass);
+        PipelineInfo pipelineInfo{};
+
+        pipelineInfo.shaders = { resources.vertexShaders["scene"].get(), resources.fragmentShaders["scene"].get() };
+        pipelineInfo.attributes = { VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::COLOUR, VertexAttributes::NORMAL };
+        pipelineInfo.specializationInfo = true;
+        pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+        pipeline.Create(&devices, &renderPass, pipelineInfo);
         frameBuffer.Create(&devices, renderPass.vkRenderPass);
         for (size_t i = 0; i < swapChain.imageCount; i++)
         {
@@ -164,12 +167,17 @@ private:
             frameBuffer.createFramebuffer(attachments, swapChain.extent);
         }
 
-        shadowMap.descriptorSetLayout = pipeline.descriptorSetLayout;
+
         shadowMap.Create(&devices, &swapChain);
-        shadowMap.Init();
+        pipelineInfo.shaders = { resources.vertexShaders["offscreen"].get() };
+        pipelineInfo.depthBiasEnable = VK_TRUE;
+        pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS };
+        pipelineInfo.attributes = { VertexAttributes::POSITION };
+        pipelineInfo.specializationInfo = false;
+
+        shadowMap.Init(pipelineInfo);
 
         createCamera();
-        loadResources();
         createModelBuffers();
         createUniformBuffers();
         createDescriptorPool();
@@ -197,8 +205,6 @@ private:
         pipeline.Destroy();
         renderPass.Destroy();
 
-        vkDestroyRenderPass(devices.logicalDevice, renderPass.vkRenderPass, nullptr);
-
         swapChain.Destroy();
 
         for (size_t i = 0; i < swapChain.images.size(); i++) {
@@ -211,11 +217,15 @@ private:
     void cleanup() {
         cleanupSwapChain();
 
+        shadowMap.Destroy();
+
         for (auto& go : gameObjects) {
             go.Destroy();
         }
 
-        vkDestroyDescriptorSetLayout(devices.logicalDevice, pipeline.descriptorSetLayout, nullptr);
+        resources.Destroy();
+
+        //vkDestroyDescriptorSetLayout(devices.logicalDevice, pipeline.descriptorSetLayout, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(devices.logicalDevice, renderFinishedSemaphores[i], nullptr);
@@ -254,8 +264,8 @@ private:
         swapChain.Init();
         renderPass.Init();
         //renderPass.Init(offscreenPass);
-        pipeline.Init(offscreenPass);
-        frameBuffer.Create(&devices, &swapChain, renderPass.vkRenderPass, offscreenPass);
+        pipeline.Init();
+        //frameBuffer.Create(&devices, &swapChain, renderPass.vkRenderPass, offscreenPass);
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
@@ -328,6 +338,9 @@ private:
         resources.LoadMesh("tree");
         resources.LoadMesh("plane");
         resources.LoadImage("texture");
+        resources.LoadShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT);
+        resources.LoadShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT);
+        resources.LoadShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT);
     }
 
     void createModelBuffers() {
@@ -336,7 +349,7 @@ private:
         for (size_t i = 0; i < gameObjectCount; i++)
         {
             auto& go = gameObjects.emplace_back(GameObject());
-            go.mesh = resources.meshes[i != 1 ? i == 0 ? "tree" : "sphere" : "plane"].get();
+            go.mesh = resources.meshes[i != 1 ? i == 0 ? "sphere" : "sphere" : "plane"].get();
             go.image = resources.images["texture"].get();
             go.Init();
             if (i == 2)
@@ -368,7 +381,7 @@ private:
 
     void createDescriptorPool() {
         std::vector<VkDescriptorPoolSize> poolSizes{
-        Initialisers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(swapChain.images.size() * gameObjectCount)),
+        Initialisers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(swapChain.images.size() * gameObjectCount * 3)),
         Initialisers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(swapChain.images.size()* gameObjectCount))
         };
 
@@ -381,29 +394,10 @@ private:
 
     void createDescriptorSets() {
 
-        // Image descriptor for the shadow map attachment
-        //VkDescriptorImageInfo shadowMapDescriptor =
-        //    Initialisers::descriptorImageInfo(
-        //        offscreenPass.depth.view,
-        //        offscreenPass.depthSampler,
-        //        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
-        std::vector<VkDescriptorSetLayout> layouts(swapChain.images.size(), pipeline.descriptorSetLayout);
+        std::vector<VkDescriptorSetLayout> layouts(swapChain.images.size(), shadowMap.pipeline.descriptorSetLayout);
         VkDescriptorSetAllocateInfo allocInfo = Initialisers::descriptorSetAllocateInfo(descriptorPool, static_cast<uint32_t>(swapChain.images.size()), layouts.data());
 
-        //descriptorSets.debug.resize(swapChain.images.size());
-        //if (vkAllocateDescriptorSets(devices.logicalDevice, &allocInfo, descriptorSets.debug.data()) != VK_SUCCESS) {
-        //    throw std::runtime_error("failed to allocate descriptor sets!");
-        //}
-
-        //for (size_t i = 0; i < swapChain.images.size(); i++) {
-
-        //    std::vector<VkWriteDescriptorSet> descriptorWrites{
-        //    Initialisers::writeImageDescriptorSet(descriptorSets.debug[i], 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &shadowMap.depthTexture.descriptorInfo)
-        //    };
-
-        //    vkUpdateDescriptorSets(devices.logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        //}
 
         descriptorSets.offscreen.resize(swapChain.images.size());
         if (vkAllocateDescriptorSets(devices.logicalDevice, &allocInfo, descriptorSets.offscreen.data()) != VK_SUCCESS) {
@@ -437,6 +431,9 @@ private:
 
             vkUpdateDescriptorSets(devices.logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
+
+        std::vector<VkDescriptorSetLayout> layouts2(swapChain.images.size(), pipeline.descriptorSetLayout);
+        allocInfo = Initialisers::descriptorSetAllocateInfo(descriptorPool, static_cast<uint32_t>(swapChain.images.size()), layouts2.data());
 
         for (auto& go : gameObjects) {
             go.descriptorSets.resize(swapChain.images.size());
@@ -510,8 +507,8 @@ private:
                 vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
                 vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
 
-                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.vkPipeline);
-                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipelineLayout, 0, 1, &descriptorSets.offscreen[i], 0, nullptr);
+                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.vkPipeline);
+                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, 1, &descriptorSets.offscreen[i], 0, nullptr);
 
                 VkDeviceSize offsets[] = { 0 };
 
@@ -521,9 +518,9 @@ private:
                         continue;
 
                     if(j == 0)
-                        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipelineLayout, 0, 1, &descriptorSets.offscreen[i], 0, nullptr);
+                        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, 1, &descriptorSets.offscreen[i], 0, nullptr);
                     else
-                        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipelineLayout, 0, 1, &descriptorSets.offscreen2[i], 0, nullptr);
+                        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, 1, &descriptorSets.offscreen2[i], 0, nullptr);
                     vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &go.mesh->vertexBuffer->vkBuffer, offsets);
 
                     vkCmdBindIndexBuffer(commandBuffers[i], go.mesh->indexBuffer->vkBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -632,94 +629,99 @@ private:
         //lightPos.z = 2.5f + sin(glm::radians(timer * 360.0f)) * 5.0f;
 
 
-        if (glfwGetKey(window, GLFW_KEY_W) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         {
             camera.transform.position += camera.transform.forward * 10.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_S) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
         {
             camera.transform.position -= camera.transform.forward * 10.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_A) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         {
             camera.transform.position += camera.transform.right * 10.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_D) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         {
             camera.transform.position -= camera.transform.right * 10.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         {
             camera.transform.position += camera.transform.up * 10.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
         {
             camera.transform.position -= camera.transform.up * 10.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_Q) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         {
             camera.transform.rotation.y -= 50.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_E) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
         {
             camera.transform.rotation.y += 50.0f * time;
         }
 
-        if (glfwGetKey(window, GLFW_KEY_KP_8) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
         {
             lightPos += camera.transform.forward * 5.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_KP_5) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS)
         {
             lightPos -= camera.transform.forward* 5.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_KP_4) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
         {
             lightPos += camera.transform.right * 5.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_KP_6) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
         {
             lightPos -= camera.transform.right * 5.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_KP_9) != GLFW_RELEASE)
-        {
+        if (glfwGetKey(window, GLFW_KEY_KP_9) == GLFW_PRESS)
+        { 
             lightPos.y += 5.0f * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_KP_7) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_KP_7) == GLFW_PRESS)
         {
             lightPos.y -= 5.0f * time;
         }
 
-        if (glfwGetKey(window, GLFW_KEY_P) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
         {
             gameObjects[0].transform.scale += glm::vec3(1.0f) * time;
         }
-        if (glfwGetKey(window, GLFW_KEY_O) != GLFW_RELEASE)
+        if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
         {
             gameObjects[0].transform.scale -= glm::vec3(1.0f) * time;
         }
 
+        if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+        {
+            lightFOV += 5.0f * time;
+        }
+        if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+        {
+            lightFOV -= 5.0f * time;
+        }
+
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
         {
-            lightPos.x = 0.0f;
-            lightPos.z = 0.0f;
-        }
-       
+            Log(lightPos, "Light Pos");
+            //lightPos.x = 0.0f;
+            //lightPos.z = 0.0f;
+        } 
 
         camera.update(static_cast<float>(swapChain.extent.width), static_cast<float>(swapChain.extent.height));
 
         float zNear = 1.0f;
         float zFar = 100.0f;
 
-        glm::vec3 direction(1, -2, -1);
-        direction = glm::normalize(direction);
-
         glm::vec3 lightLookAt = glm::vec3(0.0f, 0.0f, 0.0f);
-
-        float lightFOV = 45.0f;
 
         // Matrix from light's point of view
         glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
+        //depthProjectionMatrix[1][1] *= -1;
         //glm::mat4 depthProjectionMatrix = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, zNear, zFar);
         glm::mat4 depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
         glm::mat4 depthModelMatrix = glm::mat4(1.0f);

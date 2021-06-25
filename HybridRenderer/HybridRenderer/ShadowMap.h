@@ -3,6 +3,7 @@
 #include "Constants.h"
 #include "DepthRenderPass.h"
 #include "FrameBuffer.h"
+#include "Pipeline.h"
 
 class ShadowMap
 {
@@ -14,21 +15,18 @@ public:
 
 	void Create(Device* _devices, SwapChain* _swapChain);
 
-	void Init();
-
+	void Init(const PipelineInfo& pipelineInfo);
+	void Destroy();
 
 	uint32_t width = 2048;
 	uint32_t height = 2048;
 
 	FrameBuffer frameBuffer;
+	Pipeline pipeline;
 
 	Texture depthTexture;
 	DepthRenderPass renderPass;
 	Device* devices = nullptr;
 	SwapChain* swapChain = nullptr;
-
-	VkDescriptorSetLayout descriptorSetLayout;
-	VkPipelineLayout pipelineLayout;
-	VkPipeline vkPipeline;
 };
 

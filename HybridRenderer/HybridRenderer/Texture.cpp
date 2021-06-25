@@ -5,6 +5,16 @@
 
 Texture::~Texture()
 {
+    if (!destroyed)
+    {
+        if (hasSampler)
+            vkDestroySampler(devices->logicalDevice, sampler, nullptr);
+        if (hasImageView)
+            vkDestroyImageView(devices->logicalDevice, imageView, nullptr);
+
+        vkDestroyImage(devices->logicalDevice, image, nullptr);
+        vkFreeMemory(devices->logicalDevice, vkMemory, nullptr);
+    }
 	devices = nullptr;
 }
 
@@ -34,9 +44,6 @@ void Texture::createImage() {
     vkGetImageMemoryRequirements(devices->logicalDevice, image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo = Initialisers::memoryAllocateInfo(memRequirements.size, Utility::findMemoryType(memRequirements.memoryTypeBits, devices->physicalDevice, properties));
-    //allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    //allocInfo.allocationSize = memRequirements.size;
-    //allocInfo.memoryTypeIndex = Utility::findMemoryType(memRequirements.memoryTypeBits, devices->physicalDevice, properties);
 
     if (vkAllocateMemory(devices->logicalDevice, &allocInfo, nullptr, &vkMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate image memory!");
@@ -146,4 +153,11 @@ void Texture::Destroy() {
 
     vkDestroyImage(devices->logicalDevice, image, nullptr);
     vkFreeMemory(devices->logicalDevice, vkMemory, nullptr);
+    destroyed = true;
+}
+
+void Texture::DestroyImageViews() {
+    if (hasImageView)
+        vkDestroyImageView(devices->logicalDevice, imageView, nullptr);
+    destroyed = true;
 }

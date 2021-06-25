@@ -12,17 +12,17 @@ public:
 	std::vector<VkFramebuffer> vkFrameBuffers;
 
 
-	void Create(Device* _devices, SwapChain* _swapChain, VkRenderPass _vkRenderPass, OffscreenPass& offscreenPass);
+	void Create(Device* _devices, SwapChain* _swapChain, VkRenderPass _vkRenderPass);
 
 	void Create(Device* _devices, VkRenderPass _vkRenderPass);
 
-	void Init(OffscreenPass& offscreenPass);
+	void Init();
 
 	void createFramebuffers();
 
 	void createFramebuffer(const std::vector<VkImageView>& attachments, VkExtent2D extent);
 
-	void prepareOffscreenFramebuffer(OffscreenPass& offscreenPass);
+	void prepareOffscreenFramebuffer();
 
 	void Destroy();
 

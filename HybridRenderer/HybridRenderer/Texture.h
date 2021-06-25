@@ -31,6 +31,8 @@ public:
 
 	void Destroy();
 
+	void DestroyImageViews();
+
 	VkImage image;
 	VkFormat format;
 	VkDeviceMemory vkMemory;
@@ -52,6 +54,6 @@ public:
 	bool hasImageView = false;
 
 private:
-
+	bool destroyed = false;
 };
 

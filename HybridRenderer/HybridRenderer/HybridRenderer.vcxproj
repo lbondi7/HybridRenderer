@@ -72,19 +72,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>libs\glfw-3.3.4\glfwWIN32\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <IncludePath>libs\json;libs\glfw-3.3.4\glfwWIN32\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>libs\glfw-3.3.4\glfwWIN32\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <IncludePath>libs\json;libs\glfw-3.3.4\glfwWIN32\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>libs\glfw-3.3.4\glfwWIN64\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <IncludePath>libs\json;libs\glfw-3.3.4\glfwWIN64\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>libs\glfw-3.3.4\glfwWIN64\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <IncludePath>libs\json;libs\glfw-3.3.4\glfwWIN64\include;libs\vulkan\Include;libs\glm;libs\stb;libs\tinyobjloader;$(IncludePath)</IncludePath>
+    <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,7 +96,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -109,7 +113,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,7 +130,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,7 +147,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -158,6 +162,7 @@
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ColourRenderPass.cpp" />
+    <ClCompile Include="DebugLogger.cpp" />
     <ClCompile Include="DepthRenderPass.cpp" />
     <ClCompile Include="DepthTexture.cpp" />
     <ClCompile Include="DescriptorSetManager.cpp" />
@@ -183,6 +188,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ColourRenderPass.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="DebugLogger.h" />
     <ClInclude Include="DepthRenderPass.h" />
     <ClInclude Include="DepthTexture.h" />
     <ClInclude Include="DescriptorSetManager.h" />

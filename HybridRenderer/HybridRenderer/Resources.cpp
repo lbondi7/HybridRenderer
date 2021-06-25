@@ -31,6 +31,17 @@ void Resources::Destroy()
         image.second->texture.Destroy();
     }
 
+    for (auto& shader : vertexShaders)
+    {
+        shader.second->Destroy();
+    }
+
+
+    for (auto& shader : fragmentShaders)
+    {
+        shader.second->Destroy();
+    }
+
 }
 
 void Resources::LoadMesh(const std::string& name)
@@ -116,5 +127,63 @@ void Resources::LoadImage(const std::string& name)
     image->texture.createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
     image->texture.createSampler();
     image->texture.descriptorInfo = Initialisers::descriptorImageInfo(image->texture.imageView, image->texture.sampler);
+    stagingBuffer.Destroy();
 
 }
+
+void Resources::LoadShader(const std::string& name, VkShaderStageFlagBits stage)
+{
+    auto trimmedName = trimName(name);
+    switch (stage)
+    {
+    case VK_SHADER_STAGE_VERTEX_BIT:
+        vertexShaders.emplace(trimmedName, std::make_unique<Shader>());
+        InitShader(name, vertexShaders[trimmedName].get(), stage);
+        break;
+    case VK_SHADER_STAGE_GEOMETRY_BIT:
+        break;
+    case VK_SHADER_STAGE_FRAGMENT_BIT:
+        fragmentShaders.emplace(trimmedName, std::make_unique<Shader>());
+        InitShader(name, fragmentShaders[trimmedName].get(), stage);
+        break;
+    case VK_SHADER_STAGE_COMPUTE_BIT:
+        break;
+    case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+        break;
+    case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
+        break;
+    case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+        break;
+    case VK_SHADER_STAGE_MISS_BIT_KHR:
+        break;
+    case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
+        break;
+    case VK_SHADER_STAGE_CALLABLE_BIT_KHR:
+        break;
+    default:
+        break;
+    }
+
+}
+
+void Resources::InitShader(const std::string& name, Shader* shader, VkShaderStageFlagBits stage)
+{
+    shader->Init(devices, name, stage);
+}
+
+const std::string Resources::trimName(const std::string& name)
+{
+    std::string newName="";
+    for (auto letter : name)
+    {
+        newName += letter;
+        if (letter == '\\' || letter == '/')
+            newName.clear();
+
+    }
+
+
+    return newName;
+}
+
+

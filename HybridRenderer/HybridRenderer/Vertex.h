@@ -48,7 +48,7 @@ struct Vertex {
             }
             if (attribute == VertexAttributes::NORMAL)
             {
-                attributeDescriptions.emplace_back(Initialisers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, normal)));
+                attributeDescriptions.emplace_back(Initialisers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)));
             }
         }
         //{

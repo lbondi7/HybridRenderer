@@ -18,7 +18,6 @@ void GameObject::Update()
 		transform.getMatrix(model);
 		prevTransform = transform;
 	}
-
 }
 
 void GameObject::Destroy()

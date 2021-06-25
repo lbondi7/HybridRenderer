@@ -9,13 +9,17 @@
 
 
 struct PipelineInfo {
-    bool emptyInputStruct;
     std::vector<Shader*> shaders;
-    VkCullModeFlagBits cullMode;
-    VkPrimitiveTopology topology;
-    VkPolygonMode polygonMode;
+    bool emptyVertexInputState = false;
+    std::vector<VertexAttributes> attributes;
+    VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
+    VkPrimitiveTopology topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkPolygonMode polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+    VkBool32 depthBiasEnable = VK_FALSE;
+    std::vector<VkViewport> viewports;
+    std::vector<VkRect2D> scissors;
     std::vector<VkDynamicState> dynamicStates;
-    VkBool32 depthBiasEnable;
+    bool specializationInfo = false;
 };
 
 class Pipeline
@@ -40,14 +44,14 @@ public:
 
     VkDescriptorPool descriptorPool;
 
-    void Create(Device* _devices, SwapChain* _swapChain, RenderPass* _renderPass, OffscreenPass& offscreenPass);
+    void Create(Device* _devices, RenderPass* _renderPass, const PipelineInfo& _pipelineInfo);
 
 
-    void Init(OffscreenPass& offscreenPass);
+    void Init();
 
     void createDescriptorSetLayout();
 
-    void createGraphicsPipeline(OffscreenPass& offscreenPass);
+    void createGraphicsPipeline();
 
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
@@ -56,8 +60,8 @@ public:
 private:
 
     Device* devices = nullptr;
-    SwapChain* swapChain = nullptr;
+    //SwapChain* swapChain = nullptr;
     RenderPass* renderPass = nullptr;
-
+    PipelineInfo pipelineInfo;
 };
 

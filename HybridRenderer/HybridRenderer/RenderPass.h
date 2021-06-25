@@ -13,12 +13,12 @@ public:
 
 	VkRenderPass vkRenderPass;
 
-	void Create(Device* _devices, SwapChain* _swapChain, OffscreenPass& offscreenPass);
+	//void Create(Device* _devices, SwapChain* _swapChain,);
 
 
 	virtual void Create(Device* _devices, SwapChain* _swapChain);
 
-	void Init(OffscreenPass& offscreenPass);
+	//void Init();
 
 	virtual void Init() = 0;
 

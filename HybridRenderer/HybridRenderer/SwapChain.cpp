@@ -30,14 +30,19 @@ void SwapChain::Init()
 
 void SwapChain::Destroy()
 {
+    depthImage.Destroy();
     for (auto& image : images)
     {
-        image.Destroy();
+        image.DestroyImageViews();
     }
 
-    depthImage.Destroy();
-
     vkDestroySwapchainKHR(devices->logicalDevice, vkSwapChain, nullptr);
+
+    for (auto& image : _images)
+    {
+        image = VK_NULL_HANDLE;
+    }
+
 }
 
 void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
@@ -74,7 +79,7 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
     }
 
     vkGetSwapchainImagesKHR(devices->logicalDevice, vkSwapChain, &imageCount, nullptr);
-    std::vector<VkImage> _images;
+
     _images.resize(imageCount);
     images.resize(imageCount);
 

@@ -14,13 +14,13 @@ RenderPass::~RenderPass()
     swapChain = nullptr;
 }
 
-void RenderPass::Create(Device* _devices, SwapChain* _swapChain, OffscreenPass& offscreenPass)
-{
-    devices = _devices;
-    swapChain = _swapChain;
-
-    Init(offscreenPass);
-}
+//void RenderPass::Create(Device* _devices, SwapChain* _swapChain, OffscreenPass& offscreenPass)
+//{
+//    devices = _devices;
+//    swapChain = _swapChain;
+//
+//    Init(offscreenPass);
+//}
 
 void RenderPass::Create(Device* _devices, SwapChain* _swapChain)
 {
@@ -28,11 +28,11 @@ void RenderPass::Create(Device* _devices, SwapChain* _swapChain)
     swapChain = _swapChain;
 }
 
-void RenderPass::Init(OffscreenPass& offscreenPass) {
-    //createRenderPass();
-
-    //prepareOffscreenRenderpass(offscreenPass);
-}
+//void RenderPass::Init() {
+//    //createRenderPass();
+//
+//    //prepareOffscreenRenderpass(offscreenPass);
+//}
 
 //
 //void RenderPass::createRenderPass() {

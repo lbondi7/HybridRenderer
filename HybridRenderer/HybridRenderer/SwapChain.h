@@ -26,6 +26,7 @@ public:
     void Destroy();
 
 private:
+    std::vector<VkImage> _images;
 
     Device* devices = nullptr;
     GLFWwindow* window = nullptr;
