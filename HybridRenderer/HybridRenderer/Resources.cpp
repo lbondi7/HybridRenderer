@@ -13,7 +13,7 @@ Resources::~Resources()
     devices = nullptr;
 }
 
-void Resources::Init(Device* _devices)
+void Resources::Init(DeviceContext* _devices)
 {
     devices = _devices;
 }

@@ -5,20 +5,39 @@ layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec3 inColor;
 layout (location = 3) in vec3 inNormal;
 
-layout (binding = 0) uniform UBO
+//layout (binding = 0) uniform UBO
+//{
+//	mat4 projection;
+//	mat4 view;
+//	mat4 model;
+//	mat4 lightSpace;
+//	vec3 lightPos;
+//	vec3 camPos;
+//} ubo;
+
+layout (set = 0, binding = 0) uniform CameraUBO
 {
 	mat4 projection;
 	mat4 view;
-	mat4 model;
-	mat4 lightSpace;
-	vec3 lightPos;
-	vec3 camPos;
-} ubo;
+	vec3 pos;
+} cam;
+
+layout (set = 1, binding = 0) uniform ModelUBO
+{
+	mat4 matrix;
+} model;
+
+layout (set = 2, binding = 0) uniform LightUBO
+{
+	mat4 space;
+	vec3 pos;
+} light;
+
 
 layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec3 outColor;
-layout (location = 2) out vec3 outViewVec;
-layout (location = 3) out vec3 outLightVec;
+layout (location = 2) out vec3 outCamPos;
+layout (location = 3) out vec3 outLightPos;
 layout (location = 4) out vec4 outShadowCoord;
 layout (location = 5) out vec2 outUV;
 layout (location = 6) out vec3 outPos;
@@ -41,32 +60,30 @@ void main()
 	outNormal = inNormal;
 	outUV = inUV;
 
-	gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPos.xyz, 1.0);
+	gl_Position = cam.projection * cam.view * model.matrix * vec4(inPos.xyz, 1.0);
 
-	outPos = vec3(ubo.model * vec4(inPos, 1.0));
+	outPos = vec3(model.matrix * vec4(inPos, 1.0));
 	outNormal = inNormal;
-	outLightVec = ubo.lightPos;
+	outLightPos = light.pos;
 	//outLightVec = normalize(ubo.lightPos - inPos);
-	outViewVec = ubo.camPos;
+	outCamPos = cam.pos;
 	//outViewVec = -pos.xyz;
 
-	outShadowCoord = ( ubo.lightSpace * ubo.model ) * vec4(inPos, 1.0);
-	//outShadowCoord = ( biasMat * ubo.lightSpace * ubo.model ) * vec4(inPos, 1.0);
+	outShadowCoord = (biasMat * light.space * model.matrix ) * vec4(inPos, 1.0);
 
 //	outColor = inColor;
 //	outNormal = inNormal;
-//    outUV = inUV;
+//	outUV = inUV;
 //
 //	gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPos.xyz, 1.0);
 //
-//    vec4 pos = ubo.model * vec4(inPos, 1.0);
-//    outNormal = mat3(ubo.model) * inNormal;
-//	outLightVec = normalize(ubo.lightPos - pos.xyz);
+//	outPos = vec3(ubo.model * vec4(inPos, 1.0));
+//	outNormal = inNormal;
+//	outLightVec = ubo.lightPos;
 //	//outLightVec = normalize(ubo.lightPos - inPos);
-//	outViewVec = ubo.camPos - pos.xyz;
-//    //outViewVec = -pos.xyz;
+//	outViewVec = ubo.camPos;
+//	//outViewVec = -pos.xyz;
 //
-//	outShadowCoord = ( ubo.lightSpace * ubo.model ) * vec4(inPos, 1.0);
-//	//outShadowCoord = ( biasMat * ubo.lightSpace * ubo.model ) * vec4(inPos, 1.0);
+//	outShadowCoord = (biasMat * ubo.lightSpace * ubo.model ) * vec4(inPos, 1.0);
 }
 

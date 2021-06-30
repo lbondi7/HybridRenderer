@@ -9,9 +9,9 @@ public:
 	Buffer() = default;
 	~Buffer();
 
-	void Create(Device* _devices, VkDeviceSize _size, VkBufferUsageFlags _usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlags _properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, void* _data = nullptr);
+	void Create(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageFlags _usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlags _properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, void* _data = nullptr);
 
-	void Create(Device* _devices, VkDeviceSize _size, void* _data);
+	void Create(DeviceContext* _devices, VkDeviceSize _size, void* _data);
 
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
@@ -33,7 +33,7 @@ public:
 
 private:
 
-	Device* devices;
+	DeviceContext* devices;
 
 };
 

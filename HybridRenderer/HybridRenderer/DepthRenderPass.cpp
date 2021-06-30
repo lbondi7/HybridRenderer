@@ -9,7 +9,7 @@ DepthRenderPass::~DepthRenderPass()
 {
 }
 
-void DepthRenderPass::Create(Device* _devices, SwapChain* _swapChain)
+void DepthRenderPass::Create(DeviceContext* _devices, SwapChain* _swapChain)
 {
     RenderPass::Create(_devices, _swapChain);
 

@@ -19,7 +19,7 @@ Texture::~Texture()
 }
 
 
-void Texture::Create(Device* _devices, uint32_t _width, uint32_t _height, VkFormat _format, VkImageTiling _tiling, VkImageUsageFlags _usage, VkMemoryPropertyFlags _properties) {
+void Texture::Create(DeviceContext* _devices, uint32_t _width, uint32_t _height, VkFormat _format, VkImageTiling _tiling, VkImageUsageFlags _usage, VkMemoryPropertyFlags _properties) {
 
     devices = _devices;
     width = _width;

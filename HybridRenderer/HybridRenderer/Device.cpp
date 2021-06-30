@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 
-void Device::SetupDevices(VkInstance instance, VkSurfaceKHR surface)
+void DeviceContext::SetupDevices(VkInstance instance, VkSurfaceKHR surface)
 {
     pickPhysicalDevice(instance, surface);
     createLogicalDevice(surface);
@@ -13,12 +13,12 @@ void Device::SetupDevices(VkInstance instance, VkSurfaceKHR surface)
     createCommandPool(surface);
 }
 
-void Device::Destroy()
+void DeviceContext::Destroy()
 {
     vkDestroyDevice(logicalDevice, nullptr);
 }
 
-VkCommandBuffer Device::generateCommandBuffer()
+VkCommandBuffer DeviceContext::generateCommandBuffer()
 {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -38,7 +38,7 @@ VkCommandBuffer Device::generateCommandBuffer()
     return commandBuffer;
 }
 
-void Device::EndCommandBuffer(VkCommandBuffer cmdBuffer)
+void DeviceContext::EndCommandBuffer(VkCommandBuffer cmdBuffer)
 {
     vkEndCommandBuffer(cmdBuffer);
 
@@ -54,7 +54,7 @@ void Device::EndCommandBuffer(VkCommandBuffer cmdBuffer)
 }
 
 
-void Device::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
+void DeviceContext::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -80,7 +80,7 @@ void Device::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
 
 }
 
-void Device::createLogicalDevice(VkSurfaceKHR surface) {
+void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     QueueFamilyIndices indices = Utility::findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -126,7 +126,7 @@ void Device::createLogicalDevice(VkSurfaceKHR surface) {
     vkGetDeviceQueue(logicalDevice, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void Device::createCommandPool(VkSurfaceKHR surface) {
+void DeviceContext::createCommandPool(VkSurfaceKHR surface) {
     QueueFamilyIndices queueFamilyIndices = Utility::findQueueFamilies(physicalDevice, surface);
 
     VkCommandPoolCreateInfo poolInfo{};
@@ -138,7 +138,7 @@ void Device::createCommandPool(VkSurfaceKHR surface) {
     }
 }
 
-VkFormat Device::getDepthFormat()
+VkFormat DeviceContext::getDepthFormat()
 {
 
     if (!hasDepthFormat)
@@ -164,7 +164,7 @@ VkFormat Device::getDepthFormat()
     return depthFormat;
 }
 
-VkBool32 Device::formatIsFilterable(VkFormat format, VkImageTiling tiling)
+VkBool32 DeviceContext::formatIsFilterable(VkFormat format, VkImageTiling tiling)
 {
 
      VkFormatProperties formatProps;

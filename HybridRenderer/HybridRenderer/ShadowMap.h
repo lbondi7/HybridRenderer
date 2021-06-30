@@ -13,9 +13,10 @@ public:
 	~ShadowMap();
 
 
-	void Create(Device* _devices, SwapChain* _swapChain);
+	void Create(DeviceContext* _devices, SwapChain* _swapChain);
 
-	void Init(const PipelineInfo& pipelineInfo);
+	void Init(DescriptorSetManager* dsManager, const PipelineInfo& pipelineInfo);
+
 	void Destroy();
 
 	uint32_t width = 2048;
@@ -26,7 +27,7 @@ public:
 
 	Texture depthTexture;
 	DepthRenderPass renderPass;
-	Device* devices = nullptr;
+	DeviceContext* devices = nullptr;
 	SwapChain* swapChain = nullptr;
 };
 

@@ -13,9 +13,12 @@ public:
 	~Mesh();
 
 
-	void Init(Device* _devices);
+	void Init(DeviceContext* _devices);
 
 	void Destroy();
+
+	void Bind(VkCommandBuffer cmdBuffer);
+
 
 	std::unique_ptr<Buffer> vertexBuffer;
 	std::unique_ptr<Buffer> indexBuffer;
@@ -24,6 +27,6 @@ public:
 	std::vector<uint32_t> indices;
 	std::string name;
 
-	Device* devices;
+	DeviceContext* devices;
 };
 

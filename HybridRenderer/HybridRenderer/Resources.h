@@ -15,7 +15,7 @@ public:
 	Resources() = default;
 	~Resources();
 
-	void Init(Device* _devices);
+	void Init(DeviceContext* _devices);
 
 	void Destroy();
 
@@ -31,7 +31,7 @@ public:
 	std::map<std::string, std::unique_ptr<Shader>> vertexShaders;
 	std::map<std::string, std::unique_ptr<Shader>> fragmentShaders;
 
-	Device* devices;
+	DeviceContext* devices;
 private:
 	void InitShader(const std::string& name, Shader* shader, VkShaderStageFlagBits stage);
 

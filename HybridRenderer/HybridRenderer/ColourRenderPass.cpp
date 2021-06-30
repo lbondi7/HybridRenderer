@@ -9,7 +9,7 @@ ColourRenderPass::~ColourRenderPass()
 {
 }
 
-void ColourRenderPass::Create(Device* _devices, SwapChain* _swapChain)
+void ColourRenderPass::Create(DeviceContext* _devices, SwapChain* _swapChain)
 {
     RenderPass::Create(_devices, _swapChain);
 

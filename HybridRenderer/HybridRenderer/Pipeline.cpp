@@ -11,15 +11,16 @@ Pipeline::~Pipeline()
     renderPass = nullptr;
 }
 
-void Pipeline::Create(Device* _devices, RenderPass* _renderPass, const PipelineInfo& _pipelineInfo)
+void Pipeline::Create(DeviceContext* _devices, RenderPass* _renderPass, DescriptorSetManager* dsManager, const PipelineInfo& _pipelineInfo)
 {
 
     devices = _devices;
     //swapChain = _swapChain;
     renderPass = _renderPass;
     pipelineInfo = _pipelineInfo;
+    descriptorSetManager = dsManager;
 
-    createDescriptorSetLayout();
+    createDescriptorSetLayouts();
     Init();
 
 }
@@ -29,61 +30,79 @@ void Pipeline::Init()
     createGraphicsPipeline();
 }
 
-void Pipeline::createDescriptorSetLayout() {
-    //VkDescriptorSetLayoutBinding uboLayoutBinding = Initialisers::descriptorSetLayoutBinding(0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+void Pipeline::createDescriptorSetLayouts() {
 
-    //VkDescriptorSetLayoutBinding samplerLayoutBinding = Initialisers::descriptorSetLayoutBinding(1, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-
-    //size_t setCount = 0;
-    //for (auto& shader : pipelineInfo.shaders)
-    //{
-    //    for (auto& descriptor : shader->descriptors)
-    //    {
-    //        if (descriptor.set > setCount)
-    //        {
-    //            setCount = descriptor.set;
-    //        }
-    //    }
-    //}
-
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
     std::vector<DescriptorData> descriptors;
+
     for (auto& shader : pipelineInfo.shaders)
     {
         for (auto& descriptor : shader->descriptors)
         {
+            if (descriptor.set >= layoutCount)
+                layoutCount = descriptor.set;
+
             if (!DescriptorData::contains(descriptor, descriptors))
             {
-                bindings.emplace_back(Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
                 descriptors.emplace_back(descriptor);
             }
         }
     }
-    
-    //= {
-    //Initialisers::descriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-    //Initialisers::descriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT),
-    //Initialisers::descriptorSetLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT),
-    //Initialisers::descriptorSetLayoutBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
 
-    //};
-    VkDescriptorSetLayoutCreateInfo layoutInfo = Initialisers::descriptorSetLayoutCreateInfo(bindings.data(), static_cast<uint32_t>(bindings.size()));
+    layoutCount += 1;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-    if (vkCreateDescriptorSetLayout(devices->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
+    for (size_t i = 0; i < layoutCount; i++)
+    {
+        for (auto& descriptor : descriptors)
+        {
+            if (descriptor.set != i)
+                continue;
+
+            bindings.emplace_back(
+                Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
+
+        }
+
+        descriptorSetLayouts.push_back(descriptorSetManager->addLayoutAndReturn(i, bindings));
+
+        bindings.clear();
     }
 
-    //std::vector<VkDescriptorSetLayoutBinding> bindings = {
-    //Initialisers::descriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-    //Initialisers::descriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT),
-    //Initialisers::descriptorSetLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT),
-    //Initialisers::descriptorSetLayoutBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
 
-    //};
-    //VkDescriptorSetLayoutCreateInfo layoutInfo = Initialisers::descriptorSetLayoutCreateInfo(bindings.data(), static_cast<uint32_t>(bindings.size()));
+    //descriptorSetLayouts.reserve(layoutCount);
+    //descriptorSetLayouts.resize(layoutCount);
 
-    //if (vkCreateDescriptorSetLayout(devices->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to create descriptor set layout!");
+    //for (size_t i = 0; i < layoutCount; i++)
+    //{
+    //    descriptorSetLayouts[i].set = i;
+    //    for (auto& descriptor : descriptors)
+    //    {
+    //        if (descriptor.set != i)
+    //            continue;
+
+    //        descriptorSetLayouts[i].bindings.emplace_back(
+    //            Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
+
+    //    }
+    //    //if(i == 0)
+    //    //else
+    //    descriptorSetLayouts[i].init(devices);
+    //}
+
+    //for (size_t i = 0; i < setCount; i++)
+    //{
+    //    std::vector<VkDescriptorSetLayoutBinding> bind;
+    //    for (auto& descriptor : descriptors)
+    //    {
+    //        if (descriptor.set != i)
+    //            continue;
+    //        bind.emplace_back(Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
+    //    }
+    //    VkDescriptorSetLayoutCreateInfo layoutInfo =
+    //        Initialisers::descriptorSetLayoutCreateInfo(bind.data(), static_cast<uint32_t>(bind.size()));
+    //    if (vkCreateDescriptorSetLayout(devices->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayouts[i]) != VK_SUCCESS) {
+    //        throw std::runtime_error("failed to create descriptor set layout!");
+    //    }
     //}
 }
 
@@ -101,9 +120,6 @@ void Pipeline::createGraphicsPipeline() {
     if(pipelineInfo.viewports.empty())
         viewportState = Initialisers::pipelineViewportStateCreateInfo(nullptr, 1, nullptr, 1);
     else {
-        //VkViewport viewport = Initialisers::viewport(0, 0, (float)swapChain->extent.width, (float)swapChain->extent.height);
-        //VkRect2D scissor = Initialisers::scissor(swapChain->extent);
-
         viewportState = 
             Initialisers::pipelineViewportStateCreateInfo(pipelineInfo.viewports.data(), static_cast<uint32_t>(pipelineInfo.viewports.size()), pipelineInfo.scissors.data(), static_cast<uint32_t>(pipelineInfo.scissors.size()));
     }
@@ -118,7 +134,19 @@ void Pipeline::createGraphicsPipeline() {
 
     VkPipelineColorBlendStateCreateInfo colorBlending = Initialisers::pipelineColorBlendStateCreateInfo(&colorBlendAttachment, 1, VK_FALSE, VK_LOGIC_OP_COPY);
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = Initialisers::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
+    std::vector<VkDescriptorSetLayout> layouts;
+    //for (auto& layout : descriptorSetLayouts)
+    //{
+    //    layouts.emplace_back(layout.layout);
+    //}
+
+    for (size_t i = 0; i < layoutCount; ++i)
+    {
+        layouts.emplace_back(descriptorSetLayouts[i]->layout);
+    }
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = 
+        Initialisers::pipelineLayoutCreateInfo(layouts.data(), static_cast<uint32_t>(layouts.size()));
 
     if (vkCreatePipelineLayout(devices->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -156,25 +184,53 @@ void Pipeline::createGraphicsPipeline() {
         shaderStages[1].pSpecializationInfo = &specializationInfo;
     }
 
+    if (pipelineInfo.conservativeRasterisation) {
+
+        VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps{};
+
+        VkPhysicalDeviceProperties2KHR deviceProps2{};
+        conservativeRasterProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT;
+        deviceProps2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+        deviceProps2.pNext = &conservativeRasterProps;
+        vkGetPhysicalDeviceProperties2(devices->physicalDevice, &deviceProps2);
+
+        VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterStateCI{};
+        conservativeRasterStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
+        conservativeRasterStateCI.conservativeRasterizationMode = VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+        conservativeRasterStateCI.extraPrimitiveOverestimationSize = conservativeRasterProps.maxExtraPrimitiveOverestimationSize;
+       
+        // Conservative rasterization state has to be chained into the pipeline rasterization state create info structure
+        rasterizer.pNext = &conservativeRasterStateCI;
+    }
+
     if (vkCreateGraphicsPipelines(devices->logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &vkPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 }
 
 
-VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
-    VkShaderModuleCreateInfo createInfo = Initialisers::shaderModuleCreateInfo(reinterpret_cast<const uint32_t*>(code.data()), code.size());
+//VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
+//    VkShaderModuleCreateInfo createInfo = Initialisers::shaderModuleCreateInfo(reinterpret_cast<const uint32_t*>(code.data()), code.size());
+//
+//    VkShaderModule shaderModule;
+//    if (vkCreateShaderModule(devices->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+//        throw std::runtime_error("failed to create shader module!");
+//    }
+//
+//    return shaderModule;
+//}
 
-    VkShaderModule shaderModule;
-    if (vkCreateShaderModule(devices->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module!");
-    }
-
-    return shaderModule;
-}
-
-void Pipeline::Destroy() {
+void Pipeline::Destroy(bool complete) {
     vkDestroyPipeline(devices->logicalDevice, vkPipeline, nullptr);
     vkDestroyPipelineLayout(devices->logicalDevice, pipelineLayout, nullptr);
-    vkDestroyDescriptorSetLayout(devices->logicalDevice, descriptorSetLayout, nullptr);
+
+    if (!complete)
+        return;
+
+    for (auto& layout : descriptorSetLayouts)
+    {
+        layout = nullptr;
+    }
+
+    descriptorSetLayouts.clear();
 }

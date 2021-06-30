@@ -2,7 +2,7 @@
 #include "Constants.h"
 
 
-class Device
+class DeviceContext
 {
 public:
 

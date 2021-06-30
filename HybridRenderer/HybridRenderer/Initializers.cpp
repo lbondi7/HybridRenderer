@@ -58,7 +58,7 @@ namespace Initialisers {
 	}
 
 
-	VkWriteDescriptorSet writeBufferDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, uint32_t descriptorCount, const VkDescriptorBufferInfo* pBufferInfo, uint32_t descriptorArrayElement) {
+	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkDescriptorBufferInfo* pBufferInfo, uint32_t descriptorCount, uint32_t descriptorArrayElement) {
 
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -71,7 +71,7 @@ namespace Initialisers {
 		return descriptorWrite;
 	}
 
-	VkWriteDescriptorSet writeImageDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, uint32_t descriptorCount, const VkDescriptorImageInfo* pImageInfo, uint32_t descriptorArrayElement) {
+	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo, uint32_t descriptorCount, uint32_t descriptorArrayElement) {
 
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

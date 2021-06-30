@@ -7,7 +7,7 @@ class ColourRenderPass : public RenderPass
 public:
 	~ColourRenderPass();
 
-	void Create(Device* _devices, SwapChain* _swapChain) override;
+	void Create(DeviceContext* _devices, SwapChain* _swapChain) override;
 
 	void Init() override;
 

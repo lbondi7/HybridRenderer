@@ -31,7 +31,7 @@ public:
 	Shader() = default;
 	~Shader();
 
-	void Init(Device* _devices, const std::string& shaderName, VkShaderStageFlagBits _stage, const std::string& entryPoint = "main");
+	void Init(DeviceContext* _devices, const std::string& shaderName, VkShaderStageFlagBits _stage, const std::string& entryPoint = "main");
 
 	void createModule(const std::vector<char>& code);
 
@@ -54,6 +54,6 @@ public:
 
 private:
 
-	Device* devices = nullptr;
+	DeviceContext* devices = nullptr;
 };
 

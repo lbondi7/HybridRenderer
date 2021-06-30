@@ -4,7 +4,7 @@ Mesh::~Mesh()
 {
 }
 
-void Mesh::Init(Device* _devices)
+void Mesh::Init(DeviceContext* _devices)
 {
     devices = _devices;
 	vertexBuffer = std::make_unique<Buffer>();
@@ -34,4 +34,12 @@ void Mesh::Init(Device* _devices)
 void Mesh::Destroy() {
     vertexBuffer->Destroy();
     indexBuffer->Destroy();
+}
+
+void Mesh::Bind(VkCommandBuffer cmdBuffer)
+{
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer->vkBuffer, offsets);
+
+    vkCmdBindIndexBuffer(cmdBuffer, indexBuffer->vkBuffer, 0, VK_INDEX_TYPE_UINT32);
 }

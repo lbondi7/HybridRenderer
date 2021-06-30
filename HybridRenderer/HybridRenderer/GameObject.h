@@ -27,6 +27,7 @@ public:
 	std::vector<Buffer> uniformBuffers;
 
 	std::vector<VkDescriptorSet> descriptorSets;
+	std::vector<VkDescriptorSet> offModelDescSets;
 
 	bool shadowReceiver = true;
 	bool shadowCaster = true;

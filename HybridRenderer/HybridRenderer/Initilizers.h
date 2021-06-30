@@ -23,9 +23,9 @@ namespace Initialisers {
 
 	VkDescriptorImageInfo descriptorImageInfo(VkImageView imageView, VkSampler sampler, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	VkWriteDescriptorSet writeBufferDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, uint32_t descriptorCount, const VkDescriptorBufferInfo* pBufferInfo, uint32_t descriptorArrayElement = 0);
+	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkDescriptorBufferInfo* pBufferInfo, uint32_t descriptorCount = 1, uint32_t descriptorArrayElement = 0);
 	
-	VkWriteDescriptorSet writeImageDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, uint32_t descriptorCount, const VkDescriptorImageInfo* pImageInfo, uint32_t descriptorArrayElement = 0);
+	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo, uint32_t descriptorCount = 1, uint32_t descriptorArrayElement = 0);
 
 	// Descriptor Pools
 

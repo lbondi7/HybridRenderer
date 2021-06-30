@@ -8,7 +8,7 @@ Buffer::~Buffer()
 	devices = nullptr;
 }
 
-void Buffer::Create(Device* _devices, VkDeviceSize _size, VkBufferUsageFlags _usage, VkMemoryPropertyFlags _properties, void* _data)
+void Buffer::Create(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageFlags _usage, VkMemoryPropertyFlags _properties, void* _data)
 {
     devices = _devices;
     size = _size;
@@ -22,7 +22,7 @@ void Buffer::Create(Device* _devices, VkDeviceSize _size, VkBufferUsageFlags _us
         Map(_data);
 }
 
-void Buffer::Create(Device* _devices, VkDeviceSize _size, void* _data)
+void Buffer::Create(DeviceContext* _devices, VkDeviceSize _size, void* _data)
 {
     devices = _devices;
     size = _size;

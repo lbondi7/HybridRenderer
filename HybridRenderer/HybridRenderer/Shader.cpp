@@ -12,7 +12,7 @@ Shader::~Shader()
     devices = nullptr;
 }
 
-void Shader::Init(Device* _devices, const std::string& shaderName, VkShaderStageFlagBits _stage, const std::string& _entryPoint)
+void Shader::Init(DeviceContext* _devices, const std::string& shaderName, VkShaderStageFlagBits _stage, const std::string& _entryPoint)
 {
     devices = _devices;
     stage = _stage;

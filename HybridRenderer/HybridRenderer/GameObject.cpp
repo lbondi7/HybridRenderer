@@ -28,4 +28,16 @@ void GameObject::Destroy()
 	{
 		buffer.Destroy();
 	}
+	for (auto& descriptorSet : descriptorSets)
+	{
+		descriptorSet = nullptr;
+	}
+	descriptorSets.clear();
+
+	for (auto& descriptorSet : offModelDescSets)
+	{
+		descriptorSet = nullptr;
+	}
+	offModelDescSets.clear();
+
 }

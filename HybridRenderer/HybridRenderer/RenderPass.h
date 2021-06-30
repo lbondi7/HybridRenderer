@@ -15,8 +15,11 @@ public:
 
 	//void Create(Device* _devices, SwapChain* _swapChain,);
 
+	void Begin(VkCommandBuffer cmdBuffer, VkFramebuffer frameBuffer, VkExtent2D extent, const VkClearValue* pClearValues, uint32_t clearValueCount = 1);
 
-	virtual void Create(Device* _devices, SwapChain* _swapChain);
+	void End(VkCommandBuffer cmdBuffer);
+
+	virtual void Create(DeviceContext* _devices, SwapChain* _swapChain);
 
 	//void Init();
 
@@ -29,7 +32,7 @@ public:
 protected:
 
 	SwapChain* swapChain = nullptr;
-	Device* devices = nullptr;
+	DeviceContext* devices = nullptr;
 
 	//void createRenderPass();
 

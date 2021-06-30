@@ -6,7 +6,8 @@
 #include "RenderPass.h"
 #include "Vertex.h"
 #include "Shader.h"
-
+#include "DescriptorSetLayout.h"
+#include "DescriptorSetManager.h"
 
 struct PipelineInfo {
     std::vector<Shader*> shaders;
@@ -20,6 +21,7 @@ struct PipelineInfo {
     std::vector<VkRect2D> scissors;
     std::vector<VkDynamicState> dynamicStates;
     bool specializationInfo = false;
+    bool conservativeRasterisation = false;
 };
 
 class Pipeline
@@ -30,38 +32,38 @@ public:
     ~Pipeline();
 
 
-    struct {
-        VkPipeline offscreen;
-        VkPipeline sceneShadow;
-        VkPipeline sceneShadowPCF;
-        VkPipeline debug;
-    } pipelines;
-
-
+    //DescriptorSetLayout* descriptorSetLayouts;
+    std::vector< DescriptorSetLayout*> descriptorSetLayouts;
+    uint32_t layoutCount = 0;
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline vkPipeline;
 
-    VkDescriptorPool descriptorPool;
+    //std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+    //std::vector<DescriptorSetLayout> descriptorSetLayouts;
 
-    void Create(Device* _devices, RenderPass* _renderPass, const PipelineInfo& _pipelineInfo);
+    //VkDescriptorPool descriptorPool;
+
+    void Create(DeviceContext* _devices, RenderPass* _renderPass, DescriptorSetManager* dsManager, const PipelineInfo& _pipelineInfo);
 
 
     void Init();
 
-    void createDescriptorSetLayout();
+    void createDescriptorSetLayouts();
 
     void createGraphicsPipeline();
 
-    VkShaderModule createShaderModule(const std::vector<char>& code);
+    //VkShaderModule createShaderModule(const std::vector<char>& code);
 
-    void Destroy();
+    void Destroy(bool complete = true);
 
 private:
 
-    Device* devices = nullptr;
+    DeviceContext* devices = nullptr;
     //SwapChain* swapChain = nullptr;
     RenderPass* renderPass = nullptr;
     PipelineInfo pipelineInfo;
+    DescriptorSetManager* descriptorSetManager = nullptr;
+
 };
 

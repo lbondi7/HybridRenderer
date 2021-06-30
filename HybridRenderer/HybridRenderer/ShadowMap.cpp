@@ -10,13 +10,13 @@ ShadowMap::~ShadowMap()
 	swapChain = nullptr;
 }
 
-void ShadowMap::Create(Device* _devices, SwapChain* _swapChain)
+void ShadowMap::Create(DeviceContext* _devices, SwapChain* _swapChain)
 {
 	devices = _devices;
 	swapChain = _swapChain;
 }
 
-void ShadowMap::Init(const PipelineInfo& pipelineInfo)
+void ShadowMap::Init(DescriptorSetManager* dsManager, const PipelineInfo& pipelineInfo)
 {
 	//render pass
 
@@ -27,7 +27,7 @@ void ShadowMap::Init(const PipelineInfo& pipelineInfo)
     //Shader shader;
     //shader.Init(devices, "shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT);
 
-    pipeline.Create(devices, &renderPass, pipelineInfo);
+    pipeline.Create(devices, &renderPass, dsManager, pipelineInfo);
 
 	//frame buffers
 

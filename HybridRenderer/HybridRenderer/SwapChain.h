@@ -19,7 +19,7 @@ public:
 
     Texture depthImage;
 
-    void Create(GLFWwindow* window, VkSurfaceKHR surface, Device* _devices);
+    void Create(GLFWwindow* window, VkSurfaceKHR surface, DeviceContext* _devices);
 
     void Init();
 
@@ -28,7 +28,7 @@ public:
 private:
     std::vector<VkImage> _images;
 
-    Device* devices = nullptr;
+    DeviceContext* devices = nullptr;
     GLFWwindow* window = nullptr;
     VkSurfaceKHR surface;
 
