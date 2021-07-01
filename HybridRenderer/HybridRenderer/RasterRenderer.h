@@ -17,6 +17,7 @@
 #include "ShadowMap.h"
 #include "Window.h"
 #include "DescriptorSetManager.h"
+#include "ImGUI_.h"
 
 class RasterRenderer {
 public:
@@ -26,8 +27,6 @@ public:
 private:
 
     std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
-
-    //GLFWwindow* window;
 
     Window window;
 
@@ -65,6 +64,12 @@ private:
     bool framebufferResized = false;
     bool ortho = false;
 
+    ImGUI imgui;
+
+    bool lMouse = false;
+    bool rMouse = false;
+
+    glm::vec2 mousePos;
 
     struct CameraUBO {
         alignas(16) glm::mat4 projection;
@@ -95,6 +100,8 @@ private:
     glm::vec3 lightPos = glm::vec3(-19.0f, 20.0f, -30.0f);
     float lightFOV = 90.0f;
 
+
+    bool g_SwapChainRebuild = false;
 
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
@@ -134,7 +141,11 @@ private:
 
     void createDescriptorSets();
 
-    void createCommandBuffers();
+    void AllocateCommandBuffers();
+
+    void buildCommandBuffers();
+
+    void rebuildCommandBuffers();
 
     void createSyncObjects();
 

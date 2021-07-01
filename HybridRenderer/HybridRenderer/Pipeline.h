@@ -12,14 +12,18 @@
 struct PipelineInfo {
     std::vector<Shader*> shaders;
     bool emptyVertexInputState = false;
-    std::vector<VertexAttributes> attributes;
+    std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+    std::vector<VkVertexInputBindingDescription> vertexInputBindings;
+    //std::vector<VertexAttributes> attributes;
     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
     VkPrimitiveTopology topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     VkPolygonMode polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
     VkBool32 depthBiasEnable = VK_FALSE;
+    VkBool32 blendEnabled = VK_FALSE;
     std::vector<VkViewport> viewports;
     std::vector<VkRect2D> scissors;
     std::vector<VkDynamicState> dynamicStates;
+    std::vector<VkPushConstantRange> pushConstants;
     bool specializationInfo = false;
     bool conservativeRasterisation = false;
 };

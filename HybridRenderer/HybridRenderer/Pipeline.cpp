@@ -6,6 +6,12 @@
 
 Pipeline::~Pipeline()
 {
+    for (auto& layout : descriptorSetLayouts)
+    {
+        layout = nullptr;
+    }
+
+    descriptorSetLayouts.clear();
     devices = nullptr;
     //swapChain = nullptr;
     renderPass = nullptr;
@@ -108,11 +114,14 @@ void Pipeline::createDescriptorSetLayouts() {
 
 void Pipeline::createGraphicsPipeline() {
 
-    auto bindingDescription = Vertex::getBindingDescription();
-    auto attributeDescriptions = Vertex::getAttributeDescriptions(pipelineInfo.attributes);
+    //auto bindingDescription = Vertex::getBindingDescription();
+    //auto attributeDescriptions = Vertex::getAttributeDescriptions(pipelineInfo.attributes);
+
+    auto bindingDescription = pipelineInfo.vertexInputBindings;
+    auto attributeDescriptions = pipelineInfo.vertexInputAttributes;
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = pipelineInfo.emptyVertexInputState ? Initialisers::pipelineVertexInputStateCreateInfo() :
-        Initialisers::pipelineVertexInputStateCreateInfo(&bindingDescription, 1, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()));
+        Initialisers::pipelineVertexInputStateCreateInfo(bindingDescription.data(), 1, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()));
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = Initialisers::pipelineInputAssemblyStateCreateInfo(pipelineInfo.topology);
 
@@ -130,9 +139,9 @@ void Pipeline::createGraphicsPipeline() {
 
     VkPipelineDepthStencilStateCreateInfo depthStencil = Initialisers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = Initialisers::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = Initialisers::pipelineColourBlendAttachmentState(0xf, pipelineInfo.blendEnabled);
 
-    VkPipelineColorBlendStateCreateInfo colorBlending = Initialisers::pipelineColorBlendStateCreateInfo(&colorBlendAttachment, 1, VK_FALSE, VK_LOGIC_OP_COPY);
+    VkPipelineColorBlendStateCreateInfo colorBlending = Initialisers::pipelineColourBlendStateCreateInfo(&colorBlendAttachment, 1, VK_FALSE, VK_LOGIC_OP_COPY);
 
     std::vector<VkDescriptorSetLayout> layouts;
     //for (auto& layout : descriptorSetLayouts)
@@ -145,8 +154,14 @@ void Pipeline::createGraphicsPipeline() {
         layouts.emplace_back(descriptorSetLayouts[i]->layout);
     }
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = 
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         Initialisers::pipelineLayoutCreateInfo(layouts.data(), static_cast<uint32_t>(layouts.size()));
+
+    if (!pipelineInfo.pushConstants.empty()) {
+        pipelineLayoutInfo.pushConstantRangeCount = static_cast<float>(pipelineInfo.pushConstants.size());
+        pipelineLayoutInfo.pPushConstantRanges = pipelineInfo.pushConstants.data();
+    }
 
     if (vkCreatePipelineLayout(devices->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -226,11 +241,4 @@ void Pipeline::Destroy(bool complete) {
 
     if (!complete)
         return;
-
-    for (auto& layout : descriptorSetLayouts)
-    {
-        layout = nullptr;
-    }
-
-    descriptorSetLayouts.clear();
 }

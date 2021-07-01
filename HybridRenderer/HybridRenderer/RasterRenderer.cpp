@@ -2,6 +2,7 @@
 
 #include "DebugLogger.h"
 
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
@@ -40,10 +41,18 @@ void RasterRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int 
     {
         if (key == GLFW_KEY_SPACE)
         {
-
             Log(app->lightPos, "Light Pos");
-
             //app->ortho = !app->ortho;
+        }
+
+        if (key == GLFW_KEY_F2)
+        {
+            //Log(app->lightPos, "Light Pos");
+            //app->ortho = !app->ortho;
+
+            app->imgui.enabled = !app->imgui.enabled;
+            vkQueueWaitIdle(app->devices.presentQueue);
+            app->buildCommandBuffers();
         }
 
         if (key == GLFW_KEY_ESCAPE)
@@ -59,15 +68,23 @@ void RasterRenderer::framebufferResizeCallback(GLFWwindow* window, int width, in
 void RasterRenderer::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
     auto app = reinterpret_cast<RasterRenderer*>(glfwGetWindowUserPointer(window));
 
+    app->imgui.leftMouse = button == GLFW_MOUSE_BUTTON_LEFT && action != GLFW_RELEASE;
+    app->imgui.rightMouse = button == GLFW_MOUSE_BUTTON_RIGHT && action != GLFW_RELEASE;
 }
 
 void RasterRenderer::scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<RasterRenderer*>(glfwGetWindowUserPointer(window));
 
+
+    app->imgui.mouseWheel = static_cast<float>(yOffset) * 0.5f;
 }
 
 void RasterRenderer::cursorCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<RasterRenderer*>(glfwGetWindowUserPointer(window));
+
+    app->imgui.mousePos.x = xOffset;
+    app->imgui.mousePos.y = yOffset;
+
 
 }
 
@@ -102,7 +119,8 @@ void RasterRenderer::initVulkan() {
     PipelineInfo pipelineInfo{};
 
     pipelineInfo.shaders = { resources.vertexShaders["scene"].get(), resources.fragmentShaders["scene"].get() };
-    pipelineInfo.attributes = { VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::COLOUR, VertexAttributes::NORMAL };
+    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::COLOUR, VertexAttributes::NORMAL });
+    pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
     pipelineInfo.specializationInfo = true;
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
@@ -119,16 +137,30 @@ void RasterRenderer::initVulkan() {
     pipelineInfo.shaders = { resources.vertexShaders["offscreen"].get() };
     pipelineInfo.depthBiasEnable = VK_TRUE;
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS };
-    pipelineInfo.attributes = { VertexAttributes::POSITION };
+    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION});
     pipelineInfo.specializationInfo = false;
     pipelineInfo.conservativeRasterisation = true;
     shadowMap.Init(&descriptorSetManager, pipelineInfo);
+
+
+    pipelineInfo.shaders = { resources.vertexShaders["ui"].get() ,  resources.fragmentShaders["ui"].get() };
+    pipelineInfo.depthBiasEnable = VK_FALSE;
+    pipelineInfo.pushConstants = { {VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock)} };
+    pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    pipelineInfo.cullMode = VK_CULL_MODE_NONE;
+    pipelineInfo.vertexInputBindings = imgui.bindingDescriptions();
+    pipelineInfo.vertexInputAttributes = imgui.attributeDescriptions();
+    pipelineInfo.blendEnabled = VK_TRUE;
+    pipelineInfo.conservativeRasterisation = false;
+    imgui.create(&devices, &renderPass, &descriptorSetManager, pipelineInfo);
+    //imgui.create(window.glfwWindow, instance, surface, &devices, &swapChain, &renderPass);
 
     createCamera();
     createModelBuffers();
     createUniformBuffers();
     createDescriptorSets();
-    createCommandBuffers();
+    AllocateCommandBuffers();
+    buildCommandBuffers();
     createSyncObjects();
 
 }
@@ -136,6 +168,34 @@ void RasterRenderer::initVulkan() {
 void RasterRenderer::mainLoop() {
 
     while (window.isActive()) {
+
+        //if (g_SwapChainRebuild)
+        //{
+        //    g_SwapChainRebuild = false;
+        //    ImGui_ImplVulkan_SetMinImageCount(3);
+        //    imgui.vw.Surface = surface;
+        //    ImGui_ImplVulkanH_CreateWindow(instance, devices.physicalDevice, devices.logicalDevice, &imgui.vw,
+        //        devices.indices.graphicsFamily.value(), nullptr, 800, 600, imgui.vw.ImageCount);
+        //    imgui.vw.FrameIndex = 0;
+        //}
+
+        //ImGui_ImplVulkan_NewFrame();
+        //ImGui_ImplGlfw_NewFrame();
+        //ImGui::NewFrame();
+        //
+        ////ImGui::ShowAboutWindow();
+        ////ImGui::ShowDemoWindow();
+
+        //if (ImGui::Begin("Depth Texture"));
+        ////ImGui::Text("Hello I am under de water");
+        //ImGui::Image((ImTextureID)ImGui_ImplVulkan_AddTexture(shadowMap.depthTexture.sampler, shadowMap.depthTexture.imageView, shadowMap.depthTexture.descriptorInfo.imageLayout), ImVec2(250, 250));
+        //ImGui::End();
+
+        //ImGui::Render();
+
+        //ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+        //memcpy(&imgui.vw.ClearValue.color.float32[0], &clear_color, 4 * sizeof(float));
+
         drawFrame();
     }
 
@@ -153,7 +213,9 @@ void RasterRenderer::cleanupSwapChain() {
 
     swapChain.Destroy();
 
-    descriptorSetManager.destroy(false);
+
+    //imgui.destroy();
+    imgui.deinit();
 
 }
 
@@ -164,6 +226,8 @@ void RasterRenderer::cleanup() {
         lightBuffers[i].Destroy();
         cameraBuffers[i].Destroy();
     }
+
+    imgui.destroy();
 
     shadowMap.Destroy();
 
@@ -219,9 +283,11 @@ void RasterRenderer::recreateSwapChain() {
 
     pipeline.Init();
     camera.init(swapChain.extent);
+    imgui.reinit();
     //createUniformBuffers();
-    createDescriptorSets();
-    createCommandBuffers();
+    //createDescriptorSets();
+    AllocateCommandBuffers();
+    buildCommandBuffers();
 
     imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
 }
@@ -293,6 +359,8 @@ void RasterRenderer::loadResources() {
     resources.LoadShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT);
     resources.LoadShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT);
     resources.LoadShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT);
+    resources.LoadShader("imgui/ui", VK_SHADER_STAGE_VERTEX_BIT);
+    resources.LoadShader("imgui/ui", VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
 void RasterRenderer::createModelBuffers() {
@@ -415,9 +483,24 @@ void RasterRenderer::createDescriptorSets() {
 
         }
     }
+
+
+    request.requests = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
+
+    descriptorSetManager.getDescriptorSets(shadowMap.descriptorSets, request);
+
+    for (size_t i = 0; i < swapChain.imageCount; i++) {
+
+        std::vector<VkWriteDescriptorSet> descriptorWrites{
+        Initialisers::writeDescriptorSet(shadowMap.descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &shadowMap.depthTexture.descriptorInfo)
+        };
+
+        vkUpdateDescriptorSets(devices.logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+
 }
 
-void RasterRenderer::createCommandBuffers() {
+void RasterRenderer::AllocateCommandBuffers() {
     commandBuffers.resize(frameBuffer.vkFrameBuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo = Initialisers::commandBufferAllocateInfo(devices.commandPool, static_cast<uint32_t>(commandBuffers.size()));
@@ -425,10 +508,16 @@ void RasterRenderer::createCommandBuffers() {
     if (vkAllocateCommandBuffers(devices.logicalDevice, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate command buffers!");
 
+}
+
+void RasterRenderer::buildCommandBuffers() {
 
     VkCommandBufferBeginInfo beginInfo = Initialisers::commandBufferBeginInfo();
 
     std::array<VkClearValue, 2> clearValues;
+
+    if(imgui.enabled)
+        imgui.updateBuffers();
 
     for (int32_t i = 0; i < commandBuffers.size(); ++i)
     {
@@ -436,7 +525,6 @@ void RasterRenderer::createCommandBuffers() {
         if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
-
 
         /*
             First render pass: Generate shadow map by rendering the scene from light's POV
@@ -504,15 +592,21 @@ void RasterRenderer::createCommandBuffers() {
                 {
                     lastBuffer = go.mesh->vertexBuffer->vkBuffer;
                     go.mesh->Bind(commandBuffers[i]);
-                    //vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &go.mesh->vertexBuffer->vkBuffer, offsets);
-
-                    //vkCmdBindIndexBuffer(commandBuffers[i], go.mesh->indexBuffer->vkBuffer, 0, VK_INDEX_TYPE_UINT32);
-
                 }
                 vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
+
+
             }
+
+            if (imgui.enabled)
+            {
+                imgui.Draw(commandBuffers[i], i);
+            }
+
             renderPass.End(commandBuffers[i]);
         }
+
+        //{
 
         if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
@@ -730,13 +824,37 @@ void RasterRenderer::updateUniformBuffer(uint32_t currentImage) {
         ubos.model = go.model;
         go.uniformBuffers[currentImage].Map(&ubos);
     }
+
+    if (imgui.enabled)
+    {
+        imgui.update(swapChain.extent);
+        bool temp = false;
+        imgui.startFrame();
+
+        //imgui.NewWindow("Window", &temp);
+
+        ImGui::Begin("Depth Texture");
+        ImGui::Image((ImTextureID)shadowMap.depthTexture.image, ImVec2(500, 250));
+        ImGui::End();
+
+
+        //imgui.NewImage(shadowMap.depthTexture., shadowMap.depthTexture.descriptorInfo.imageLayout);
+
+        imgui.endFrame();
+    }
 }
 
 void RasterRenderer::drawFrame() {
+    
+    //std::array<VkClearValue, 2> clearValues = {};
+    //clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    //clearValues[1].depthStencil = { 1.0f, 0 };
+
     vkWaitForFences(devices.logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(devices.logicalDevice, swapChain.vkSwapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -746,29 +864,76 @@ void RasterRenderer::drawFrame() {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    updateUniformBuffer(imageIndex);
-
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(devices.logicalDevice, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
+
+    VkResult err;
+
+
+   // ImGui_ImplVulkanH_Frame* fd = &imgui.vw.Frames[imageIndex];
+    //{
+    //    err = vkWaitForFences(devices.logicalDevice, 1, &fd->Fence, VK_TRUE, UINT64_MAX);    // wait indefinitely instead of periodically checking
+
+    //    err = vkResetFences(devices.logicalDevice, 1, &fd->Fence);
+    //}
+    //{
+    //    err = vkResetCommandPool(devices.logicalDevice, imgui.commandPool, 0);
+    //    VkCommandBufferBeginInfo info = {};
+    //    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    //    info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    //    err = vkBeginCommandBuffer(imgui.commandBuffers[imageIndex], &info);
+    //}
+    //{
+    //    VkRenderPassBeginInfo info = {};
+    //    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    //    info.renderPass = imgui.renderPass;
+    //    info.framebuffer = imgui.framebuffers[imageIndex];
+    //    info.renderArea.extent = swapChain.extent;
+    //    info.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    //    info.pClearValues = clearValues.data();
+    //    vkCmdBeginRenderPass(imgui.commandBuffers[imageIndex], &info, VK_SUBPASS_CONTENTS_INLINE);
+    //}
+
+    //// Record Imgui Draw Data and draw funcs into command buffer
+    //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), imgui.commandBuffers[imageIndex]);
+    //vkCmdEndRenderPass(imgui.commandBuffers[imageIndex]);
+    //err = vkEndCommandBuffer(imgui.commandBuffers[imageIndex]);
+    updateUniformBuffer(imageIndex);
+
+
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame]};
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
 
-    VkSubmitInfo submitInfo = Initialisers::submitInfo(&commandBuffers[imageIndex], 1, waitSemaphores, 1, signalSemaphores, 1, waitStages);
+
+    std::array<VkCommandBuffer, 1> submitCommandBuffers =
+    { commandBuffers[imageIndex] };
+
+    VkSubmitInfo submitInfo = Initialisers::submitInfo(submitCommandBuffers.data(), static_cast<uint32_t>(submitCommandBuffers.size()), waitSemaphores, 1, signalSemaphores, 1, waitStages);
 
     vkResetFences(devices.logicalDevice, 1, &inFlightFences[currentFrame]);
 
     if (vkQueueSubmit(devices.graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
+ 
 
+    /// present
+    //VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain, imgui.vw.Swapchain };
     VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
+
     VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(signalSemaphores, 1, swapChains, 1, &imageIndex);
 
     result = vkQueuePresentKHR(devices.presentQueue, &presentInfo);
+
+    if (imgui.enabled)
+    {
+        vkQueueWaitIdle(devices.presentQueue);
+        buildCommandBuffers();
+    }
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.framebufferResized) {
         window.framebufferResized = false;

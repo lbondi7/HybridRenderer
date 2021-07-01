@@ -218,25 +218,39 @@ namespace Initialisers {
 		return depthStencil;
 	}
 
-	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState(VkColorComponentFlags colorWriteMask, VkBool32 blendEnable) {
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = colorWriteMask;
-		colorBlendAttachment.blendEnable = blendEnable;
-		return colorBlendAttachment;
+	VkPipelineColorBlendAttachmentState pipelineColourBlendAttachmentState(VkColorComponentFlags colorWriteMask, VkBool32 blendEnable) {
+		VkPipelineColorBlendAttachmentState colourBlendAttachment{};
+		colourBlendAttachment.colorWriteMask = colorWriteMask;
+		colourBlendAttachment.blendEnable = blendEnable;
+		colourBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colourBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colourBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colourBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		return colourBlendAttachment;
 	}
 
-	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(const VkPipelineColorBlendAttachmentState* pAttachments, uint32_t attachmentCount, VkBool32 logicOpEnable, VkLogicOp logicOp, const std::vector<float>& blendConstants) {
-		VkPipelineColorBlendStateCreateInfo colorBlending{};
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = logicOpEnable;
-		colorBlending.logicOp = logicOp;
-		colorBlending.attachmentCount = attachmentCount;
-		colorBlending.pAttachments = pAttachments;
-		colorBlending.blendConstants[0] = blendConstants[0];
-		colorBlending.blendConstants[1] = blendConstants[1];
-		colorBlending.blendConstants[2] = blendConstants[2];
-		colorBlending.blendConstants[3] = blendConstants[3];
-		return colorBlending;
+	VkPipelineColorBlendStateCreateInfo pipelineColourBlendStateCreateInfo(const VkPipelineColorBlendAttachmentState* pAttachments, uint32_t attachmentCount, VkBool32 logicOpEnable, VkLogicOp logicOp, const std::vector<float>& blendConstants) {
+		VkPipelineColorBlendStateCreateInfo colourBlending{};
+		colourBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colourBlending.logicOpEnable = logicOpEnable;
+		colourBlending.logicOp = logicOp;
+		colourBlending.attachmentCount = attachmentCount;
+		colourBlending.pAttachments = pAttachments;
+		colourBlending.blendConstants[0] = blendConstants[0];
+		colourBlending.blendConstants[1] = blendConstants[1];
+		colourBlending.blendConstants[2] = blendConstants[2];
+		colourBlending.blendConstants[3] = blendConstants[3];
+		return colourBlending;
+	}
+
+	VkPipelineColorBlendStateCreateInfo pipelineColourBlendStateCreateInfo(const VkPipelineColorBlendAttachmentState* pAttachments, uint32_t attachmentCount) {
+		VkPipelineColorBlendStateCreateInfo colourBlending{};
+		colourBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colourBlending.attachmentCount = attachmentCount;
+		colourBlending.pAttachments = pAttachments;
+		return colourBlending;
 	}
 
 	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo(const VkDynamicState* pDynamicStates, uint32_t dynamicStateCount) {

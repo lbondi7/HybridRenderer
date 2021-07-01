@@ -81,7 +81,7 @@ void DeviceContext::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface
 }
 
 void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
-    QueueFamilyIndices indices = Utility::findQueueFamilies(physicalDevice, surface);
+    indices = Utility::findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -131,6 +131,7 @@ void DeviceContext::createCommandPool(VkSurfaceKHR surface) {
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
     if (vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {

@@ -29,7 +29,7 @@ public:
 
 	VkBool32 formatIsFilterable(VkFormat format, VkImageTiling tiling);
 
-
+	QueueFamilyIndices indices;
 
 private:
 	void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);

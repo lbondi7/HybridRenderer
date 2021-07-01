@@ -46,8 +46,9 @@ void DescriptorPool::init(DeviceContext* _devices, uint32_t _imageCount, const D
 
 void DescriptorPool::destroy()
 {
-
+    //vkFreeDescriptorSets(devices->logicalDevice, pool, count, sets.data());
     vkDestroyDescriptorPool(devices->logicalDevice, pool, nullptr);
+    count = 0;
 }
 
 bool DescriptorPool::isAvailable(const DescriptorSetRequest& request)

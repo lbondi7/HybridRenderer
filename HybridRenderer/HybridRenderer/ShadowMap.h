@@ -29,5 +29,7 @@ public:
 	DepthRenderPass renderPass;
 	DeviceContext* devices = nullptr;
 	SwapChain* swapChain = nullptr;
+
+	std::vector<VkDescriptorSet> descriptorSets;
 };
 

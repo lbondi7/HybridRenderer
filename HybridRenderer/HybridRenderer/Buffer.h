@@ -21,6 +21,12 @@ public:
 
 	void Map(void* _data);
 
+	void Map();
+
+	void Unmap();
+
+	void Flush(VkDeviceSize size = VK_NULL_HANDLE, VkDeviceSize offset = 0);
+
 	VkBuffer vkBuffer;
 	VkDeviceMemory vkMemory;
 	VkDeviceSize size;

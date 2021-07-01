@@ -78,8 +78,15 @@ void Buffer::CopyFrom(Buffer* other) {
 
 void Buffer::Destroy() {
 
-    vkDestroyBuffer(devices->logicalDevice, vkBuffer, nullptr);
-    vkFreeMemory(devices->logicalDevice, vkMemory, nullptr);
+    Unmap();
+    if (vkBuffer)
+    {
+        vkDestroyBuffer(devices->logicalDevice, vkBuffer, nullptr);
+    }
+    if (vkMemory)
+    {
+        vkFreeMemory(devices->logicalDevice, vkMemory, nullptr);
+    }
 }
 
 void Buffer::Map(void* _data) {
@@ -87,4 +94,28 @@ void Buffer::Map(void* _data) {
     vkMapMemory(devices->logicalDevice, vkMemory, 0, size, 0, &data);
     memcpy(data, _data, (size_t)size);
     vkUnmapMemory(devices->logicalDevice, vkMemory);
+}
+
+void Buffer::Map()
+{
+    vkMapMemory(devices->logicalDevice, vkMemory, 0, size, 0, &data);
+    mapped = true;
+}
+
+void Buffer::Unmap()
+{
+    if (mapped)
+        vkUnmapMemory(devices->logicalDevice, vkMemory);
+
+    mapped = false;
+}
+
+void Buffer::Flush(VkDeviceSize size, VkDeviceSize offset)
+{
+    VkMappedMemoryRange mappedRange = {};
+    mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedRange.memory = vkMemory;
+    mappedRange.offset = offset;
+    mappedRange.size = size;
+    vkFlushMappedMemoryRanges(devices->logicalDevice, 1, &mappedRange);
 }

@@ -140,3 +140,8 @@ struct DescriptorSetRequest {
 
     std::vector<std::pair<uint32_t, VkDescriptorType>> requests;
 };
+
+struct PushConstBlock {
+    glm::vec2 scale;
+    glm::vec2 translate;
+};
