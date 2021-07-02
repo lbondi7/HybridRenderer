@@ -1,8 +1,8 @@
 #version 450
 
-layout (set = 1, binding = 1) uniform sampler2D shadowMap;
+layout (set = 3, binding = 0) uniform sampler2D shadowMap;
 
-layout (set = 1, binding = 2) uniform sampler2D samp;
+layout (set = 1, binding = 1) uniform sampler2D samp;
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;

@@ -89,3 +89,34 @@ void  DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets
 		}
 	}
 }
+
+VkDescriptorSet DescriptorSetManager::getDescriptorSet(const DescriptorSetRequest& request)
+{
+
+	for (auto pool : pools)
+	{
+		if (pool.isAvailable(request))
+		{
+			for (auto& layout : layouts)
+			{
+				if (layout->matches(request))
+				{
+					return pool.allocateSet(layout->layout, request);
+				}
+			}
+		}
+	}
+
+	auto& pool = pools.emplace_back();
+	pool.init(devices, imageCount, request);
+	if (pool.isAvailable(request))
+	{
+		for (auto& layout : layouts)
+		{
+			if (layout->matches(request))
+			{
+				return pool.allocateSet(layout->layout, request);
+			}
+		}
+	}
+}

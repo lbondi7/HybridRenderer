@@ -15,16 +15,19 @@ void Mesh::Init(DeviceContext* _devices)
     Buffer stagingBuffer;
     stagingBuffer.Create(devices, bufferSize, vertices.data());
 
-    vertexBuffer->Create(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vertexBuffer->CopyFrom(&stagingBuffer);
+    //vertexBuffer->Create(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    //vertexBuffer->CopyFrom(&stagingBuffer);
+
+    vertexBuffer->Create2(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vertexBuffer->CopyFrom2(&stagingBuffer);
 
     bufferSize = sizeof(indices[0]) * indices.size();
 
     Buffer stagingIndexBuffer;
     stagingIndexBuffer.Create(devices, bufferSize, indices.data());
 
-    indexBuffer->Create(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    indexBuffer->CopyFrom(&stagingIndexBuffer);
+    indexBuffer->Create2(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    indexBuffer->CopyFrom2(&stagingIndexBuffer);
 
     stagingBuffer.Destroy();
     stagingIndexBuffer.Destroy();
@@ -38,8 +41,7 @@ void Mesh::Destroy() {
 
 void Mesh::Bind(VkCommandBuffer cmdBuffer)
 {
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer->vkBuffer, offsets);
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer->bufferInfo.buffer, &vertexBuffer->bufferInfo.offset);
 
-    vkCmdBindIndexBuffer(cmdBuffer, indexBuffer->vkBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(cmdBuffer, indexBuffer->bufferInfo.buffer, indexBuffer->bufferInfo.offset, VK_INDEX_TYPE_UINT32);
 }

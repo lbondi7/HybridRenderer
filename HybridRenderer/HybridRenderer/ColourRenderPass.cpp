@@ -32,14 +32,24 @@ void ColourRenderPass::Init()
 
     VkSubpassDescription subpass = Initialisers::subpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 1, &colorAttachmentRef, &depthAttachmentRef);
 
-    VkSubpassDependency dependency = Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
+    auto dep1 = Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 
+    //auto dep2 = Initialisers::subpassDependency(0, VK_SUBPASS_EXTERNAL,
+    //    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+    //    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+    //    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+    //    VK_ACCESS_MEMORY_READ_BIT);
+
+    std::vector<VkSubpassDependency> dependencies{dep1};
+
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
     std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
     VkRenderPassCreateInfo renderPassInfo = Initialisers::renderPassCreateInfo(static_cast<uint32_t>(attachments.size()), attachments.data(),
-        1, &subpass, 1, &dependency);
+        1, &subpass, static_cast<uint32_t>(dependencies.size()), dependencies.data());
 
     if (vkCreateRenderPass(devices->logicalDevice, &renderPassInfo, nullptr, &vkRenderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");

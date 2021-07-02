@@ -19,6 +19,8 @@ public:
 
 	void getDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request);
 
+	VkDescriptorSet getDescriptorSet(const DescriptorSetRequest& request);
+
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
 
 	std::vector<DescriptorPool> pools;

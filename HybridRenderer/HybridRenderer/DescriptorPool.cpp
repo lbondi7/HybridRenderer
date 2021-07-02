@@ -76,6 +76,20 @@ bool DescriptorPool::isAvailable(const DescriptorSetRequest& request)
     return true;
 }
 
+VkDescriptorSet DescriptorPool::allocateSet(VkDescriptorSetLayout layout, const DescriptorSetRequest& request)
+{
+
+    std::vector<VkDescriptorSetLayout> layouts(1, layout);
+    VkDescriptorSetAllocateInfo allocInfo = Initialisers::descriptorSetAllocateInfo(pool, 1, layouts.data());
+
+    if (vkAllocateDescriptorSets(devices->logicalDevice, &allocInfo, &sets[count]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+    count += 1;
+    return sets[count - 1];
+}
+
+
 void DescriptorPool::allocateSets(std::vector<VkDescriptorSet>& _sets, VkDescriptorSetLayout layout, const DescriptorSetRequest& request)
 {
 

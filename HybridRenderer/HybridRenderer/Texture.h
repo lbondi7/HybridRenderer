@@ -29,9 +29,13 @@ public:
 
 	void CopyFromBuffer(VkBuffer buffer);
 
+	void CopyFromTexture(Texture other);
+
 	void Destroy();
 
 	void DestroyImageViews();
+
+	void insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange);
 
 	VkImage image;
 	VkFormat format;

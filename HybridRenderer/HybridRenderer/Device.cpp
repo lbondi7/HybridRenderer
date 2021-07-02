@@ -10,11 +10,19 @@ void DeviceContext::SetupDevices(VkInstance instance, VkSurfaceKHR surface)
     pickPhysicalDevice(instance, surface);
     createLogicalDevice(surface);
 
+    SetupAllocator();
+
     createCommandPool(surface);
+}
+
+void DeviceContext::SetupAllocator()
+{
+    allocator.init(logicalDevice, physicalDevice);
 }
 
 void DeviceContext::Destroy()
 {
+    allocator.destroy();
     vkDestroyDevice(logicalDevice, nullptr);
 }
 

@@ -12,15 +12,18 @@ public:
 	ShadowMap() = default;
 	~ShadowMap();
 
-
+	void update(bool& resize);
 	void Create(DeviceContext* _devices, SwapChain* _swapChain);
 
 	void Init(DescriptorSetManager* dsManager, const PipelineInfo& pipelineInfo);
 
-	void Destroy();
+	void reinit(bool complete = true);
+
+	void Destroy(bool complete = true);
 
 	uint32_t width = 2048;
 	uint32_t height = 2048;
+	int resolution = 2048;
 
 	FrameBuffer frameBuffer;
 	Pipeline pipeline;
@@ -31,5 +34,8 @@ public:
 	SwapChain* swapChain = nullptr;
 
 	std::vector<VkDescriptorSet> descriptorSets;
+
+	DescriptorSetManager* dsm;
+
 };
 

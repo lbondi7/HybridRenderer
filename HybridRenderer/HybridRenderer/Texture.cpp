@@ -74,6 +74,13 @@ void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLa
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
+    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = 0;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_HOST_BIT;
+    }
     else {
         throw std::invalid_argument("unsupported layout transition!");
     }
@@ -140,8 +147,20 @@ void Texture::CopyFromBuffer(VkBuffer buffer) {
     VkBufferImageCopy region = Initialisers::bufferImageCopy(width, height);
 
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    
+    devices->EndCommandBuffer(commandBuffer);
+}
+
+void Texture::CopyFromTexture(Texture other)
+{
+    VkCommandBuffer commandBuffer = devices->generateCommandBuffer();
+
+    VkBufferImageCopy region = Initialisers::bufferImageCopy(width, height);
+
+    //vkCmdCopyImage(commandBuffer, other.image, other.descriptorInfo.imageLayout, image, )
 
     devices->EndCommandBuffer(commandBuffer);
+
 }
 
 
@@ -160,4 +179,33 @@ void Texture::DestroyImageViews() {
     if (hasImageView)
         vkDestroyImageView(devices->logicalDevice, imageView, nullptr);
     destroyed = true;
+}
+
+
+void Texture::insertImageMemoryBarrier(
+    VkCommandBuffer cmdbuffer,
+    VkAccessFlags srcAccessMask,
+    VkAccessFlags dstAccessMask,
+    VkImageLayout oldImageLayout,
+    VkImageLayout newImageLayout,
+    VkPipelineStageFlags srcStageMask,
+    VkPipelineStageFlags dstStageMask,
+    VkImageSubresourceRange subresourceRange)
+{
+    VkImageMemoryBarrier imageMemoryBarrier = Initialisers::imageMemoryBarrier();
+    imageMemoryBarrier.srcAccessMask = srcAccessMask;
+    imageMemoryBarrier.dstAccessMask = dstAccessMask;
+    imageMemoryBarrier.oldLayout = oldImageLayout;
+    imageMemoryBarrier.newLayout = newImageLayout;
+    imageMemoryBarrier.image = image;
+    imageMemoryBarrier.subresourceRange = subresourceRange;
+
+    vkCmdPipelineBarrier(
+        cmdbuffer,
+        srcStageMask,
+        dstStageMask,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &imageMemoryBarrier);
 }

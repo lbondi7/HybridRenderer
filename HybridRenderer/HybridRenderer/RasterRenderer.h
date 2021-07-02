@@ -45,7 +45,7 @@ private:
 
     std::vector<GameObject> gameObjects;
 
-    int gameObjectCount = 3;
+    int gameObjectCount = 500;
 
     ShadowMap shadowMap;
 
@@ -93,15 +93,24 @@ private:
     std::vector<Buffer> lightBuffers;
     std::vector<Buffer> cameraBuffers;
 
+
+    int counted = 100;
+
+    const char* imagedata;
+
+    bool printImage = false;
+
     float timer = 0.0f;
     bool countUp = true;
 
     glm::vec3 lightInvDir = glm::vec3(0.5f, 2, 2);
     glm::vec3 lightPos = glm::vec3(-19.0f, 20.0f, -30.0f);
+
     float lightFOV = 90.0f;
 
+    bool conservativeRendering = false;
+    bool prevConservativeRendering = true;
 
-    bool g_SwapChainRebuild = false;
 
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 

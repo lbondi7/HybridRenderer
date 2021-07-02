@@ -608,6 +608,15 @@ namespace Initialisers {
 		return barrier;
 	}
 
+	VkImageMemoryBarrier imageMemoryBarrier() {
+
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		return barrier;
+	}
+
 	// Present
 
 	VkPresentInfoKHR presentInfoKHR(const VkSemaphore* pWaitSemaphores, uint32_t waitSemaphoreCount, const VkSwapchainKHR* swapChains, uint32_t swapChainCount, const uint32_t* pImageIndices) {

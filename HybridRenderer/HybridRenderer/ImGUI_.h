@@ -8,8 +8,8 @@
 
 #include "imgui/imgui.h"
 
-#include "imgui/imgui_impl_vulkan.h"
-#include "imgui/imgui_impl_glfw.h"
+//#include "imgui/imgui_impl_vulkan.h"
+//#include "imgui/imgui_impl_glfw.h"
 
 
 
@@ -44,7 +44,7 @@ public:
 
 	void destroy(bool complete = true);
 
-	bool enabled = true;
+	bool enabled = false;
 
 	bool updated = true;
 
@@ -89,7 +89,7 @@ public:
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer>commandBuffers;
 	std::vector<VkFramebuffer> framebuffers;
-	ImGui_ImplVulkanH_Window vw;
+	//ImGui_ImplVulkanH_Window vw;
 
 };
 

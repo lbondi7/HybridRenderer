@@ -30,13 +30,13 @@ void GameObject::Destroy()
 	}
 	for (auto& descriptorSet : descriptorSets)
 	{
-		descriptorSet = nullptr;
+		descriptorSet = VK_NULL_HANDLE;
 	}
 	descriptorSets.clear();
 
 	for (auto& descriptorSet : offModelDescSets)
 	{
-		descriptorSet = nullptr;
+		descriptorSet = VK_NULL_HANDLE;
 	}
 	offModelDescSets.clear();
 

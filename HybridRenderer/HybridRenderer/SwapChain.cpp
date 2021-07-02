@@ -9,7 +9,7 @@ SwapChain::~SwapChain()
 {
     devices = nullptr;
     window = nullptr;
-    surface = nullptr;
+    surface = VK_NULL_HANDLE;
 }
 
 void SwapChain::Create(GLFWwindow* _window, VkSurfaceKHR _surface, DeviceContext* _devices)

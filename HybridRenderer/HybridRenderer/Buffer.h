@@ -15,7 +15,13 @@ public:
 
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
+	void Create2(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageFlags _usage, VkMemoryPropertyFlags _properties, void* _data = nullptr);
+
+	void createBuffer2(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+
 	void CopyFrom(Buffer* other);
+
+	void CopyFrom2(Buffer* other);
 
 	void Destroy();
 
@@ -25,10 +31,12 @@ public:
 
 	void Unmap();
 
+	void Map2(const void* src_data);
+
 	void Flush(VkDeviceSize size = VK_NULL_HANDLE, VkDeviceSize offset = 0);
 
 	VkBuffer vkBuffer;
-	VkDeviceMemory vkMemory;
+	VkDeviceMemory memory;
 	VkDeviceSize size;
 	VkBufferUsageFlags usage; 
 	VkMemoryPropertyFlags properties;
@@ -36,6 +44,8 @@ public:
 	bool mapped = false;
 
 	VkDescriptorBufferInfo descriptorInfo;
+
+	BufferInfo bufferInfo;
 
 private:
 

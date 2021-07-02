@@ -59,6 +59,8 @@ public:
 
     //VkShaderModule createShaderModule(const std::vector<char>& code);
 
+    PipelineInfo pipelineInfo;
+
     void Destroy(bool complete = true);
 
 private:
@@ -66,7 +68,6 @@ private:
     DeviceContext* devices = nullptr;
     //SwapChain* swapChain = nullptr;
     RenderPass* renderPass = nullptr;
-    PipelineInfo pipelineInfo;
     DescriptorSetManager* descriptorSetManager = nullptr;
 
 };

@@ -32,6 +32,7 @@ public:
 	std::map<std::string, std::unique_ptr<Shader>> fragmentShaders;
 
 	DeviceContext* devices;
+
 private:
 	void InitShader(const std::string& name, Shader* shader, VkShaderStageFlagBits stage);
 

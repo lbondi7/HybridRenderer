@@ -62,7 +62,7 @@ void RasterRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int 
 
 void RasterRenderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<RasterRenderer*>(glfwGetWindowUserPointer(window));
-    app->framebufferResized = true;
+    app->window.framebufferResized = true;
 }
 
 void RasterRenderer::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -76,7 +76,7 @@ void RasterRenderer::scrollCallback(GLFWwindow* window, double xOffset, double y
     auto app = reinterpret_cast<RasterRenderer*>(glfwGetWindowUserPointer(window));
 
 
-    app->imgui.mouseWheel = static_cast<float>(yOffset) * 0.5f;
+    //app->imgui.mouseWheel += static_cast<float>(yOffset) * 0.01f;
 }
 
 void RasterRenderer::cursorCallback(GLFWwindow* window, double xOffset, double yOffset) {
@@ -115,7 +115,6 @@ void RasterRenderer::initVulkan() {
 
     descriptorSetManager.init(&devices, swapChain.imageCount);
 
-
     PipelineInfo pipelineInfo{};
 
     pipelineInfo.shaders = { resources.vertexShaders["scene"].get(), resources.fragmentShaders["scene"].get() };
@@ -131,7 +130,6 @@ void RasterRenderer::initVulkan() {
         std::vector<VkImageView> attachments{ swapChain.images[i].imageView, swapChain.depthImage.imageView };
         frameBuffer.createFramebuffer(attachments, swapChain.extent);
     }
-
 
     shadowMap.Create(&devices, &swapChain);
     pipelineInfo.shaders = { resources.vertexShaders["offscreen"].get() };
@@ -169,33 +167,6 @@ void RasterRenderer::mainLoop() {
 
     while (window.isActive()) {
 
-        //if (g_SwapChainRebuild)
-        //{
-        //    g_SwapChainRebuild = false;
-        //    ImGui_ImplVulkan_SetMinImageCount(3);
-        //    imgui.vw.Surface = surface;
-        //    ImGui_ImplVulkanH_CreateWindow(instance, devices.physicalDevice, devices.logicalDevice, &imgui.vw,
-        //        devices.indices.graphicsFamily.value(), nullptr, 800, 600, imgui.vw.ImageCount);
-        //    imgui.vw.FrameIndex = 0;
-        //}
-
-        //ImGui_ImplVulkan_NewFrame();
-        //ImGui_ImplGlfw_NewFrame();
-        //ImGui::NewFrame();
-        //
-        ////ImGui::ShowAboutWindow();
-        ////ImGui::ShowDemoWindow();
-
-        //if (ImGui::Begin("Depth Texture"));
-        ////ImGui::Text("Hello I am under de water");
-        //ImGui::Image((ImTextureID)ImGui_ImplVulkan_AddTexture(shadowMap.depthTexture.sampler, shadowMap.depthTexture.imageView, shadowMap.depthTexture.descriptorInfo.imageLayout), ImVec2(250, 250));
-        //ImGui::End();
-
-        //ImGui::Render();
-
-        //ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-        //memcpy(&imgui.vw.ClearValue.color.float32[0], &clear_color, 4 * sizeof(float));
-
         drawFrame();
     }
 
@@ -229,7 +200,7 @@ void RasterRenderer::cleanup() {
 
     imgui.destroy();
 
-    shadowMap.Destroy();
+    shadowMap.Destroy(true);
 
     descriptorSetManager.destroy();
 
@@ -280,7 +251,7 @@ void RasterRenderer::recreateSwapChain() {
         std::vector<VkImageView> attachments{ swapChain.images[i].imageView, swapChain.depthImage.imageView };
         frameBuffer.createFramebuffer(attachments, swapChain.extent);
     }
-
+    shadowMap.reinit(true);
     pipeline.Init();
     camera.init(swapChain.extent);
     imgui.reinit();
@@ -365,9 +336,22 @@ void RasterRenderer::loadResources() {
 
 void RasterRenderer::createModelBuffers() {
 
-    float value = 10.0f;
-    float x = -value;
-    float z = -value;
+    float value = 0;
+    float dist = 20.0f;
+    
+    for (size_t i = 0; i < gameObjectCount; i++)
+    {
+        if (i * i > gameObjectCount)
+        {
+            value = i - 1;
+            break;
+        }
+    }
+    
+    float max = ((value * dist) / 2.0f);
+
+    float x = -max;
+    float z = -max;
     for (size_t i = 0; i < gameObjectCount; i++)
     {
         auto& go = gameObjects.emplace_back(GameObject());
@@ -379,7 +363,7 @@ void RasterRenderer::createModelBuffers() {
         else if (i == gameObjectCount - 2)
         {
             go.transform.position = glm::vec3(0.0f, -1.0f, 0.0f);
-            go.transform.scale = glm::vec3(30, 1, 30);
+            go.transform.scale = glm::vec3(max, 1, max);
             //go.shadowCaster = false;
             go.mesh = resources.meshes["plane"].get();
 
@@ -395,13 +379,13 @@ void RasterRenderer::createModelBuffers() {
         go.Init();
 
 
-        if (x >= value)
+        if (x >= max)
         {
-            z += value;
-            x = -value;
+            z += dist;
+            x = -max;
         }
         else {
-            x += value;
+            x += dist;
         }
     }
 }
@@ -413,7 +397,7 @@ void RasterRenderer::createUniformBuffers() {
 
         for (size_t i = 0; i < swapChain.imageCount; i++) {
             VkDeviceSize bufferSize = sizeof(ModelUBO);
-            go.uniformBuffers[i].Create(&devices, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            go.uniformBuffers[i].Create2(&devices, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         }
     }
 
@@ -422,9 +406,9 @@ void RasterRenderer::createUniformBuffers() {
     lightBuffers.resize(swapChain.imageCount);
     for (size_t i = 0; i < swapChain.imageCount; i++) {
         VkDeviceSize bufferSize = sizeof(cameraUBO);
-        cameraBuffers[i].Create(&devices, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        cameraBuffers[i].Create2(&devices, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         bufferSize = sizeof(lightUBO);
-        lightBuffers[i].Create(&devices, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        lightBuffers[i].Create2(&devices, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     }
 }
@@ -437,18 +421,15 @@ void RasterRenderer::createDescriptorSets() {
     descriptorSetManager.getDescriptorSets(cameraDescSets, request);
     descriptorSetManager.getDescriptorSets(lightDescSets, request);
     for (size_t i = 0; i < swapChain.imageCount; i++) {
-        VkDescriptorBufferInfo bufferInfo = Initialisers::descriptorBufferInfo(cameraBuffers[i].vkBuffer, sizeof(cameraUBO));
 
         std::vector<VkWriteDescriptorSet> descriptorWrites{
-            Initialisers::writeDescriptorSet(cameraDescSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo)
+            Initialisers::writeDescriptorSet(cameraDescSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &cameraBuffers[i].descriptorInfo)
         };
 
         vkUpdateDescriptorSets(devices.logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-        bufferInfo = Initialisers::descriptorBufferInfo(lightBuffers[i].vkBuffer, sizeof(lightUBO));
-
         descriptorWrites = {
-        Initialisers::writeDescriptorSet(lightDescSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo),
+        Initialisers::writeDescriptorSet(lightDescSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &lightBuffers[i].descriptorInfo),
         };
 
         vkUpdateDescriptorSets(devices.logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -457,8 +438,8 @@ void RasterRenderer::createDescriptorSets() {
 
     DescriptorSetRequest request2;
     request2.requests.push_back({ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER });
+//    request2.requests.push_back({ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER });
     request2.requests.push_back({ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER });
-    request2.requests.push_back({ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER });
 
     for (auto& go : gameObjects) {
 
@@ -469,8 +450,7 @@ void RasterRenderer::createDescriptorSets() {
 
             std::vector<VkWriteDescriptorSet> descriptorWrites{
             Initialisers::writeDescriptorSet(go.descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &go.uniformBuffers[i].descriptorInfo),
-            Initialisers::writeDescriptorSet(go.descriptorSets[i], 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &shadowMap.depthTexture.descriptorInfo),
-            Initialisers::writeDescriptorSet(go.descriptorSets[i], 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &go.image->texture.descriptorInfo)
+            Initialisers::writeDescriptorSet(go.descriptorSets[i], 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &go.image->texture.descriptorInfo)
             };
 
             vkUpdateDescriptorSets(devices.logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -485,23 +465,10 @@ void RasterRenderer::createDescriptorSets() {
     }
 
 
-    request.requests = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
-
-    descriptorSetManager.getDescriptorSets(shadowMap.descriptorSets, request);
-
-    for (size_t i = 0; i < swapChain.imageCount; i++) {
-
-        std::vector<VkWriteDescriptorSet> descriptorWrites{
-        Initialisers::writeDescriptorSet(shadowMap.descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &shadowMap.depthTexture.descriptorInfo)
-        };
-
-        vkUpdateDescriptorSets(devices.logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-
 }
 
 void RasterRenderer::AllocateCommandBuffers() {
-    commandBuffers.resize(frameBuffer.vkFrameBuffers.size());
+    commandBuffers.resize(frameBuffer.frames.size());
 
     VkCommandBufferAllocateInfo allocInfo = Initialisers::commandBufferAllocateInfo(devices.commandPool, static_cast<uint32_t>(commandBuffers.size()));
 
@@ -532,14 +499,15 @@ void RasterRenderer::buildCommandBuffers() {
         {
             clearValues[0].depthStencil = { 1.0f, 0 };
 
-            shadowMap.renderPass.Begin(commandBuffers[i], shadowMap.frameBuffer.vkFrameBuffers[i], { shadowMap.width , shadowMap.height }, &clearValues[0]);
+            auto& frame = shadowMap.frameBuffer.frames[i];
+            shadowMap.renderPass.Begin(commandBuffers[i], frame.vkFrameBuffer, frame.extent, &clearValues[0]);
 
             // Set depth bias (aka "Polygon offset")
             // Required to avoid shadow mapping artifacts
             vkCmdSetDepthBias(commandBuffers[i], 1.25f, 0.0f, 1.75f);
 
-            VkViewport viewport = Initialisers::viewport(0, 0, (float)shadowMap.width, (float)shadowMap.height);
-            VkRect2D scissor = Initialisers::scissor({ shadowMap.width, shadowMap.height });
+            VkViewport viewport = Initialisers::viewport(0, 0, (float)frame.extent.width, (float)frame.extent.height);
+            VkRect2D scissor = Initialisers::scissor(frame.extent);
 
             vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
@@ -549,20 +517,14 @@ void RasterRenderer::buildCommandBuffers() {
             VkDeviceSize offsets[] = { 0 };
 
             int j = 0;
-            VkBuffer lastBuffer = nullptr;
+            VkBuffer lastBuffer = VK_NULL_HANDLE;
             for (auto& go : gameObjects) {
                 if (!go.shadowCaster)
                     continue;
 
                 std::array<VkDescriptorSet, 2> descriptorSets = { lightDescSets[i] , go.offModelDescSets[i] };
                 vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
-
-                if (go.mesh->vertexBuffer->vkBuffer != lastBuffer)
-                {
-                    lastBuffer = go.mesh->vertexBuffer->vkBuffer;
-                    go.mesh->Bind(commandBuffers[i]);
-
-                }
+                go.mesh->Bind(commandBuffers[i]);
                 vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
                 j++;
             }
@@ -574,25 +536,25 @@ void RasterRenderer::buildCommandBuffers() {
             clearValues[0].color = { 0.025f, 0.025f, 0.025f, 1.0f };
             clearValues[1].depthStencil = { 1.0f, 0 };
 
-            renderPass.Begin(commandBuffers[i], frameBuffer.vkFrameBuffers[i], swapChain.extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
+            renderPass.Begin(commandBuffers[i], frameBuffer.frames[i].vkFrameBuffer, swapChain.extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
 
             camera.setViewport(commandBuffers[i]);
 
             vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
 
-            VkBuffer lastBuffer = nullptr;
+            VkBuffer lastBuffer = VK_NULL_HANDLE;
             VkDeviceSize offsets[] = { 0 };
             for (auto& go : gameObjects) {
 
-                std::array<VkDescriptorSet, 3> descriptorSets = { cameraDescSets[i], go.descriptorSets[i], lightDescSets[i] };
+                std::array<VkDescriptorSet, 4> descriptorSets = { cameraDescSets[i], go.descriptorSets[i], lightDescSets[i], shadowMap.descriptorSets[i] };
 
                 vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
 
-                if (go.mesh->vertexBuffer->vkBuffer != lastBuffer)
-                {
-                    lastBuffer = go.mesh->vertexBuffer->vkBuffer;
+                //if (go.mesh->vertexBuffer->bufferInfo.buffer != lastBuffer)
+                //{
+                //    lastBuffer = go.mesh->vertexBuffer->bufferInfo.buffer;
                     go.mesh->Bind(commandBuffers[i]);
-                }
+                //}
                 vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
 
 
@@ -795,9 +757,8 @@ void RasterRenderer::updateUniformBuffer(uint32_t currentImage) {
     //depthProjectionMatrix[1][1] *= -1;
     else
     {
-        //depthProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
-        depthProjectionMatrix = glm::ortho<float>(-10, 10, -10, 10, -10, 20);
-        depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+        depthProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
+        depthViewMatrix = glm::lookAt(lightInvDir, -lightInvDir, glm::vec3(0, 1, 0));
     }
     glm::mat4 depthModelMatrix = glm::mat4(1.0f);
 
@@ -805,12 +766,12 @@ void RasterRenderer::updateUniformBuffer(uint32_t currentImage) {
 
     lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
     lightUBO.lightPos = lightPos;
-    lightBuffers[currentImage].Map(&lightUBO);
+    lightBuffers[currentImage].Map2(&lightUBO);
 
     cameraUBO.camPos = camera.transform.position;
     cameraUBO.view = camera.view;
     cameraUBO.projection = camera.projection;
-    cameraBuffers[currentImage].Map(&cameraUBO);
+    cameraBuffers[currentImage].Map2(&cameraUBO);
 
     // uniformBuffers.offscreen[currentImage].Map(&uboOffscreenVS);
 
@@ -822,7 +783,7 @@ void RasterRenderer::updateUniformBuffer(uint32_t currentImage) {
 
         ModelUBO ubos;
         ubos.model = go.model;
-        go.uniformBuffers[currentImage].Map(&ubos);
+        go.uniformBuffers[currentImage].Map2(&ubos);
     }
 
     if (imgui.enabled)
@@ -831,24 +792,29 @@ void RasterRenderer::updateUniformBuffer(uint32_t currentImage) {
         bool temp = false;
         imgui.startFrame();
 
-        //imgui.NewWindow("Window", &temp);
+        ImGui::Begin("Options");
+        ImGui::Checkbox("Orthographic", &ortho);
+        ImGui::Checkbox("Conservative Rasterisation", &shadowMap.pipeline.pipelineInfo.conservativeRasterisation);
+        ImGui::SliderInt("Shadow Map Resultion", &shadowMap.resolution, 1, 8192);
 
-        ImGui::Begin("Depth Texture");
-        ImGui::Image((ImTextureID)shadowMap.depthTexture.image, ImVec2(500, 250));
+        //ImGui::Image((ImTextureID)&descSet, {200, 200 });
         ImGui::End();
-
-
-        //imgui.NewImage(shadowMap.depthTexture., shadowMap.depthTexture.descriptorInfo.imageLayout);
 
         imgui.endFrame();
     }
+
+    if (prevConservativeRendering != shadowMap.pipeline.pipelineInfo.conservativeRasterisation)
+    {
+        prevConservativeRendering = shadowMap.pipeline.pipelineInfo.conservativeRasterisation;
+        window.framebufferResized = true;
+    }
+
+    shadowMap.update(window.framebufferResized);
+
 }
 
 void RasterRenderer::drawFrame() {
     
-    //std::array<VkClearValue, 2> clearValues = {};
-    //clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-    //clearValues[1].depthStencil = { 1.0f, 0 };
 
     vkWaitForFences(devices.logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -868,37 +834,6 @@ void RasterRenderer::drawFrame() {
         vkWaitForFences(devices.logicalDevice, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
 
-    VkResult err;
-
-
-   // ImGui_ImplVulkanH_Frame* fd = &imgui.vw.Frames[imageIndex];
-    //{
-    //    err = vkWaitForFences(devices.logicalDevice, 1, &fd->Fence, VK_TRUE, UINT64_MAX);    // wait indefinitely instead of periodically checking
-
-    //    err = vkResetFences(devices.logicalDevice, 1, &fd->Fence);
-    //}
-    //{
-    //    err = vkResetCommandPool(devices.logicalDevice, imgui.commandPool, 0);
-    //    VkCommandBufferBeginInfo info = {};
-    //    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    //    info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    //    err = vkBeginCommandBuffer(imgui.commandBuffers[imageIndex], &info);
-    //}
-    //{
-    //    VkRenderPassBeginInfo info = {};
-    //    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    //    info.renderPass = imgui.renderPass;
-    //    info.framebuffer = imgui.framebuffers[imageIndex];
-    //    info.renderArea.extent = swapChain.extent;
-    //    info.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    //    info.pClearValues = clearValues.data();
-    //    vkCmdBeginRenderPass(imgui.commandBuffers[imageIndex], &info, VK_SUBPASS_CONTENTS_INLINE);
-    //}
-
-    //// Record Imgui Draw Data and draw funcs into command buffer
-    //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), imgui.commandBuffers[imageIndex]);
-    //vkCmdEndRenderPass(imgui.commandBuffers[imageIndex]);
-    //err = vkEndCommandBuffer(imgui.commandBuffers[imageIndex]);
     updateUniformBuffer(imageIndex);
 
 
@@ -934,6 +869,107 @@ void RasterRenderer::drawFrame() {
         vkQueueWaitIdle(devices.presentQueue);
         buildCommandBuffers();
     }
+
+    //if (counted == 0)
+    //{
+
+    //    Texture dstImage;
+    //    dstImage.Create(&devices, 800, 600, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    //    VkCommandBuffer copyCmd = devices.generateCommandBuffer();
+
+    //    dstImage.insertImageMemoryBarrier(
+    //        copyCmd,
+    //        0,
+    //        VK_ACCESS_TRANSFER_WRITE_BIT,
+    //        VK_IMAGE_LAYOUT_UNDEFINED,
+    //        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
+    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
+    //        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+    //    // colorAttachment.image is already in VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, and does not need to be transitioned
+
+    //    VkImageCopy imageCopyRegion{};
+    //    imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    //    imageCopyRegion.srcSubresource.layerCount = 1;
+    //    imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    //    imageCopyRegion.dstSubresource.layerCount = 1;
+    //    imageCopyRegion.extent.width = 800;
+    //    imageCopyRegion.extent.height = 600;
+    //    imageCopyRegion.extent.depth = 1;
+
+    //    vkCmdCopyImage(
+    //        copyCmd,
+    //        swapChain.images[0].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    //        dstImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    //        1,
+    //        &imageCopyRegion);
+
+    //    dstImage.insertImageMemoryBarrier(
+    //        copyCmd,
+    //        VK_ACCESS_TRANSFER_WRITE_BIT,
+    //        VK_ACCESS_MEMORY_READ_BIT,
+    //        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    //        VK_IMAGE_LAYOUT_GENERAL,
+    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
+    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
+    //        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+
+    //    devices.EndCommandBuffer(copyCmd);
+
+    //    // Get layout of the image (including row pitch)
+    //    VkImageSubresource subResource{};
+    //    subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    //    VkSubresourceLayout subResourceLayout;
+
+    //    vkGetImageSubresourceLayout(devices.logicalDevice, dstImage.image, &subResource, &subResourceLayout);
+
+    //    // Map image memory so we can start copying from it
+    //    vkMapMemory(devices.logicalDevice, dstImage.vkMemory, 0, VK_WHOLE_SIZE, 0, (void**)&imagedata);
+    //    imagedata += subResourceLayout.offset;
+
+
+    //    const char* filename = "headless.ppm";
+    //    std::ofstream file(filename, std::ios::out | std::ios::binary);
+
+    //    // ppm header
+    //    file << "P6\n" << 800 << "\n" << 600 << "\n" << 255 << "\n";
+
+    //    // If source is BGR (destination is always RGB) and we can't use blit (which does automatic conversion), we'll have to manually swizzle color components
+    //    // Check if source is BGR and needs swizzle
+    //    std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
+    //    const bool colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), VK_FORMAT_R8G8B8A8_UNORM) != formatsBGR.end());
+
+    //    // ppm binary pixel data
+    //    for (int32_t y = 0; y < 600; y++) {
+    //        unsigned int* row = (unsigned int*)imagedata;
+    //        for (int32_t x = 0; x < 800; x++) {
+    //            if (colorSwizzle) {
+    //                file.write((char*)row + 2, 1);
+    //                file.write((char*)row + 1, 1);
+    //                file.write((char*)row, 1);
+    //            }
+    //            else {
+    //                file.write((char*)row, 3);
+    //            }
+    //            row++;
+    //        }
+    //        imagedata += subResourceLayout.rowPitch;
+    //    }
+    //    file.close();
+
+    //    printImage = false;
+
+    //    vkUnmapMemory(devices.logicalDevice, dstImage.vkMemory);
+    //    dstImage.Destroy();
+    //    printImage = true;
+    //    counted--;
+    //}
+
+    //if(!printImage)
+    //    counted--;
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.framebufferResized) {
         window.framebufferResized = false;

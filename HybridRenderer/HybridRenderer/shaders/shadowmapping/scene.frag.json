@@ -1,7 +1,7 @@
 {
-  "sets": [ 1, 1 ],
+  "sets": [ 3, 1 ],
   "setCount": 2,
-  "bindings": [ 1, 2 ],
+  "bindings": [ 0, 1 ],
   "bindingsCount": 2,
   "type": [ 1, 1 ],
   "typeCount": 2

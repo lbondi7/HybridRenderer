@@ -192,6 +192,8 @@ namespace Initialisers {
 		uint32_t baseArrayLayer = 0,
 		uint32_t layerCount = 1);
 
+	VkImageMemoryBarrier imageMemoryBarrier();
+
 	// Present
 
 	VkPresentInfoKHR presentInfoKHR(const VkSemaphore* pWaitSemaphores, uint32_t waitSemaphoreCount, const VkSwapchainKHR* swapChains, uint32_t swapChainCount, const uint32_t* pImageIndices);

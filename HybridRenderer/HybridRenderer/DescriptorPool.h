@@ -16,6 +16,8 @@ public:
 
 	bool isAvailable(const DescriptorSetRequest& request);
 
+	VkDescriptorSet allocateSet(VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
+
 
 	void allocateSets(std::vector<VkDescriptorSet>& _sets, VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
 

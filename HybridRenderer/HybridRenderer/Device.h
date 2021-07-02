@@ -1,6 +1,7 @@
 #pragma once
 #include "Constants.h"
 
+#include "Allocator.h"
 
 class DeviceContext
 {
@@ -18,6 +19,9 @@ public:
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 
 	void SetupDevices(VkInstance instance, VkSurfaceKHR surface);
+
+	void SetupAllocator();
+
 	void Destroy();
 
 	VkCommandBuffer generateCommandBuffer();
@@ -30,6 +34,8 @@ public:
 	VkBool32 formatIsFilterable(VkFormat format, VkImageTiling tiling);
 
 	QueueFamilyIndices indices;
+
+	Allocator allocator;
 
 private:
 	void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
