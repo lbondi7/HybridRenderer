@@ -36,8 +36,10 @@ private:
     DeviceContext devices;
 
     SwapChain swapChain;
-    ColourRenderPass renderPass;
+    RenderPass renderPass;
     FrameBuffer frameBuffer;
+    RenderPass penultimateRenderPass;
+    FrameBuffer penultimateFrameBuffer;
     Pipeline pipeline;
 
     Camera camera;
@@ -45,7 +47,7 @@ private:
 
     std::vector<GameObject> gameObjects;
 
-    int gameObjectCount = 500;
+    int gameObjectCount = 2;
 
     ShadowMap shadowMap;
 
@@ -111,6 +113,7 @@ private:
     bool conservativeRendering = false;
     bool prevConservativeRendering = true;
 
+    VkDescriptorSet descTest;
 
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
@@ -153,8 +156,8 @@ private:
     void AllocateCommandBuffers();
 
     void buildCommandBuffers();
-
-    void rebuildCommandBuffers();
+    void buildCommandBuffer(uint32_t i);
+    void buildCommandBuffersImGui();
 
     void createSyncObjects();
 

@@ -140,11 +140,11 @@ void Buffer::CopyFrom2(Buffer* other) {
 void Buffer::Destroy() {
 
     Unmap();
-    if (vkBuffer)
+    if (vkBuffer != VK_NULL_HANDLE)
     {
         vkDestroyBuffer(devices->logicalDevice, vkBuffer, nullptr);
     }
-    if (memory)
+    if (memory != VK_NULL_HANDLE)
     {
         vkFreeMemory(devices->logicalDevice, memory, nullptr);
     }

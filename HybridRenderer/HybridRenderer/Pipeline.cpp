@@ -112,38 +112,24 @@ void Pipeline::createDescriptorSetLayouts() {
     //}
 }
 
-void Pipeline::createGraphicsPipeline() {
+VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-    //auto bindingDescription = Vertex::getBindingDescription();
-    //auto attributeDescriptions = Vertex::getAttributeDescriptions(pipelineInfo.attributes);
-
-    auto bindingDescription = pipelineInfo.vertexInputBindings;
-    auto attributeDescriptions = pipelineInfo.vertexInputAttributes;
-
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = pipelineInfo.emptyVertexInputState ? Initialisers::pipelineVertexInputStateCreateInfo() :
-        Initialisers::pipelineVertexInputStateCreateInfo(bindingDescription.data(), 1, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()));
-
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = Initialisers::pipelineInputAssemblyStateCreateInfo(pipelineInfo.topology);
-
-    VkPipelineViewportStateCreateInfo viewportState;
-    if(pipelineInfo.viewports.empty())
-        viewportState = Initialisers::pipelineViewportStateCreateInfo(nullptr, 1, nullptr, 1);
-    else {
-        viewportState = 
-            Initialisers::pipelineViewportStateCreateInfo(pipelineInfo.viewports.data(), static_cast<uint32_t>(pipelineInfo.viewports.size()), pipelineInfo.scissors.data(), static_cast<uint32_t>(pipelineInfo.scissors.size()));
+    VkShaderModule shaderModule;
+    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create shader module!");
     }
 
-    VkPipelineRasterizationStateCreateInfo rasterizer = Initialisers::pipelineRasterizationStateCreateInfo(pipelineInfo.polygonMode, pipelineInfo.cullMode, VK_FRONT_FACE_COUNTER_CLOCKWISE, 1.0f, VK_FALSE, pipelineInfo.depthBiasEnable);
+    return shaderModule;
+}
 
-    VkPipelineMultisampleStateCreateInfo multisampling = Initialisers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+void Pipeline::createGraphicsPipeline() {
 
-    VkPipelineDepthStencilStateCreateInfo depthStencil = Initialisers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = Initialisers::pipelineColourBlendAttachmentState(0xf, pipelineInfo.blendEnabled);
-
-    VkPipelineColorBlendStateCreateInfo colorBlending = Initialisers::pipelineColourBlendStateCreateInfo(&colorBlendAttachment, 1, VK_FALSE, VK_LOGIC_OP_COPY);
-
-    std::vector<VkDescriptorSetLayout> layouts;
+    std::vector<VkDescriptorSetLayout> layouts{};
     //for (auto& layout : descriptorSetLayouts)
     //{
     //    layouts.emplace_back(layout.layout);
@@ -167,37 +153,96 @@ void Pipeline::createGraphicsPipeline() {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
+    pipelineCreateInfo = Initialisers::graphicsPipelineCreateInfo(pipelineLayout, renderPass->vkRenderPass, 0);
+
+
+    auto bindingDescription = pipelineInfo.vertexInputBindings;
+    auto attributeDescriptions = pipelineInfo.vertexInputAttributes;
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = pipelineInfo.emptyVertexInputState ? Initialisers::pipelineVertexInputStateCreateInfo() :
+        Initialisers::pipelineVertexInputStateCreateInfo(bindingDescription.data(), 1, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()));
+
+    pipelineCreateInfo.pVertexInputState = &vertexInputInfo;
+
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = Initialisers::pipelineInputAssemblyStateCreateInfo(pipelineInfo.topology);
+
+    pipelineCreateInfo.pInputAssemblyState = &inputAssembly;
+
+
+    VkPipelineViewportStateCreateInfo viewportState;
+    if(pipelineInfo.viewports.empty())
+        viewportState = Initialisers::pipelineViewportStateCreateInfo(nullptr, 1, nullptr, 1);
+    else {
+        viewportState = 
+            Initialisers::pipelineViewportStateCreateInfo(pipelineInfo.viewports.data(), static_cast<uint32_t>(pipelineInfo.viewports.size()), pipelineInfo.scissors.data(), static_cast<uint32_t>(pipelineInfo.scissors.size()));
+    }
+
+    pipelineCreateInfo.pViewportState = &viewportState;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer = Initialisers::pipelineRasterizationStateCreateInfo(pipelineInfo.polygonMode, pipelineInfo.cullMode, VK_FRONT_FACE_COUNTER_CLOCKWISE, 1.0f, VK_FALSE, pipelineInfo.depthBiasEnable);
+
+    pipelineCreateInfo.pRasterizationState = &rasterizer;
+
+    VkPipelineMultisampleStateCreateInfo multisampling = Initialisers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+
+    pipelineCreateInfo.pMultisampleState = &multisampling;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil = Initialisers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipelineCreateInfo.pDepthStencilState = &depthStencil;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = Initialisers::pipelineColourBlendAttachmentState(0xf, pipelineInfo.blendEnabled);
+
+    VkPipelineColorBlendStateCreateInfo colorBlending = Initialisers::pipelineColourBlendStateCreateInfo(&colorBlendAttachment, 1, VK_FALSE, VK_LOGIC_OP_COPY);
+    pipelineCreateInfo.pColorBlendState = &colorBlending;
+
+
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(auto& shader : pipelineInfo.shaders)
     {
         shaderStages.emplace_back(shader->createInfo());
     }
 
-    VkGraphicsPipelineCreateInfo pipelineCreateInfo = Initialisers::graphicsPipelineCreateInfo(pipelineLayout, renderPass->vkRenderPass, 0);
-    pipelineCreateInfo.pVertexInputState = &vertexInputInfo;
-    pipelineCreateInfo.pInputAssemblyState = &inputAssembly;
-    pipelineCreateInfo.pViewportState = &viewportState;
-    pipelineCreateInfo.pRasterizationState = &rasterizer;
-    pipelineCreateInfo.pMultisampleState = &multisampling;
-    pipelineCreateInfo.pDepthStencilState = &depthStencil;
-    pipelineCreateInfo.pColorBlendState = &colorBlending;
+    //if (pipelineInfo.specializationInfo == 1)
+    //{
+    //    uint32_t enablePCF = 0;
+    //    VkSpecializationMapEntry specializationMapEntry{};
+    //    specializationMapEntry.constantID = 0;
+    //    specializationMapEntry.offset = 0;
+    //    specializationMapEntry.size = sizeof(uint32_t);
+    //    //VkSpecializationMapEntry specializationMapEntry = Initialisers::specializationMapEntry(0, 0, sizeof(uint32_t));
+    //    VkSpecializationMapEntry maps[1]{ specializationMapEntry };
+    //    VkSpecializationInfo specializationInfo{};
+    //    specializationInfo.mapEntryCount = 0;
+    //    specializationInfo.pMapEntries = nullptr;
+    //    specializationInfo.dataSize = sizeof(uint32_t);
+    //    specializationInfo.pData = &enablePCF;
+    //    shaderStages[0].pSpecializationInfo = &specializationInfo;
+    //    shaderStages[1].pSpecializationInfo = &specializationInfo;
+    //}
+
+    //std::cout << shaderStages[0].pSpecializationInfo->mapEntryCount << std::endl;
+    //    // VkSpecializationInfo specializationInfo = Initialisers::specializationInfo(1, &specializationMapEntry, sizeof(uint32_t), &enablePCF);
+
+    //if(shaderStages.size() > 1)
+    //{
+    //    //shaderStages[1].pSpecializationInfo = &specializationInfo;
+
+
+    //    if (pipelineInfo.specializationInfo == 0)
+    //        shaderStages[1].pSpecializationInfo = nullptr;
+    //}
+
     pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineCreateInfo.pStages = shaderStages.data();
 
-    if (!pipelineInfo.dynamicStates.empty())
-    {
-        VkPipelineDynamicStateCreateInfo dynamicState = Initialisers::pipelineDynamicStateCreateInfo(pipelineInfo.dynamicStates.data(), pipelineInfo.dynamicStates.size());
-        pipelineCreateInfo.pDynamicState = &dynamicState;
-    }
 
+    VkPipelineDynamicStateCreateInfo dynamicState = Initialisers::pipelineDynamicStateCreateInfo(pipelineInfo.dynamicStates.data(), static_cast<uint32_t>(pipelineInfo.dynamicStates.size()));
+    //dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    pipelineCreateInfo.pDynamicState = &dynamicState;
 
-    if (pipelineInfo.specializationInfo)
-    {
-        uint32_t enablePCF = 0;
-        VkSpecializationMapEntry specializationMapEntry = Initialisers::specializationMapEntry(0, 0, sizeof(uint32_t));
-        VkSpecializationInfo specializationInfo = Initialisers::specializationInfo(1, &specializationMapEntry, sizeof(uint32_t), &enablePCF);
-        shaderStages[1].pSpecializationInfo = &specializationInfo;
-    }
+    float shu = 0.0f;
 
     if (pipelineInfo.conservativeRasterisation) {
 
@@ -213,7 +258,7 @@ void Pipeline::createGraphicsPipeline() {
         conservativeRasterStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
         conservativeRasterStateCI.conservativeRasterizationMode = VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
         conservativeRasterStateCI.extraPrimitiveOverestimationSize = conservativeRasterProps.maxExtraPrimitiveOverestimationSize;
-       
+        
         // Conservative rasterization state has to be chained into the pipeline rasterization state create info structure
         rasterizer.pNext = &conservativeRasterStateCI;
     }

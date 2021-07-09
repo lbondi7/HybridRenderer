@@ -12,7 +12,7 @@ void DescriptorSetManager::init(DeviceContext* _devices, uint32_t _imageCount)
 
 void DescriptorSetManager::destroy(bool complete)
 {
-	for (auto pool : pools)
+	for (auto& pool : pools)
 	{
 		pool.destroy();
 	}
@@ -38,13 +38,14 @@ void DescriptorSetManager::addLayout(uint32_t set, const std::vector<VkDescripto
 	layouts[layouts.size() - 1]->init(devices);
 }
 
-DescriptorSetLayout* DescriptorSetManager::addLayoutAndReturn(uint32_t set, const std::vector<VkDescriptorSetLayoutBinding>& bindings)
+DescriptorSetLayout* DescriptorSetManager::addLayoutAndReturn(uint32_t set, const std::vector<VkDescriptorSetLayoutBinding>& bindings, bool newLayout)
 {
-
-	for (auto& layout : layouts)
-	{
-		if (layout->checkBindings(bindings))
-			return layout.get();
+	if (!newLayout) {
+		for (auto& layout : layouts)
+		{
+			if (layout->checkBindings(bindings))
+				return layout.get();
+		}
 	}
 
 	layouts.push_back(std::make_unique<DescriptorSetLayout>());
@@ -57,10 +58,10 @@ DescriptorSetLayout* DescriptorSetManager::addLayoutAndReturn(uint32_t set, cons
 	return layouts[layouts.size() - 1].get();
 }
 
-void  DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request)
+void DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request)
 {
 
-	for (auto pool : pools)
+	for (auto& pool : pools)
 	{
 		if (pool.isAvailable(request))
 		{
@@ -90,6 +91,39 @@ void  DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets
 	}
 }
 
+void DescriptorSetManager::createDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request)
+{
+	for (auto& pool : pools)
+	{
+		if (pool.isAvailable(request))
+		{
+			for (auto& layout : layouts)
+			{
+				if (layout->matches(request))
+				{
+					pool.allocateAndUpdateSets(sets, layout->layout, request);
+					return;
+				}
+			}
+		}
+	}
+
+	auto& pool = pools.emplace_back();
+	pool.init(devices, imageCount, request);
+	if (pool.isAvailable(request))
+	{
+		for (auto& layout : layouts)
+		{
+			if (layout->matches(request))
+			{
+				pool.allocateAndUpdateSets(sets, layout->layout, request);
+				return;
+			}
+		}
+	}
+
+}
+
 VkDescriptorSet DescriptorSetManager::getDescriptorSet(const DescriptorSetRequest& request)
 {
 
@@ -117,6 +151,47 @@ VkDescriptorSet DescriptorSetManager::getDescriptorSet(const DescriptorSetReques
 			{
 				return pool.allocateSet(layout->layout, request);
 			}
+		}
+	}
+}
+
+void DescriptorSetManager::getTempDescriptorSet(VkDescriptorSet* descriptorSet, const DescriptorSetRequest& request, bool temp)
+{
+
+	for (auto pool : pools)
+	{
+		if (pool.isAvailable(request) && pool.temporary)
+		{
+			for (auto& layout : layouts)
+			{
+				if (layout->matches(request))
+				{
+					pool.allocateAndUpdateSet(descriptorSet, layout->layout, request);
+					return;
+				}
+			}
+		}
+	}
+
+	auto& pool = pools.emplace_back();
+	pool.init(devices, imageCount, request, temp);
+	for (auto& layout : layouts)
+	{
+		if (layout->matches(request))
+		{
+			pool.allocateAndUpdateSet(descriptorSet, layout->layout, request);
+			return;
+		}
+	}
+}
+
+void DescriptorSetManager::freeDescriptorSet(VkDescriptorSet* descriptorSet)
+{
+	for (auto pool : pools)
+	{
+		if (pool.temporary)
+		{
+			pool.freeDescriptorSet(descriptorSet);
 		}
 	}
 }

@@ -15,11 +15,18 @@ public:
 
 	void addLayout(uint32_t set, const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 
-	DescriptorSetLayout* addLayoutAndReturn(uint32_t set, const std::vector<VkDescriptorSetLayoutBinding>& bindings);
+	DescriptorSetLayout* addLayoutAndReturn(uint32_t set, const std::vector<VkDescriptorSetLayoutBinding>& bindings, bool newLayout = false);
 
 	void getDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request);
 
+	void createDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request);
+
 	VkDescriptorSet getDescriptorSet(const DescriptorSetRequest& request);
+
+	void getTempDescriptorSet(VkDescriptorSet* descriptorSet, const DescriptorSetRequest& request, bool temp);
+
+	void freeDescriptorSet(VkDescriptorSet* descriptorSet);
+
 
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
 

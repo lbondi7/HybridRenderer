@@ -2,7 +2,7 @@
 #include "Constants.h"
 #include "Transform.h"
 #include "Mesh.h"
-#include "Image.h"
+#include "TextureSampler.h"
 
 #include <vector>
 
@@ -22,7 +22,7 @@ public:
 	glm::mat4 model;
 
 	Mesh* mesh = nullptr;
-	Image* image = nullptr;
+	TextureSampler* texture = nullptr;
 
 	std::vector<Buffer> uniformBuffers;
 

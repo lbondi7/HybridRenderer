@@ -11,7 +11,7 @@ ColourRenderPass::~ColourRenderPass()
 
 void ColourRenderPass::Create(DeviceContext* _devices, SwapChain* _swapChain)
 {
-    RenderPass::Create(_devices, _swapChain);
+   // RenderPass::Create(_devices, _swapChain);
 
     Init();
 }
@@ -20,7 +20,7 @@ void ColourRenderPass::Init()
 {
     VkAttachmentDescription colorAttachment = Initialisers::attachmentDescription(swapChain->imageFormat, VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkAttachmentDescription depthAttachment = Initialisers::attachmentDescription(Utility::findDepthFormat(devices->physicalDevice), VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -39,13 +39,13 @@ void ColourRenderPass::Init()
 
     //auto dep2 = Initialisers::subpassDependency(0, VK_SUBPASS_EXTERNAL,
     //    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-    //    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+    //    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
     //    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
     //    VK_ACCESS_MEMORY_READ_BIT);
 
     std::vector<VkSubpassDependency> dependencies{dep1};
 
-    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    //dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
     VkRenderPassCreateInfo renderPassInfo = Initialisers::renderPassCreateInfo(static_cast<uint32_t>(attachments.size()), attachments.data(),

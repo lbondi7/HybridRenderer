@@ -8,6 +8,7 @@ void GameObject::Init()
 {
 	transform.getMatrix(model);
 	prevTransform = transform;
+
 }
 
 void GameObject::Update()
@@ -23,7 +24,7 @@ void GameObject::Update()
 void GameObject::Destroy()
 {
 	mesh = nullptr;
-	image = nullptr;
+	texture = nullptr;
 	for (auto& buffer : uniformBuffers)
 	{
 		buffer.Destroy();

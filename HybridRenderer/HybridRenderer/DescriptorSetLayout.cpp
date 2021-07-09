@@ -41,13 +41,13 @@ bool DescriptorSetLayout::checkBindings(const std::vector<VkDescriptorSetLayoutB
 bool DescriptorSetLayout::matches(const DescriptorSetRequest& request)
 {
 
-    if (request.requests.size() != bindings.size())
+    if (request.ids.size() != bindings.size())
         return false;
 
-    for (size_t i = 0; i < request.requests.size(); i++)
+    for (size_t i = 0; i < request.ids.size(); i++)
     {
-        if (bindings[i].binding != request.requests[i].first ||
-            bindings[i].descriptorType != request.requests[i].second)
+        if (bindings[i].binding != request.ids[i].first ||
+            bindings[i].descriptorType != request.ids[i].second)
             return false;
     }
 

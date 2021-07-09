@@ -115,11 +115,13 @@ namespace Initialisers {
 
 	VkImageViewCreateInfo imageViewCreateInfo(VkImage image,
 		VkImageViewType viewType, VkFormat format,
-		VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT,
+		VkImageAspectFlags aspectFlags,
 		uint32_t baseMipLevel = 0,
 		uint32_t levelCount = 1,
 		uint32_t baseArrayLayer = 0,
 		uint32_t layerCount = 1);
+
+	VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkImageViewType viewType, VkFormat format);
 
 	// Samplers
 
@@ -168,6 +170,8 @@ namespace Initialisers {
 
 	VkSubpassDescription subpassDescription(VkPipelineBindPoint pipelineBindPoint, uint32_t colorAttachmentCount,
 		const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pDepthAttachments);
+
+	VkSubpassDescription subpassDescription(VkPipelineBindPoint pipelineBindPoint);
 
 	VkSubpassDependency subpassDependency(uint32_t srcSubpass, uint32_t dstSubpass, 
 		VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, 

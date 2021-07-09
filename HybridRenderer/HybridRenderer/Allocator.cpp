@@ -106,7 +106,7 @@ void Allocator::destroy() {
         if (buffer.buffer)
         {
             vkDestroyBuffer(logicalDevice, buffer.buffer, nullptr);
-            buffer.buffer = nullptr;
+            buffer.buffer = VK_NULL_HANDLE;
         }
     }
 
@@ -114,7 +114,7 @@ void Allocator::destroy() {
         if (memory.memory)
         {
             vkFreeMemory(logicalDevice, memory.memory, nullptr);
-            memory.memory = nullptr;
+            memory.memory = VK_NULL_HANDLE;
         }
     }
 

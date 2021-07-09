@@ -1,6 +1,6 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
@@ -36,7 +36,7 @@ const std::vector<const char*> deviceExtensions = {
 };
 
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+const bool enableValidationLayers = true;
 #else
 const bool enableValidationLayers = true;
 #endif
@@ -56,29 +56,6 @@ struct SwapChainSupportDetails {
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
-
-
-struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-};
-
-// Framebuffer for offscreen rendering
-//struct FrameBufferAttachment {
-//    VkImage image;
-//    VkDeviceMemory mem;
-//    VkImageView view;
-//};
-//
-//struct OffscreenPass {
-//    int32_t width = 2048, height = 2048;
-//    std::vector<VkFramebuffer> frameBuffers;
-//    FrameBufferAttachment depth;
-//    VkRenderPass renderPass;
-//    VkSampler depthSampler;
-//    VkDescriptorImageInfo descriptor;
-//};
 
 static std::vector<char> readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -125,23 +102,40 @@ static std::vector<char> readNormalFile(const std::string& filename) {
 enum VertexAttributes {
     POSITION,
     UV_COORD,
-    COLOUR,
+    V_COLOUR,
     NORMAL
 };
 
 
 struct DescriptorSetRequest {
 
-    DescriptorSetRequest& operator = (const DescriptorSetRequest& other)
-    {
-        this->requests = other.requests;
-        return *this;
-    }
-
-    std::vector<std::pair<uint32_t, VkDescriptorType>> requests;
+    using BindingType = std::pair<uint32_t, VkDescriptorType>;
+    std::vector<BindingType> ids;
+    std::vector<void*> data;
 };
 
 struct PushConstBlock {
     glm::vec2 scale;
     glm::vec2 translate;
+};
+
+
+enum AttachmentType : int {
+    COLOUR = 0,
+    DEPTH = 1,
+};
+
+struct AttactmentInfo {
+    AttachmentType type;
+    VkFormat format;
+    VkAttachmentLoadOp loadOp;
+    VkImageLayout finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkImageLayout referenceLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+};
+
+struct RenderPassInfo {
+
+    std::vector<AttactmentInfo> attachments;
+    std::vector<VkSubpassDependency> dependencies;
 };

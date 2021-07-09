@@ -89,6 +89,7 @@ namespace Initialisers {
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(uint32_t poolSizeCount, const VkDescriptorPoolSize* pPoolSizes, uint32_t maxSets) {
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 		poolInfo.poolSizeCount = poolSizeCount;
 		poolInfo.pPoolSizes = pPoolSizes;
 		poolInfo.maxSets = maxSets;
@@ -406,6 +407,17 @@ namespace Initialisers {
 		return viewInfo;
 	}
 
+	VkImageViewCreateInfo imageViewCreateInfo(VkImage image,
+		VkImageViewType viewType, VkFormat format) {
+
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = image;
+		viewInfo.viewType = viewType;
+		viewInfo.format = format;
+		return viewInfo;
+	}
+
 	// Samplers
 
 	VkSamplerCreateInfo samplerCreateInfo(VkFilter magFilter, VkFilter minFilter, VkBool32 anisotropyEnable, float maxAnisotropy, VkSamplerMipmapMode mipmapMode,
@@ -552,6 +564,12 @@ namespace Initialisers {
 		return subpass;
 	}
 
+	VkSubpassDescription subpassDescription(VkPipelineBindPoint pipelineBindPoint) {
+		VkSubpassDescription subpass{};
+		subpass.pipelineBindPoint = pipelineBindPoint;
+		return subpass;
+	}
+
 	VkSubpassDependency subpassDependency(uint32_t srcSubpass, uint32_t dstSubpass, 
 		VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
 		VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask) {
@@ -562,6 +580,7 @@ namespace Initialisers {
 		dependency.dstStageMask = dstStageMask;
 		dependency.srcAccessMask = srcAccessMask;
 		dependency.dstAccessMask = dstAccessMask;
+		dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 		return dependency;
 	}
 

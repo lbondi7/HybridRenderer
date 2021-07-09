@@ -10,17 +10,6 @@ ImGUI::~ImGUI()
 	devices = nullptr;
 }
 
-void ImGUI::create(DeviceContext* _devices, RenderPass* _renderPass, DescriptorSetManager* _descriptorSetManager, const PipelineInfo& _pipelineInfo)
-{
-	devices = _devices;
-	pipelineInfo = _pipelineInfo;
-	dsm = _descriptorSetManager;
-	dpipeline.Create(devices, _renderPass, dsm, _pipelineInfo);
-
-	init();
-
-}
-
 void ImGUI::createCommandPool(VkCommandPool* commandPool, VkCommandPoolCreateFlags flags) {
 	VkCommandPoolCreateInfo commandPoolCreateInfo = {};
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -42,8 +31,79 @@ void ImGUI::createCommandBuffers(VkCommandBuffer* commandBuffer, uint32_t comman
 }
 
 
-void ImGUI::create(GLFWwindow * window, VkInstance instance, VkSurfaceKHR surface, DeviceContext* _devices, SwapChain* swapChain, RenderPass* _renderPass)
+void ImGUI::create(GLFWwindow * window, VkInstance instance, VkSurfaceKHR surface, DeviceContext* _devices, SwapChain* _swapChain)
 {
+
+	devices = _devices;
+	swapChain = _swapChain;
+
+	VkDescriptorPoolSize pool_sizes[] =
+	{
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+	};
+	VkDescriptorPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+	pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
+	pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
+	pool_info.pPoolSizes = pool_sizes;
+	auto err = vkCreateDescriptorPool(devices->logicalDevice, &pool_info, nullptr, &descriptorPool);
+
+	RenderPassInfo info{};
+	info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+
+	info.dependencies.emplace_back(Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT));
+
+	renderPass.Create(devices, info);
+
+	reinit();
+
+	QueueFamilyIndices queueFamilyIndices = devices->indices;// findQueueFamilies(physicalDevice);
+	imGuiCommandPools.resize(swapChain->imageCount);
+	commandBuffers.resize(swapChain->imageCount);
+
+	createCommandPool(&commandPool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	createCommandBuffers(commandBuffers.data(), static_cast<uint32_t>(commandBuffers.size()), commandPool);
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForVulkan(window, true);
+	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.Instance = instance;
+	init_info.PhysicalDevice = devices->physicalDevice;
+	init_info.Device = devices->logicalDevice;
+	init_info.QueueFamily = 0;
+	init_info.Queue = devices->graphicsQueue;
+	init_info.PipelineCache = VK_NULL_HANDLE;
+	init_info.DescriptorPool = descriptorPool;
+	init_info.Allocator = nullptr;
+	init_info.MinImageCount = swapChain->imageCount;
+	init_info.ImageCount = swapChain->imageCount;
+	//init_info.CheckVkResultFn = check_vk_result;
+	ImGui_ImplVulkan_Init(&init_info, renderPass.vkRenderPass);
+
+	auto cmdBuffer = devices->generateCommandBuffer();
+	ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
+	devices->EndCommandBuffer(cmdBuffer);
+
 
 }
 
@@ -53,198 +113,26 @@ void ImGUI::Render() {
 }
 
 
-void ImGUI::init()
-{
-	ImGui::CreateContext();
-
-	//pushConstBlock = {};
-	/// init
-
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
-	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
-	style.Colors[ImGuiCol_MenuBarBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-	style.Colors[ImGuiCol_Header] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-	style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
-	// Dimensions
-	ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize = ImVec2(WIDTH, HEIGHT);
-	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-
-
-	/// init resources
-
-	// Create font texture
-	unsigned char* fontData;
-	int texWidth, texHeight;
-	io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
-	VkDeviceSize uploadSize = texWidth * texHeight * 4 * sizeof(char);
-
-
-	fontImage.Create(devices, texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM);
-	fontImage.createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-	// Staging buffers for font data upload
-	Buffer stagingBuffer;
-	stagingBuffer.Create(devices, uploadSize);
-
-	stagingBuffer.Map(fontData);
-
-	fontImage.transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	fontImage.CopyFromBuffer(stagingBuffer.vkBuffer);
-
-	fontImage.transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	stagingBuffer.Destroy();
-
-	VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, 1.0f, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE);
-
-	fontImage.createSampler(samplerInfo);
-
-	DescriptorSetRequest request{};
-	request.requests.push_back({ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER });
-	dsm->getDescriptorSets(descriptorSets, request);
-
-	for (size_t i = 0; i < 3; i++)
-	{
-		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-	Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &fontImage.descriptorInfo)
-		};
-		vkUpdateDescriptorSets(devices->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-	}
-
-}
-
 void ImGUI::reinit()
 {
-	dpipeline.Init();
+
+	frameBuffer.Create(devices, renderPass.vkRenderPass);
+	for (size_t i = 0; i < swapChain->imageCount; i++)
+	{
+		std::vector<VkImageView> attachments{ swapChain->images[i].imageView };
+		frameBuffer.createFramebuffer(attachments, swapChain->extent);
+	}
+
+
 }
 
-void ImGUI::Draw(VkCommandBuffer commandBuffer, size_t cmdBufferIndex) {
-
-
-	ImGuiIO& io = ImGui::GetIO();
-	ImDrawData* imDrawData = ImGui::GetDrawData();
-
-	if (!imDrawData)
-		return;
-
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dpipeline.pipelineLayout, 0, 1, &descriptorSets[cmdBufferIndex], 0, nullptr);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dpipeline.vkPipeline);
-
-	VkViewport viewport = Initialisers::viewport(0.0f, 0.0f, ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y);
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-	// UI scale and translate via push constants
-	pushConstBlock.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
-	pushConstBlock.translate = glm::vec2(-1.0f);
-	vkCmdPushConstants(commandBuffer, dpipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
-
-	// Render commands
-	int32_t vertexOffset = 0;
-	int32_t indexOffset = 0;
-
-	if (imDrawData->CmdListsCount > 0) {
-
-		VkDeviceSize offsets[1] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.vkBuffer, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer.vkBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-		for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
-		{
-			const ImDrawList* cmd_list = imDrawData->CmdLists[i];
-			for (int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++)
-			{
-				const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[j];
-				VkRect2D scissorRect;
-				scissorRect.offset.x = std::max((int32_t)(pcmd->ClipRect.x), 0);
-				scissorRect.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
-				scissorRect.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
-				scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
-				vkCmdSetScissor(commandBuffer, 0, 1, &scissorRect);
-				vkCmdDrawIndexed(commandBuffer, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
-				indexOffset += pcmd->ElemCount;
-			}
-			vertexOffset += cmd_list->VtxBuffer.Size;
-		}
-	}
-}
-
-void ImGUI::updateBuffers()
-{
-
-	ImDrawData* imDrawData = ImGui::GetDrawData();
-
-	if (!imDrawData)
-		return;
-
-
-	// Note: Alignment is done inside buffer creation
-	VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
-	VkDeviceSize indexBufferSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
-
-	if ((vertexBufferSize == 0) || (indexBufferSize == 0)) {
-		return;
-	}
-
-	// Update buffers only if vertex or index count has been changed compared to current buffer size
-
-	// Vertex buffer
-	if ((vertexBuffer.vkBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
-		vertexBuffer.Unmap();
-		vertexBuffer.Destroy();
-		vertexBuffer.Create(devices, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-		vertexCount = imDrawData->TotalVtxCount;
-		vertexBuffer.Map();
-	}
-
-	// Index buffer
-	if ((indexBuffer.vkBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
-		indexBuffer.Unmap();
-		indexBuffer.Destroy();
-		indexBuffer.Create(devices, indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-		indexCount = imDrawData->TotalIdxCount;
-		indexBuffer.Map();
-	}
-
-	// Upload data
-	ImDrawVert* vtxDst = (ImDrawVert*)vertexBuffer.data;
-	ImDrawIdx* idxDst = (ImDrawIdx*)indexBuffer.data;
-
-	
-	for (int n = 0; n < imDrawData->CmdListsCount; n++) {
-		const ImDrawList* cmd_list = imDrawData->CmdLists[n];
-		memcpy(vtxDst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
-		memcpy(idxDst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
-		vtxDst += cmd_list->VtxBuffer.Size;
-		idxDst += cmd_list->IdxBuffer.Size;
-	}
-
-	// Flush to make writes visible to GPU
-	vertexBuffer.Flush();
-	indexBuffer.Flush();
-}
-
-void ImGUI::newFrame() {
-	//ImGui::NewFrame();
-
-	//// Init imGui windows and elements
-
-	//ImGui::ShowDemoWindow();
-
-	//// Render to generate draw buffers
-	//ImGui::Render();
-}
 
 void ImGUI::startFrame() {
 	ImGui::NewFrame();
 
 }
 
-void ImGUI::NewWindow(const char* name, bool * close) {
+void ImGUI::NewWindow(const char* name, bool* close) {
 
 	float x = 0.0f;
 	float xarr[2]{ 0.0f, 0.0f };
@@ -254,9 +142,9 @@ void ImGUI::NewWindow(const char* name, bool * close) {
 	bool enabled = true;
 
 	if (ImGui::BeginMainMenuBar()) {
-	ImGui::MenuItem("Main Menu Item 1", "MMI1");
-	ImGui::MenuItem("Main Menu Item 2", "MMI2");
-	ImGui::MenuItem("Main Menu Item 3", "MMI3");
+		ImGui::MenuItem("Main Menu Item 1", "MMI1");
+		ImGui::MenuItem("Main Menu Item 2", "MMI2");
+		ImGui::MenuItem("Main Menu Item 3", "MMI3");
 	}
 	ImGui::EndMainMenuBar();
 
@@ -291,13 +179,6 @@ void ImGUI::NewWindow(const char* name, bool * close) {
 
 }
 
-void ImGUI::NewImage(VkSampler sampler, VkImageView view, VkImageLayout layout) {
-
-	//if (ImGui::Begin("Depth Texture"));
-	//ImGui::Image((ImTextureID)ImGui_ImplVulkan_AddTexture(sampler, view, layout), ImVec2(250, 250));
-	//ImGui::End();
-}
-
 void ImGUI::endFrame() {
 
 	// Render to generate draw buffers
@@ -309,34 +190,22 @@ void ImGUI::endFrame() {
 
 void ImGUI::deinit()
 {
-
-	dpipeline.Destroy(false);
-	//vkDestroyDescriptorPool(devices->logicalDevice, descriptorPool, nullptr);
-	//vkDestroyPipeline(devices->logicalDevice, pipeline, nullptr);
-	//vkDestroyPipelineCache(devices->logicalDevice, pipelineCache, nullptr);
+	frameBuffer.Destroy();
 }
 
 void ImGUI::destroy(bool complete)
 {
 
-	//for (auto framebuffer : framebuffers) {
-	//	vkDestroyFramebuffer(devices->logicalDevice, framebuffer, nullptr);
-	//}
+	renderPass.Destroy();
 
-	//vkDestroyRenderPass(devices->logicalDevice, renderPass, nullptr);
+	vkFreeCommandBuffers(devices->logicalDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkDestroyCommandPool(devices->logicalDevice , commandPool, nullptr);
 
-	//vkFreeCommandBuffers(devices->logicalDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	//vkDestroyCommandPool(devices->logicalDevice, commandPool, nullptr);
-
-	//// Resources to destroy when the program ends
-	//ImGui_ImplVulkan_Shutdown();
-	//ImGui_ImplGlfw_Shutdown();
-	//ImGui::DestroyContext();
-	//vkDestroyDescriptorPool(devices->logicalDevice, descriptorPool, nullptr);
-
-	fontImage.Destroy();
-	vertexBuffer.Destroy();
-	indexBuffer.Destroy();
+	// Resources to destroy when the program ends
+	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+	vkDestroyDescriptorPool(devices->logicalDevice, descriptorPool, nullptr);
 }
 
 void ImGUI::update(VkExtent2D extent)

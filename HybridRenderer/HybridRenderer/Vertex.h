@@ -42,7 +42,7 @@ struct Vertex {
             {
                 attributeDescriptions.emplace_back(Initialisers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)));
             }
-            if (attribute == VertexAttributes::COLOUR)
+            if (attribute == VertexAttributes::V_COLOUR)
             {
                 attributeDescriptions.emplace_back(Initialisers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)));
             }

@@ -162,6 +162,7 @@
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ColourRenderPass.cpp" />
+    <ClCompile Include="CubemapTexture.cpp" />
     <ClCompile Include="DebugLogger.cpp" />
     <ClCompile Include="DepthRenderPass.cpp" />
     <ClCompile Include="DepthTexture.cpp" />
@@ -173,10 +174,12 @@
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="Allocator.cpp" />
+    <ClCompile Include="ImGUIWidgets.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
-    <ClCompile Include="imgui\imgui_tables.cpp" />
+    <ClCompile Include="imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="imgui\imgui_impl_vulkan.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="ImGUI_.cpp" />
     <ClCompile Include="RasterRenderer.cpp" />
@@ -190,6 +193,7 @@
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Resources.cpp" />
     <ClCompile Include="SwapChain.cpp" />
+    <ClCompile Include="TextureSampler.cpp" />
     <ClCompile Include="Utility.cpp" />
     <ClCompile Include="Vertex.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -199,6 +203,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ColourRenderPass.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="CubemapTexture.h" />
     <ClInclude Include="DebugLogger.h" />
     <ClInclude Include="DepthRenderPass.h" />
     <ClInclude Include="DepthTexture.h" />
@@ -210,8 +215,11 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="Allocator.h" />
+    <ClInclude Include="ImGUIWidgets.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
+    <ClInclude Include="imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="imgui\imgui_impl_vulkan.h" />
     <ClInclude Include="imgui\imgui_internal.h" />
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
@@ -227,6 +235,7 @@
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="Resources.h" />
     <ClInclude Include="SwapChain.h" />
+    <ClInclude Include="TextureSampler.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="Vertex.h" />

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mesh.h"
-#include "Image.h"
+#include "TextureSampler.h"
 #include "Shader.h"
 #include "Device.h"
 
@@ -22,12 +22,12 @@ public:
 
 	void LoadMesh(const std::string& name);
 
-	void LoadImage(const std::string& name);
+	void LoadTexture(const std::string& name);
 
 	void LoadShader(const std::string& name, VkShaderStageFlagBits stage);
 
 	std::map<std::string, std::unique_ptr<Mesh>> meshes;
-	std::map<std::string, std::unique_ptr<Image>> images;
+	std::map<std::string, std::unique_ptr<TextureSampler>> textures;
 	std::map<std::string, std::unique_ptr<Shader>> vertexShaders;
 	std::map<std::string, std::unique_ptr<Shader>> fragmentShaders;
 

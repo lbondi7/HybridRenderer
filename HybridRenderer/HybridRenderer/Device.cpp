@@ -20,6 +20,7 @@ void DeviceContext::SetupAllocator()
     allocator.init(logicalDevice, physicalDevice);
 }
 
+
 void DeviceContext::Destroy()
 {
     allocator.destroy();

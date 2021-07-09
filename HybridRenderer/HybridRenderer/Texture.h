@@ -17,21 +17,24 @@ public:
 		VkImageUsageFlags _usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
 		VkMemoryPropertyFlags _properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	void createImage();
+	virtual void createVkImage();
 
-	void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+	void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask,
+		VkPipelineStageFlags dstStageMask, 
+		VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		uint32_t layerCount = 1,
+		uint32_t baseArrayLayer = 0,
+		uint32_t baseMipLevel = 0,
+		uint32_t levelCount = 1
+	);
 
-	void createSampler();
-
-	void createSampler(const VkSamplerCreateInfo& samplerInfo);
-
-	void createImageView(VkImageAspectFlags aspectFlags);
+	virtual void createImageView(VkImageAspectFlags aspectFlags);
 
 	void CopyFromBuffer(VkBuffer buffer);
 
 	void CopyFromTexture(Texture other);
 
-	void Destroy();
+	virtual void Destroy();
 
 	void DestroyImageViews();
 
@@ -39,14 +42,12 @@ public:
 
 	VkImage image;
 	VkFormat format;
-	VkDeviceMemory vkMemory;
+	VkDeviceMemory memory;
 	uint32_t width, height;
 	VkImageUsageFlags usage;  
 	VkMemoryPropertyFlags properties;
 	VkImageTiling tiling;
-
 	VkImageView imageView;
-	VkSampler sampler;
 
 	VkDescriptorImageInfo descriptorInfo;
 
@@ -54,10 +55,9 @@ public:
 
 	std::string name;
 
-	bool hasSampler = false;
 	bool hasImageView = false;
 
-private:
+protected:
 	bool destroyed = false;
 };
 

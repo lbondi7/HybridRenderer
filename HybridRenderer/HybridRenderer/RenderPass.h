@@ -19,20 +19,22 @@ public:
 
 	void End(VkCommandBuffer cmdBuffer);
 
-	virtual void Create(DeviceContext* _devices, SwapChain* _swapChain);
+	virtual void Create(DeviceContext* _devices, RenderPassInfo& _info);
 
 	//void Init();
 
-	virtual void Init() = 0;
+	virtual void Init();
 
 	void Destroy();
 
 	VkPipelineBindPoint pipelineBindPoint;
 
+	RenderPassInfo info;
+
 protected:
 
-	SwapChain* swapChain = nullptr;
 	DeviceContext* devices = nullptr;
+	SwapChain* swapChain;
 
 	//void createRenderPass();
 

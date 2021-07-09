@@ -26,9 +26,9 @@ void Resources::Destroy()
         mesh.second->Destroy();
     }
 
-    for (auto& image : images)
+    for (auto& texture : textures)
     {
-        image.second->texture.Destroy();
+        texture.second->Destroy();
     }
 
     for (auto& shader : vertexShaders)
@@ -97,7 +97,7 @@ void Resources::LoadMesh(const std::string& name)
     mesh->Init(devices);
 }
 
-void Resources::LoadImage(const std::string& name)
+void Resources::LoadTexture(const std::string& name)
 {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(("textures/" + name + ".jpg").c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -113,52 +113,24 @@ void Resources::LoadImage(const std::string& name)
 
     stbi_image_free(pixels);
 
-    images.emplace(name, std::make_unique<Image>());
+    textures.emplace(name, std::make_unique<TextureSampler>());
 
-    auto& image = images[name];
-    image->width = texWidth;
-    image->height = texHeight;
-    image->channels = texChannels;
+    auto& texture = textures[name];
 
-    image->texture.Create(devices, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    image->texture.transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    image->texture.CopyFromBuffer(stagingBuffer.vkBuffer);
-    image->texture.transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    image->texture.createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-    image->texture.createSampler();
-    image->texture.descriptorInfo = Initialisers::descriptorImageInfo(image->texture.imageView, image->texture.sampler);
+    texture->Create(devices, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    texture->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, 
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT);
+    texture->CopyFromBuffer(stagingBuffer.vkBuffer);
+    texture->transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+    texture->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+    texture->createSampler();
+    texture->descriptorInfo = Initialisers::descriptorImageInfo(texture->imageView, texture->sampler);
     stagingBuffer.Destroy();
-
-
-    pixels = stbi_load(("textures/" + name + ".jpg").c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    imageSize = texWidth * texHeight * 4;
-
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    stagingBuffer.Create(devices, imageSize, pixels);
-
-    stbi_image_free(pixels);
-
-    auto n = name + "2";
-    images.emplace(n, std::make_unique<Image>());
-
-    auto& image2 = images[n];
-    image2->width = texWidth;
-    image2->height = texHeight;
-    image2->channels = texChannels;
-
-    image2->texture.Create(devices, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    image2->texture.transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    image2->texture.CopyFromBuffer(stagingBuffer.vkBuffer);
-    image2->texture.transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-    image2->texture.createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-    image2->texture.createSampler();
-    image2->texture.descriptorInfo = Initialisers::descriptorImageInfo(image2->texture.imageView, image2->texture.sampler, VK_IMAGE_LAYOUT_GENERAL);
-    stagingBuffer.Destroy();
-
-
 }
 
 void Resources::LoadShader(const std::string& name, VkShaderStageFlagBits stage)
