@@ -45,7 +45,7 @@ public:
 
 	void destroy(bool complete = true);
 
-	bool enabled = true;
+	bool enabled = false;
 
 	bool updated = true;
 

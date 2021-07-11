@@ -14,14 +14,6 @@ RenderPass::~RenderPass()
     swapChain = nullptr;
 }
 
-//void RenderPass::Create(Device* _devices, SwapChain* _swapChain, OffscreenPass& offscreenPass)
-//{
-//    devices = _devices;
-//    swapChain = _swapChain;
-//
-//    Init(offscreenPass);
-//}
-
 void RenderPass::Begin(VkCommandBuffer cmdBuffer, VkFramebuffer frameBuffer, VkExtent2D extent, const VkClearValue* pClearValues, uint32_t clearValueCount)
 {
 
@@ -49,11 +41,13 @@ void RenderPass::Create(DeviceContext* _devices, RenderPassInfo& _info)
 void RenderPass::Init()
 {
     std::vector<VkAttachmentDescription> attachments;
+    attachments.reserve(info.attachments.size());
     std::vector< VkAttachmentReference> references;
+    references.reserve(info.attachments.size());
 
     VkSubpassDescription subpass = Initialisers::subpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS);
     uint32_t idx = 0;
-    for (auto& attachment : info.attachments)
+    for (const auto& attachment : info.attachments)
     {
         attachments.emplace_back(
             Initialisers::attachmentDescription(attachment.format, 
@@ -63,19 +57,18 @@ void RenderPass::Init()
 
         if (attachment.type == AttachmentType::COLOUR) {
 
-            VkAttachmentReference reference = Initialisers::attachmentReference(idx, attachment.referenceLayout);
-            //references.emplace_back(Initialisers::attachmentReference(idx, attachment.referenceLayout));
+            references.emplace_back(Initialisers::attachmentReference(idx, attachment.referenceLayout));
             subpass.colorAttachmentCount = 1;
-            subpass.pColorAttachments = &reference;
+            subpass.pColorAttachments = &references[idx];
         }
         else if (attachment.type == AttachmentType::DEPTH) {
-            VkAttachmentReference reference = Initialisers::attachmentReference(idx, attachment.referenceLayout);
-            subpass.pDepthStencilAttachment = &reference;
+            references.emplace_back(Initialisers::attachmentReference(idx, attachment.referenceLayout));
+            subpass.pDepthStencilAttachment = &references[idx];
         }
 
         ++idx;
     }
-
+    
     VkRenderPassCreateInfo renderPassInfo = Initialisers::renderPassCreateInfo(static_cast<uint32_t>(attachments.size()), attachments.data(),
         1, &subpass, static_cast<uint32_t>(info.dependencies.size()), info.dependencies.data());
 

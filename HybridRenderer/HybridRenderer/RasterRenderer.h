@@ -9,7 +9,6 @@
 #include "FrameBuffer.h"
 #include "Pipeline.h"
 #include "Buffer.h"
-#include "Image.h"
 #include "Texture.h"
 #include "Camera.h"
 #include "GameObject.h"
@@ -18,22 +17,25 @@
 #include "Window.h"
 #include "DescriptorSetManager.h"
 #include "ImGUI_.h"
+#include "VulkanCore.h"
+#include "Descriptor.h"
 
 class RasterRenderer {
 public:
 
+    RasterRenderer() = default;
+    RasterRenderer(Window* window, VulkanCore* core);
+
+
     void run();
 
-private:
+    void initialise(Resources* _resources, DescriptorSetManager* _descriptorSetManager);
 
-    std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
+    void prepare();
 
-    Window window;
+    void render(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs);
 
-    VkInstance instance;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    VkSurfaceKHR surface;
-    DeviceContext devices;
+    DeviceContext* deviceContext;
 
     SwapChain swapChain;
     RenderPass renderPass;
@@ -42,18 +44,16 @@ private:
     FrameBuffer penultimateFrameBuffer;
     Pipeline pipeline;
 
-    Camera camera;
-    Resources resources;
+    //Camera camera;
+    Resources* resources;
 
-    std::vector<GameObject> gameObjects;
+    //std::vector<GameObject> gameObjects;
 
-    int gameObjectCount = 2;
+    //int gameObjectCount = 2;
 
     ShadowMap shadowMap;
 
-    DescriptorSetManager descriptorSetManager;
-
-    VkDescriptorPool descriptorPool;
+    DescriptorSetManager* descriptorSetManager;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -64,6 +64,7 @@ private:
     size_t currentFrame = 0;
 
     bool framebufferResized = false;
+    bool rebuildSwapChain = false;
     bool ortho = false;
 
     ImGUI imgui;
@@ -73,27 +74,18 @@ private:
 
     glm::vec2 mousePos;
 
-    struct CameraUBO {
-        alignas(16) glm::mat4 projection;
-        alignas(16) glm::mat4 view;
-        alignas(16) glm::vec3 camPos;
-    }cameraUBO;
+    //struct CameraUBO {
+    //    alignas(16) glm::mat4 projection;
+    //    alignas(16) glm::mat4 view;
+    //    alignas(16) glm::vec3 camPos;
+    //}cameraUBO;
 
-    struct ModelUBO {
-        alignas(16) glm::mat4 model;
-    };
+    //struct LightUBO {
+    //    alignas(16) glm::mat4 depthBiasMVP;
+    //    alignas(16) glm::vec3 lightPos;
+    //}lightUBO;
 
-    struct LightUBO {
-        alignas(16) glm::mat4 depthBiasMVP;
-        alignas(16) glm::vec3 lightPos;
-    }lightUBO;
-
-
-    std::vector<VkDescriptorSet> cameraDescSets;
-    std::vector<VkDescriptorSet> lightDescSets;
-
-    std::vector<Buffer> lightBuffers;
-    std::vector<Buffer> cameraBuffers;
+    bool commandBuffersReady = false;
 
 
     int counted = 100;
@@ -115,21 +107,8 @@ private:
 
     VkDescriptorSet descTest;
 
-    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    uint32_t imageIndex;
 
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
-    static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
-
-    static void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
-
-    static void cursorCallback(GLFWwindow* window, double xOffset, double yOffset);
-
-    void initWindow();
-
-    void initVulkan();
-
-    void mainLoop();
 
     void cleanupSwapChain();
 
@@ -137,37 +116,13 @@ private:
 
     void recreateSwapChain();
 
-    void createInstance();
-
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-    void setupDebugMessenger();
-
-    void createSurface();
-
-    void loadResources();
-
-    void createModelBuffers();
-
-    void createUniformBuffers();
-
-    void createDescriptorSets();
 
     void AllocateCommandBuffers();
 
-    void buildCommandBuffers();
-    void buildCommandBuffer(uint32_t i);
-    void buildCommandBuffersImGui();
+    void buildCommandBuffers(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs);
+
+    void rebuildCommandBuffer(uint32_t i, Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs);
 
     void createSyncObjects();
 
-    void createCamera();
-
-    void updateUniformBuffer(uint32_t currentImage);
-
-    void drawFrame();
-
-    std::vector<const char*> getRequiredExtensions();
-
-    bool checkValidationLayerSupport();
 };

@@ -2,6 +2,8 @@
 #include "Constants.h"
 
 #include "Allocator.h"
+#include "DescriptorSetManager.h"
+#include "Descriptor.h"
 
 class DeviceContext
 {
@@ -33,9 +35,17 @@ public:
 
 	VkBool32 formatIsFilterable(VkFormat format, VkImageTiling tiling);
 
+	void getDescriptors(Descriptor& descriptor, const DescriptorSetRequest& request);
+
+
 	QueueFamilyIndices indices;
 
 	Allocator allocator;
+
+	uint32_t imageCount;
+
+	DescriptorSetManager dsm;
+
 
 private:
 	void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);

@@ -80,16 +80,32 @@ void ShadowMap::Init(DescriptorSetManager* dsManager, const PipelineInfo& pipeli
 	DescriptorSetRequest request;
 	request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
 
-	dsm->getDescriptorSets(descriptorSets, request);
+	for (size_t i = 0; i < devices->imageCount; i++) {
 
-	for (size_t i = 0; i < dsm->imageCount; i++) {
-
-		std::vector<VkWriteDescriptorSet> descriptorWrites{
-		Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &depthTexture.descriptorInfo)
-		};
-
-		vkUpdateDescriptorSets(devices->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		request.data.push_back(&depthTexture.descriptorInfo);
 	}
+
+	devices->getDescriptors(descriptor, request);
+
+	//DescriptorSetRequest request;
+	//request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
+
+	//for (size_t i = 0; i < devices->imageCount; i++) {
+
+	//	request.data.push_back(&depthTexture.descriptorInfo);
+	//}
+	//dsm->createDescriptorSets(&descriptorSets, request);
+
+	//dsm->getDescriptorSets(descriptorSets, request);
+
+	//for (size_t i = 0; i < dsm->imageCount; i++) {
+
+	//	std::vector<VkWriteDescriptorSet> descriptorWrites{
+	//	Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &depthTexture.descriptorInfo)
+	//	};
+
+	//	vkUpdateDescriptorSets(devices->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	//}
 
 }
 
@@ -131,19 +147,25 @@ void ShadowMap::reinit(bool complete)
 		frameBuffer.createFramebuffer(attachments, extent);
 	}
 
-	//DescriptorSetRequest request;
-	//request.requests = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
+	DescriptorSetRequest request;
+	request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
 
-	//dsm->getDescriptorSets(descriptorSets, request);
+	for (size_t i = 0; i < devices->imageCount; i++) {
 
-	for (size_t i = 0; i < dsm->imageCount; i++) {
-
-		std::vector<VkWriteDescriptorSet> descriptorWrites{
-		Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &depthTexture.descriptorInfo)
-		};
-
-		vkUpdateDescriptorSets(devices->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		request.data.push_back(&depthTexture.descriptorInfo);
 	}
+
+	devices->dsm.update(descriptor, request);
+	//descriptor.reinitialise(request);
+
+	//for (size_t i = 0; i < devices->imageCount; i++) {
+
+	//	std::vector<VkWriteDescriptorSet> descriptorWrites{
+	//	Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &depthTexture.descriptorInfo)
+	//	};
+
+	//	vkUpdateDescriptorSets(devices->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	//}
 
 }
 

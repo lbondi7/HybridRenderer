@@ -2,6 +2,7 @@
 #include "Constants.h"
 #include "DescriptorSetLayout.h"
 #include "DescriptorPool.h"
+#include "Descriptor.h"
 
 class DescriptorSetManager
 {
@@ -9,7 +10,7 @@ public:
 	DescriptorSetManager() = default;
 	~DescriptorSetManager();
 
-	void init(DeviceContext* _devices, uint32_t _imageCount);
+	void init(VkDevice _logicalDevice);
 
 	void destroy(bool complete = true);
 
@@ -19,7 +20,9 @@ public:
 
 	void getDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request);
 
-	void createDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request);
+	void getDescriptor(Descriptor& descriptor, const DescriptorSetRequest& request);
+
+	void createDescriptorSets(std::vector<VkDescriptorSet>* sets, const DescriptorSetRequest& request);
 
 	VkDescriptorSet getDescriptorSet(const DescriptorSetRequest& request);
 
@@ -27,6 +30,9 @@ public:
 
 	void freeDescriptorSet(VkDescriptorSet* descriptorSet);
 
+	void getDescriptorSets(std::vector<DescriptorSet*>* descriptorSets, const DescriptorSetRequest& request);
+
+	void update(Descriptor& descriptor, const DescriptorSetRequest& request);
 
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
 
@@ -34,8 +40,8 @@ public:
 
 	uint32_t imageCount = 0;
 
-	DeviceContext* devices = nullptr;
+	VkDevice logicalDevice;
+
 private:
 
 };
-

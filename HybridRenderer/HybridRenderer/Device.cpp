@@ -1,4 +1,6 @@
 #include "Device.h"
+#include "ValidationLayers.h"
+
 #include "Utility.h"
 
 #include <set>
@@ -12,6 +14,8 @@ void DeviceContext::SetupDevices(VkInstance instance, VkSurfaceKHR surface)
 
     SetupAllocator();
 
+    dsm.init(logicalDevice);
+
     createCommandPool(surface);
 }
 
@@ -24,6 +28,7 @@ void DeviceContext::SetupAllocator()
 void DeviceContext::Destroy()
 {
     allocator.destroy();
+    dsm.destroy();
     vkDestroyDevice(logicalDevice, nullptr);
 }
 
@@ -107,6 +112,7 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
 
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -119,9 +125,8 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    if (enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
+    if (ValidationLayers::enabled()) {
+        ValidationLayers::addValidationLayers(&createInfo);
     }
     else {
         createInfo.enabledLayerCount = 0;
@@ -187,4 +192,9 @@ VkBool32 DeviceContext::formatIsFilterable(VkFormat format, VkImageTiling tiling
         return formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
 
     return false;
+}
+
+void DeviceContext::getDescriptors(Descriptor& descriptor, const DescriptorSetRequest& request)
+{
+    dsm.getDescriptor(descriptor, request);
 }

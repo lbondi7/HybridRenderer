@@ -5,6 +5,7 @@
 #include "FrameBuffer.h"
 #include "Pipeline.h"
 #include "CubemapTexture.h"
+#include "Descriptor.h"
 
 class ShadowMap
 {
@@ -38,6 +39,8 @@ public:
 	std::vector<VkDescriptorSet> descriptorSets;
 
 	DescriptorSetManager* dsm;
+
+	Descriptor descriptor;
 
 };
 

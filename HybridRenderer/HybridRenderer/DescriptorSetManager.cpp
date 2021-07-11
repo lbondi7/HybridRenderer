@@ -1,13 +1,13 @@
 #include "DescriptorSetManager.h"
+#include "Initilizers.h"
 
 DescriptorSetManager::~DescriptorSetManager()
 {
 }
 
-void DescriptorSetManager::init(DeviceContext* _devices, uint32_t _imageCount)
+void DescriptorSetManager::init(VkDevice _logicalDevice)
 {
-	devices = _devices;
-	imageCount = _imageCount;
+	logicalDevice = _logicalDevice;
 }
 
 void DescriptorSetManager::destroy(bool complete)
@@ -35,7 +35,7 @@ void DescriptorSetManager::addLayout(uint32_t set, const std::vector<VkDescripto
 
 	layouts[layouts.size() - 1]->bindings = bindings;
 	layouts[layouts.size() - 1]->set = set;
-	layouts[layouts.size() - 1]->init(devices);
+	layouts[layouts.size() - 1]->init(logicalDevice);
 }
 
 DescriptorSetLayout* DescriptorSetManager::addLayoutAndReturn(uint32_t set, const std::vector<VkDescriptorSetLayoutBinding>& bindings, bool newLayout)
@@ -53,7 +53,7 @@ DescriptorSetLayout* DescriptorSetManager::addLayoutAndReturn(uint32_t set, cons
 
 	layouts[layouts.size() - 1]->bindings = bindings;
 	layouts[layouts.size() - 1]->set = set;
-	layouts[layouts.size() - 1]->init(devices);
+	layouts[layouts.size() - 1]->init(logicalDevice);
 
 	return layouts[layouts.size() - 1].get();
 }
@@ -77,7 +77,7 @@ void DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets,
 	}
 
 	auto& pool = pools.emplace_back();
-	pool.init(devices, imageCount, request);
+	pool.init(logicalDevice, request);
 	if (pool.isAvailable(request))
 	{
 		for (auto& layout : layouts)
@@ -91,7 +91,42 @@ void DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets,
 	}
 }
 
-void DescriptorSetManager::createDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request)
+void DescriptorSetManager::getDescriptor(Descriptor& descriptor, const DescriptorSetRequest& request)
+{
+
+	for (auto& pool : pools)
+	{
+		if (pool.isAvailable2(request))
+		{
+			for (auto& layout : layouts)
+			{
+				if (layout->matches(request))
+				{
+					pool.allocate(descriptor, layout->layout, request);
+					update(descriptor, request);
+					return;
+				}
+			}
+		}
+	}
+
+	auto& pool = pools.emplace_back();
+	pool.init(logicalDevice, request);
+	if (pool.isAvailable2(request))
+	{
+		for (auto& layout : layouts)
+		{
+			if (layout->matches(request))
+			{
+				pool.allocate(descriptor, layout->layout, request);
+				update(descriptor, request);
+				return;
+			}
+		}
+	}
+}
+
+void DescriptorSetManager::createDescriptorSets(std::vector<VkDescriptorSet>* sets, const DescriptorSetRequest& request)
 {
 	for (auto& pool : pools)
 	{
@@ -109,7 +144,7 @@ void DescriptorSetManager::createDescriptorSets(std::vector<VkDescriptorSet>& se
 	}
 
 	auto& pool = pools.emplace_back();
-	pool.init(devices, imageCount, request);
+	pool.init(logicalDevice, request);
 	if (pool.isAvailable(request))
 	{
 		for (auto& layout : layouts)
@@ -142,7 +177,7 @@ VkDescriptorSet DescriptorSetManager::getDescriptorSet(const DescriptorSetReques
 	}
 
 	auto& pool = pools.emplace_back();
-	pool.init(devices, imageCount, request);
+	pool.init(logicalDevice, request);
 	if (pool.isAvailable(request))
 	{
 		for (auto& layout : layouts)
@@ -174,7 +209,7 @@ void DescriptorSetManager::getTempDescriptorSet(VkDescriptorSet* descriptorSet, 
 	}
 
 	auto& pool = pools.emplace_back();
-	pool.init(devices, imageCount, request, temp);
+	pool.init(logicalDevice, request, temp);
 	for (auto& layout : layouts)
 	{
 		if (layout->matches(request))
@@ -193,5 +228,65 @@ void DescriptorSetManager::freeDescriptorSet(VkDescriptorSet* descriptorSet)
 		{
 			pool.freeDescriptorSet(descriptorSet);
 		}
+	}
+}
+
+void DescriptorSetManager::getDescriptorSets(std::vector<DescriptorSet*>* descriptorSets, const DescriptorSetRequest& request)
+{
+	for (auto pool : pools)
+	{
+		if (pool.isAvailable2(request))
+		{
+			for (auto& layout : layouts)
+			{
+				if (layout->matches(request))
+				{
+					pool.allocateAndUpdateSets(descriptorSets, layout->layout, request);
+					return;
+				}
+			}
+		}
+	}
+
+	auto& pool = pools.emplace_back();
+	pool.init(logicalDevice, request);
+	for (auto& layout : layouts)
+	{
+		if (layout->matches(request))
+		{
+			pool.allocateAndUpdateSets(descriptorSets, layout->layout, request);
+			return;
+		}
+	}
+
+}
+
+void DescriptorSetManager::update(Descriptor& descriptor, const DescriptorSetRequest& request)
+{
+
+	auto writeCount = static_cast<uint32_t>(request.data.size()) / 3;
+
+	for (size_t i = 0; i < 3; i++) {
+
+		std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+		for (size_t j = 0; j < writeCount; ++j) {
+			bool isImage = false;
+
+			auto& descriptorInfo = request.ids[j];
+			isImage =
+				descriptorInfo.second == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+				descriptorInfo.second == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+				descriptorInfo.second == VK_DESCRIPTOR_TYPE_SAMPLER ||
+				descriptorInfo.second == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+			if (isImage)
+				descriptorWrites.push_back(Initialisers::writeDescriptorSet(descriptor.sets[i], descriptorInfo.first, descriptorInfo.second, (const VkDescriptorImageInfo*)request.data[i * writeCount + j]));
+			else
+				descriptorWrites.push_back(Initialisers::writeDescriptorSet(descriptor.sets[i], descriptorInfo.first, descriptorInfo.second, (const VkDescriptorBufferInfo*)request.data[i * writeCount + j]));
+		}
+
+		vkUpdateDescriptorSets(logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
 	}
 }

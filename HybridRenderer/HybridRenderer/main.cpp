@@ -1,9 +1,9 @@
 #pragma once
 
-#include "RasterRenderer.h"
+#include "HybridEngine.h"
 
 int main() {
-    RasterRenderer app;
+    HybridEngine app;
 
     try {
         app.run();

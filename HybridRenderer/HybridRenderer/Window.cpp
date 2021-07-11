@@ -7,18 +7,14 @@ Window::~Window()
 void Window::init(void* pointer)
 {
     glfwInit();
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
     glfwWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(glfwWindow, pointer);
 }
 
 void Window::destroy()
 {
-
     glfwDestroyWindow(glfwWindow);
-
     glfwTerminate();
 }
 

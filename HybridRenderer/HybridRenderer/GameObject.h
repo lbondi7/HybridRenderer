@@ -3,9 +3,14 @@
 #include "Transform.h"
 #include "Mesh.h"
 #include "TextureSampler.h"
+#include "Descriptor.h"
 
 #include <vector>
 
+
+struct ModelUBO {
+	alignas(16) glm::mat4 model;
+};
 
 
 class GameObject
@@ -14,7 +19,7 @@ public:
 	GameObject() = default;
 	~GameObject();
 
-	void Init();
+	void Init(DeviceContext* deviceContext);
 	void Update();
 	void Destroy();
 
@@ -31,6 +36,10 @@ public:
 
 	bool shadowReceiver = true;
 	bool shadowCaster = true;
+
+	Descriptor descriptor;
+	Descriptor offscreenDescriptor;
+
 
 private:
 	Transform prevTransform;

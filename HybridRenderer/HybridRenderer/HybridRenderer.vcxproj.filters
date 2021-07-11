@@ -28,40 +28,55 @@
     <Filter Include="Header Files\Vulkan\RenderPass">
       <UniqueIdentifier>{935a8b38-5335-4832-8ef1-60bc77b9fe63}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Vulkan\Core">
+      <UniqueIdentifier>{91614422-4697-4ed8-8a2a-39ed2db7fa45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vulkan\Pipeline">
+      <UniqueIdentifier>{6d1342a7-fc63-4e6f-8cc3-bcd5cb2459f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vulkan\Descriptors">
+      <UniqueIdentifier>{84ae0058-8fe4-49ab-b29b-c62103c2a0e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vulkan\Buffer">
+      <UniqueIdentifier>{50f85554-b4ba-486a-9cb4-4ff2068cbdb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vulkan\SwapChain">
+      <UniqueIdentifier>{785bc715-91f9-4be9-8a8b-5f4d1bbefdcf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vulkan\Shader">
+      <UniqueIdentifier>{8305744d-d0be-41b5-bb4f-e49fba61378c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\Core">
+      <UniqueIdentifier>{09d5959c-a25c-4c7a-b7be-e8a2af0229aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\Buffer">
+      <UniqueIdentifier>{5140b44b-7af5-4065-aabe-e77100bbaff6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\RenderPass">
+      <UniqueIdentifier>{a5b8a0d9-2837-4936-b67c-3e14cd06293a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\SwapChain">
+      <UniqueIdentifier>{3e0fa448-5754-43c6-a014-f19ca852f6f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\Pipeline">
+      <UniqueIdentifier>{964e9ac9-17a1-4a8e-877f-64b9bf162cf0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\Descriptors">
+      <UniqueIdentifier>{4cf00996-220b-4504-9f6c-174f1912cef5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\Texture">
+      <UniqueIdentifier>{d48df0b4-184e-4140-9837-ca3627e483b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vulkan\Shader">
+      <UniqueIdentifier>{95af11ce-9d9c-4d30-ac6e-01a735d426f9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Buffer.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Utility.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Device.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="FrameBuffer.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Pipeline.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPass.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="SwapChain.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Vertex.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Initializers.cpp">
-      <Filter>Source Files\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
@@ -72,29 +87,8 @@
     <ClCompile Include="Resources.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Image.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ShadowMap.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DepthRenderPass.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="ColourRenderPass.cpp">
-      <Filter>Source Files\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="DepthTexture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DescriptorSetManager.cpp">
-      <Filter>Source Files\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="DebugLogger.cpp">
       <Filter>Source Files</Filter>
@@ -102,16 +96,7 @@
     <ClCompile Include="Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DescriptorPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DescriptorSetLayout.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RasterRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Allocator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ImGUI_.cpp">
@@ -119,12 +104,6 @@
     </ClCompile>
     <ClCompile Include="ImGUIWidgets.cpp">
       <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="CubemapTexture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureSampler.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui.cpp">
       <Filter>imgui</Filter>
@@ -144,37 +123,82 @@
     <ClCompile Include="imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="HybridEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Buffer.cpp">
+      <Filter>Source Files\Vulkan\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="ColourRenderPass.cpp">
+      <Filter>Source Files\Vulkan\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="DepthRenderPass.cpp">
+      <Filter>Source Files\Vulkan\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPass.cpp">
+      <Filter>Source Files\Vulkan\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="SwapChain.cpp">
+      <Filter>Source Files\Vulkan\SwapChain</Filter>
+    </ClCompile>
+    <ClCompile Include="Pipeline.cpp">
+      <Filter>Source Files\Vulkan\Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorPool.cpp">
+      <Filter>Source Files\Vulkan\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorSetLayout.cpp">
+      <Filter>Source Files\Vulkan\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorSetManager.cpp">
+      <Filter>Source Files\Vulkan\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="Allocator.cpp">
+      <Filter>Source Files\Vulkan\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanCore.cpp">
+      <Filter>Source Files\Vulkan\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Initializers.cpp">
+      <Filter>Source Files\Vulkan\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility.cpp">
+      <Filter>Source Files\Vulkan\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="ValidationLayers.cpp">
+      <Filter>Source Files\Vulkan\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="CubemapTexture.cpp">
+      <Filter>Source Files\Vulkan\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameBuffer.cpp">
+      <Filter>Source Files\Vulkan\SwapChain</Filter>
+    </ClCompile>
+    <ClCompile Include="Device.cpp">
+      <Filter>Source Files\Vulkan\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files\Vulkan\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureSampler.cpp">
+      <Filter>Source Files\Vulkan\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="DepthTexture.cpp">
+      <Filter>Source Files\Vulkan\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Source Files\Vulkan\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorSet.cpp">
+      <Filter>Source Files\Vulkan\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="Descriptor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Buffer.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Utility.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Constants.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Device.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameBuffer.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Pipeline.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="SwapChain.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Vertex.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Initilizers.h">
-      <Filter>Header Files\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
@@ -188,22 +212,7 @@
     <ClInclude Include="Resources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
-      <Filter>Header Files\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ShadowMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DepthTexture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DescriptorSetManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DebugLogger.h">
@@ -212,16 +221,7 @@
     <ClInclude Include="Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DescriptorPool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DescriptorSetLayout.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RasterRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Allocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ImGUI_.h">
@@ -229,12 +229,6 @@
     </ClInclude>
     <ClInclude Include="ImGUIWidgets.h">
       <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="CubemapTexture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureSampler.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imconfig.h">
       <Filter>imgui</Filter>
@@ -268,6 +262,78 @@
     </ClInclude>
     <ClInclude Include="RenderPass.h">
       <Filter>Header Files\Vulkan\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="HybridEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanCore.h">
+      <Filter>Header Files\Vulkan\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Device.h">
+      <Filter>Header Files\Vulkan\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>Header Files\Vulkan\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Initilizers.h">
+      <Filter>Header Files\Vulkan\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Header Files\Vulkan\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorPool.h">
+      <Filter>Header Files\Vulkan\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorSetManager.h">
+      <Filter>Header Files\Vulkan\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorSetLayout.h">
+      <Filter>Header Files\Vulkan\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="DepthTexture.h">
+      <Filter>Header Files\Vulkan\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="CubemapTexture.h">
+      <Filter>Header Files\Vulkan\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureSampler.h">
+      <Filter>Header Files\Vulkan\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Pipeline.h">
+      <Filter>Header Files\Vulkan\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files\Vulkan\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Allocator.h">
+      <Filter>Header Files\Vulkan\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Header Files\Vulkan\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="SwapChain.h">
+      <Filter>Header Files\Vulkan\SwapChain</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameBuffer.h">
+      <Filter>Header Files\Vulkan\SwapChain</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ValidationLayers.h">
+      <Filter>Header Files\Vulkan\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Header Files\Vulkan\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorSet.h">
+      <Filter>Header Files\Vulkan\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorPoolData.h">
+      <Filter>Header Files\Vulkan\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptor.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

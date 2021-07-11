@@ -24,23 +24,11 @@ const std::string MODEL_PATH = "models/";
 const std::string TEXTURE_PATH = "textures/texture.jpg";
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-
-const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation",
-    "VK_LAYER_LUNARG_monitor"
-};
  
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME
 };
-
-#ifdef NDEBUG
-const bool enableValidationLayers = true;
-#else
-const bool enableValidationLayers = true;
-#endif
-
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -90,14 +78,8 @@ static std::vector<char> readNormalFile(const std::string& filename) {
         buffer.push_back(element);
     }
 
-    //file.seekg(0);
-    //file.read(buffer.data(), fileSize);
-
-    //file.close();
-
     return buffer;
 }
-
 
 enum VertexAttributes {
     POSITION,
@@ -105,7 +87,6 @@ enum VertexAttributes {
     V_COLOUR,
     NORMAL
 };
-
 
 struct DescriptorSetRequest {
 

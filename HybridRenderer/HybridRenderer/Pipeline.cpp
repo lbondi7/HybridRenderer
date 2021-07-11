@@ -55,10 +55,11 @@ void Pipeline::createDescriptorSetLayouts() {
     }
 
     layoutCount += 1;
+    descriptorSetLayouts.reserve(layoutCount);
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-
     for (size_t i = 0; i < layoutCount; i++)
     {
+        bindings.reserve(descriptors.size());
         for (auto& descriptor : descriptors)
         {
             if (descriptor.set != i)
@@ -69,47 +70,10 @@ void Pipeline::createDescriptorSetLayouts() {
 
         }
 
-        descriptorSetLayouts.push_back(descriptorSetManager->addLayoutAndReturn(i, bindings));
+        descriptorSetLayouts.push_back(devices->dsm.addLayoutAndReturn(i, bindings));
 
         bindings.clear();
     }
-
-
-    //descriptorSetLayouts.reserve(layoutCount);
-    //descriptorSetLayouts.resize(layoutCount);
-
-    //for (size_t i = 0; i < layoutCount; i++)
-    //{
-    //    descriptorSetLayouts[i].set = i;
-    //    for (auto& descriptor : descriptors)
-    //    {
-    //        if (descriptor.set != i)
-    //            continue;
-
-    //        descriptorSetLayouts[i].bindings.emplace_back(
-    //            Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
-
-    //    }
-    //    //if(i == 0)
-    //    //else
-    //    descriptorSetLayouts[i].init(devices);
-    //}
-
-    //for (size_t i = 0; i < setCount; i++)
-    //{
-    //    std::vector<VkDescriptorSetLayoutBinding> bind;
-    //    for (auto& descriptor : descriptors)
-    //    {
-    //        if (descriptor.set != i)
-    //            continue;
-    //        bind.emplace_back(Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
-    //    }
-    //    VkDescriptorSetLayoutCreateInfo layoutInfo =
-    //        Initialisers::descriptorSetLayoutCreateInfo(bind.data(), static_cast<uint32_t>(bind.size()));
-    //    if (vkCreateDescriptorSetLayout(devices->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayouts[i]) != VK_SUCCESS) {
-    //        throw std::runtime_error("failed to create descriptor set layout!");
-    //    }
-    //}
 }
 
 VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {
@@ -128,12 +92,8 @@ VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code
 
 void Pipeline::createGraphicsPipeline() {
 
-
-    std::vector<VkDescriptorSetLayout> layouts{};
-    //for (auto& layout : descriptorSetLayouts)
-    //{
-    //    layouts.emplace_back(layout.layout);
-    //}
+    std::vector<VkDescriptorSetLayout> layouts;
+    layouts.reserve(layoutCount);
 
     for (size_t i = 0; i < layoutCount; ++i)
     {
@@ -204,36 +164,6 @@ void Pipeline::createGraphicsPipeline() {
         shaderStages.emplace_back(shader->createInfo());
     }
 
-    //if (pipelineInfo.specializationInfo == 1)
-    //{
-    //    uint32_t enablePCF = 0;
-    //    VkSpecializationMapEntry specializationMapEntry{};
-    //    specializationMapEntry.constantID = 0;
-    //    specializationMapEntry.offset = 0;
-    //    specializationMapEntry.size = sizeof(uint32_t);
-    //    //VkSpecializationMapEntry specializationMapEntry = Initialisers::specializationMapEntry(0, 0, sizeof(uint32_t));
-    //    VkSpecializationMapEntry maps[1]{ specializationMapEntry };
-    //    VkSpecializationInfo specializationInfo{};
-    //    specializationInfo.mapEntryCount = 0;
-    //    specializationInfo.pMapEntries = nullptr;
-    //    specializationInfo.dataSize = sizeof(uint32_t);
-    //    specializationInfo.pData = &enablePCF;
-    //    shaderStages[0].pSpecializationInfo = &specializationInfo;
-    //    shaderStages[1].pSpecializationInfo = &specializationInfo;
-    //}
-
-    //std::cout << shaderStages[0].pSpecializationInfo->mapEntryCount << std::endl;
-    //    // VkSpecializationInfo specializationInfo = Initialisers::specializationInfo(1, &specializationMapEntry, sizeof(uint32_t), &enablePCF);
-
-    //if(shaderStages.size() > 1)
-    //{
-    //    //shaderStages[1].pSpecializationInfo = &specializationInfo;
-
-
-    //    if (pipelineInfo.specializationInfo == 0)
-    //        shaderStages[1].pSpecializationInfo = nullptr;
-    //}
-
     pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineCreateInfo.pStages = shaderStages.data();
 
@@ -243,6 +173,8 @@ void Pipeline::createGraphicsPipeline() {
     pipelineCreateInfo.pDynamicState = &dynamicState;
 
     float shu = 0.0f;
+
+    VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterStateCI{};
 
     if (pipelineInfo.conservativeRasterisation) {
 
@@ -254,7 +186,6 @@ void Pipeline::createGraphicsPipeline() {
         deviceProps2.pNext = &conservativeRasterProps;
         vkGetPhysicalDeviceProperties2(devices->physicalDevice, &deviceProps2);
 
-        VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterStateCI{};
         conservativeRasterStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
         conservativeRasterStateCI.conservativeRasterizationMode = VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
         conservativeRasterStateCI.extraPrimitiveOverestimationSize = conservativeRasterProps.maxExtraPrimitiveOverestimationSize;
@@ -267,18 +198,6 @@ void Pipeline::createGraphicsPipeline() {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 }
-
-
-//VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
-//    VkShaderModuleCreateInfo createInfo = Initialisers::shaderModuleCreateInfo(reinterpret_cast<const uint32_t*>(code.data()), code.size());
-//
-//    VkShaderModule shaderModule;
-//    if (vkCreateShaderModule(devices->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-//        throw std::runtime_error("failed to create shader module!");
-//    }
-//
-//    return shaderModule;
-//}
 
 void Pipeline::Destroy(bool complete) {
     vkDestroyPipeline(devices->logicalDevice, vkPipeline, nullptr);

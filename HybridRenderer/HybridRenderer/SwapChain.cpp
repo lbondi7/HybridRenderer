@@ -91,6 +91,7 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
     }
     imageFormat = surfaceFormat.format;
     extent = _extent;
+    devices->imageCount = imageCount;
 }
 
 

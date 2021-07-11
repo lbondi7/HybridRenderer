@@ -2,6 +2,16 @@
 
 #include "Constants.h"
 #include "Transform.h"
+#include "Buffer.h"
+
+#include "Descriptor.h"
+
+
+struct CameraUBO {
+	alignas(16) glm::mat4 projection;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::vec3 camPos;
+};
 
 class Camera
 {
@@ -34,7 +44,7 @@ public:
 
 	bool lookAtPlace = false;
 
-	void init(const VkExtent2D& _extent);
+	void init(DeviceContext* deviceContext, const VkExtent2D& _extent);
 
 	void update(float windowWidth, float windowHeight);
 
@@ -43,6 +53,13 @@ public:
 	bool valuesUpdated(const VkExtent2D& _extent);
 
 	void setViewport(VkCommandBuffer cmdBuffer);
+
+	std::vector<Buffer> buffers;
+
+	Descriptor descriptor;
+
+	std::vector<VkDescriptorSet> cameraDescSets;
+
 
 private:
 	bool valuesUpdated(float windowWidth, float windowHeight);

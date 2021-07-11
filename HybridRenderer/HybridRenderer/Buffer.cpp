@@ -80,31 +80,6 @@ void Buffer::Create2(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageF
 
 void Buffer::createBuffer2(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
 
-    //VkBufferCreateInfo bufferInfo = Initialisers::bufferCreateInfo(size, usage);
-    //bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    //bufferInfo.size = size;
-    //bufferInfo.usage = usage;
-    //bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    //if (vkCreateBuffer(devices->logicalDevice, &bufferInfo, nullptr, &vkBuffer) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to create buffer!");
-    //}
-
-    //VkMemoryRequirements memRequirements;
-    //vkGetBufferMemoryRequirements(devices->logicalDevice, vkBuffer, &memRequirements);
-
-    //VkMemoryAllocateInfo allocInfo = Initialisers::memoryAllocateInfo(memRequirements.size,
-    //    Utility::findMemoryType(memRequirements.memoryTypeBits, devices->physicalDevice, properties));
-    ////allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    ////allocInfo.allocationSize = memRequirements.size;
-    ////allocInfo.memoryTypeIndex = Utility::findMemoryType(memRequirements.memoryTypeBits, devices->physicalDevice, properties);
-
-    //if (vkAllocateMemory(devices->logicalDevice, &allocInfo, nullptr, &vkMemory) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to allocate buffer memory!");
-    //}
-
-    //vkBindBufferMemory(devices->logicalDevice, vkBuffer, vkMemory, 0);
-
     devices->allocator.allocateBuffer(bufferInfo, size, usage, properties);
 
     descriptorInfo = Initialisers::descriptorBufferInfo(bufferInfo.buffer, bufferInfo.size, bufferInfo.offset);

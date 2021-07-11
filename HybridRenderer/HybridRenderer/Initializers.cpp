@@ -580,7 +580,7 @@ namespace Initialisers {
 		dependency.dstStageMask = dstStageMask;
 		dependency.srcAccessMask = srcAccessMask;
 		dependency.dstAccessMask = dstAccessMask;
-		dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		//dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 		return dependency;
 	}
 

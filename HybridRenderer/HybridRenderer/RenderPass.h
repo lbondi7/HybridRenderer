@@ -31,9 +31,9 @@ public:
 
 	RenderPassInfo info;
 
+	DeviceContext* devices = nullptr;
 protected:
 
-	DeviceContext* devices = nullptr;
 	SwapChain* swapChain;
 
 	//void createRenderPass();

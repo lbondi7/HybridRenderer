@@ -60,15 +60,53 @@ void ImGUI::create(GLFWwindow * window, VkInstance instance, VkSurfaceKHR surfac
 	auto err = vkCreateDescriptorPool(devices->logicalDevice, &pool_info, nullptr, &descriptorPool);
 
 	RenderPassInfo info{};
-	info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 	info.dependencies.emplace_back(Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-		0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT));
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT));
 
 	renderPass.Create(devices, info);
+
+	//VkAttachmentDescription attachment = {};
+	//attachment.format = swapChain->imageFormat;
+	//attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	//attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	//attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	//attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	//attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	//attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	//attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	//VkAttachmentReference color_attachment = {};
+	//color_attachment.attachment = 0;
+	//color_attachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	//VkSubpassDescription subpass = {};
+	//subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	//subpass.colorAttachmentCount = 1;
+	//subpass.pColorAttachments = &color_attachment;
+	//VkSubpassDependency dependency = {};
+	//dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	//dependency.dstSubpass = 0;
+	//dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	//dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	//dependency.srcAccessMask = 0;
+	//dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	//VkRenderPassCreateInfo cinfo = {};
+	//cinfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	//cinfo.attachmentCount = 1;
+	//cinfo.pAttachments = &attachment;
+	//cinfo.subpassCount = 1;
+	//cinfo.pSubpasses = &subpass;
+	//cinfo.dependencyCount = 1;
+	//cinfo.pDependencies = &dependency;
+
+	//if (vkCreateRenderPass(devices->logicalDevice, &cinfo, nullptr, &renderPass.vkRenderPass) != VK_SUCCESS) {
+	//	throw std::runtime_error("failed to create render pass!");
+	//}
+
+	//renderPass.devices = devices;
 
 	reinit();
 
