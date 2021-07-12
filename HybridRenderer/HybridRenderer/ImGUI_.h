@@ -9,14 +9,13 @@
 
 #include "imgui/imgui.h"
 
-#include "imgui/imgui_impl_vulkan.h"
-#include "imgui/imgui_impl_glfw.h"
-
-
 
 class ImGUI
 {
 public:
+
+	static bool enabled;
+
 
 	ImGUI() = default;
 	~ImGUI();
@@ -31,13 +30,9 @@ public:
 
 	//void Draw(VkCommandBuffer commandBuffer, size_t cmdBufferIndex);
 
-	void newFrame();
-
 	void startFrame();
 
 	void NewWindow(const char* name, bool* close);
-
-	void NewImage(VkSampler sampler, VkImageView view, VkImageLayout layout);
 
 	void endFrame();
 
@@ -45,13 +40,12 @@ public:
 
 	void destroy(bool complete = true);
 
-	bool enabled = false;
-
 	bool updated = true;
 
 	bool drawn = false;
 
 	void update(VkExtent2D extent);
+	void buildCommandBuffers(uint32_t i, const VkExtent2D& extent);
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions();
 
@@ -65,35 +59,9 @@ public:
 	bool rightMouse = false;
 	float mouseWheel = 0.0f;
 
-	DescriptorSetManager* dsm;
-
-	//Buffer vertexBuffer;
-	//Buffer indexBuffer;
-	//int32_t vertexCount = 0;
-	//int32_t indexCount = 0;
-	//Pipeline dpipeline;
-	//TextureSampler fontImage;
-	//VkPipelineCache pipelineCache;
-	//VkPipelineLayout pipelineLayout;
-	//VkPipeline pipeline;
-	//VkDescriptorPool descriptorPool;
-	//VkDescriptorSetLayout descriptorSetLayout;
-	//std::vector<VkDescriptorSet> descriptorSets;
 	DeviceContext* devices;
 
-	PipelineInfo pipelineInfo;
-
-	PushConstBlock pushConstBlock;
-
-	bool renderStuff = false;
-
-	//VkDescriptorPool descriptorPool;
-	//VkRenderPass renderPass;
-	//VkCommandPool commandPool;
-	//std::vector<VkCommandBuffer>commandBuffers;
-	//std::vector<VkFramebuffer> framebuffers;
-	//ImGui_ImplVulkanH_Window vw;
-
+	bool startedFrame = false;
 
 	RenderPass renderPass;
 	FrameBuffer frameBuffer;
@@ -107,5 +75,6 @@ public:
 
 	SwapChain* swapChain = nullptr;
 
-};
+	VkClearValue clearValues;
 
+};

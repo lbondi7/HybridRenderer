@@ -33,7 +33,7 @@ public:
 
 	void Map2(const void* src_data);
 
-	void Flush(VkDeviceSize size = VK_NULL_HANDLE, VkDeviceSize offset = 0);
+	void Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
 	VkBuffer vkBuffer;
 	VkDeviceMemory memory;

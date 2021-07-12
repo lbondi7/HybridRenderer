@@ -10,6 +10,7 @@ void Window::init(void* pointer)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(glfwWindow, pointer);
+    glfwGetFramebufferSize(glfwWindow, &width, &height);
 }
 
 void Window::destroy()
@@ -45,7 +46,6 @@ void Window::setupCursorCallback(void* cursorCallback)
 
 void Window::resize()
 {
-    int width = 0, height = 0;
     glfwGetFramebufferSize(glfwWindow, &width, &height);
     while (width == 0 || height == 0) {
         glfwGetFramebufferSize(glfwWindow, &width, &height);

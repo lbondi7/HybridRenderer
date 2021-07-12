@@ -4,6 +4,7 @@
 #include "Vertex.h"
 #include "Shader.h"
 #include "Utility.h"
+#include "ImGUI_.h"
 
 ShadowMap::~ShadowMap()
 {
@@ -26,11 +27,34 @@ void ShadowMap::Create(DeviceContext* _devices, SwapChain* _swapChain)
 	swapChain = _swapChain;
 }
 
-void ShadowMap::Init(DescriptorSetManager* dsManager, const PipelineInfo& pipelineInfo)
+void ShadowMap::update() {
+
+
+	if (ImGUI::enabled && widget.enabled) {
+		if (widget.NewWindow("Shadow Map")) {
+
+			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
+				vkQueueWaitIdle(devices->presentQueue);
+				reinit();
+			}
+			if (widget.Slider("Resolution", &resolution, 1, 2048))
+			{
+				vkQueueWaitIdle(devices->presentQueue);
+				reinit();
+
+			}
+			widget.Image(0, { 300, 300 });
+		}
+		widget.EndWindow();
+	}
+
+
+}
+
+
+void ShadowMap::Init(const PipelineInfo& pipelineInfo)
 {
 	//render pass
-
-	dsm = dsManager;
 	RenderPassInfo info{};
 	info.attachments.push_back({ AttachmentType::DEPTH, Utility::findDepthFormat(devices->physicalDevice), VK_ATTACHMENT_LOAD_OP_CLEAR,
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
@@ -51,7 +75,7 @@ void ShadowMap::Init(DescriptorSetManager* dsManager, const PipelineInfo& pipeli
 
 	height = width = static_cast<uint32_t>(resolution);
 
-    pipeline.Create(devices, &renderPass, dsManager, pipelineInfo);
+    pipeline.Create(devices, &renderPass, pipelineInfo);
 
 	//frame buffers
 
@@ -87,26 +111,7 @@ void ShadowMap::Init(DescriptorSetManager* dsManager, const PipelineInfo& pipeli
 
 	devices->getDescriptors(descriptor, request);
 
-	//DescriptorSetRequest request;
-	//request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
-
-	//for (size_t i = 0; i < devices->imageCount; i++) {
-
-	//	request.data.push_back(&depthTexture.descriptorInfo);
-	//}
-	//dsm->createDescriptorSets(&descriptorSets, request);
-
-	//dsm->getDescriptorSets(descriptorSets, request);
-
-	//for (size_t i = 0; i < dsm->imageCount; i++) {
-
-	//	std::vector<VkWriteDescriptorSet> descriptorWrites{
-	//	Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &depthTexture.descriptorInfo)
-	//	};
-
-	//	vkUpdateDescriptorSets(devices->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	//}
-
+	widget.SetupImage(0, depthTexture);
 }
 
 void ShadowMap::reinit(bool complete)
@@ -156,16 +161,9 @@ void ShadowMap::reinit(bool complete)
 	}
 
 	devices->dsm.update(descriptor, request);
-	//descriptor.reinitialise(request);
 
-	//for (size_t i = 0; i < devices->imageCount; i++) {
 
-	//	std::vector<VkWriteDescriptorSet> descriptorWrites{
-	//	Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &depthTexture.descriptorInfo)
-	//	};
-
-	//	vkUpdateDescriptorSets(devices->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	//}
+	widget.SetupImage(0, depthTexture);
 
 }
 

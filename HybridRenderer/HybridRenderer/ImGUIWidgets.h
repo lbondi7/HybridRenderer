@@ -1,9 +1,12 @@
 #pragma once
 #include "Constants.h"
 
-namespace ImGUIWidgets
+#include "TextureSampler.h"
+
+class ImGUIWidget
 {
-	void NewWindow(const char* name = "Window");
+public:
+	bool NewWindow(const char* name);
 
 	void EndWindow();
 
@@ -13,33 +16,68 @@ namespace ImGUIWidgets
 
 	void TextColoured(const char* text, const glm::vec3& col);
 
-	void CheckBox(bool* checked, const char * label = "Check Box");
+	bool CheckBox(const char * label, bool* checked);
 
-	void FloatSlider(float* value, float min, float max, const char* label = "Float Slider");
+	bool Slider(const char * label, int* value, int min, int max);
 
-	void Float2Slider(float* values, float min, float max, const char* label = "Float2 Slider");
+	bool Slider(const char* label, float* value, float min, float max);
 
-	void Float3Slider(float* values, float min, float max, const char* label = "Float 3 Slider");
+	bool Slider2(const char* label, float* values, float min, float max);
 
-	void Float4Slider(float* values, float min, float max, const char* label = "Float 4 Slider");
+	bool Slider3(const char* label, float* values, float min, float max);
 
-	void Vec2Slider(glm::vec2& vec, float min, float max, const char* label = "Vec 2 Slider");
+	bool Slider4(const char* label, float* values, float min, float max);
 
-	void Vec3Slider(glm::vec3& vec, float min, float max, const char* label = "Vec 3 Slider");
+	bool Slider2(const char* label, glm::vec2& vec, float min, float max);
 
-	void Vec4Slider(glm::vec4& vec, float min, float max, const char* label = "Vec 4 Slider");
+	bool Slider3(const char* label, glm::vec3& vec, float min, float max);
 
-	void ColourEdit(glm::vec3& vec, const char* label = "Colour Editor");
+	bool Slider4(const char* label, glm::vec4& vec, float min, float max);
 
-	void ColourEdit(glm::vec4& vec, const char* label = "Colour Editor");
+	bool ColourEdit(const char* label, glm::vec3& vec);
 
-	void ColourPicker(glm::vec3& vec, const char* label = "Colour Picker");
+	bool ColourEdit(const char* label, glm::vec4& vec);
 
-	void ColourPicker(glm::vec4& vec, const char* label = "Colour Picker");
+	bool ColourPicker(const char* label, glm::vec3& vec);
 
-	void Vec2(const glm::vec2& vec, const char* label = "Vec 2");
+	bool ColourPicker(const char* label, glm::vec4& vec);
 
-	void Vec3(const glm::vec3& vec, const char* label = "Vec 2");
+	bool Vec2(const char* label, const glm::vec2& vec);
+
+	bool Vec3(const char* label, const glm::vec3& vec);
+
+	void Image(size_t id, glm::vec2 size, glm::vec2 uv0 = glm::vec2(0.0f, 0.0f), glm::vec2 uv1 = glm::vec2(1.0f, 1.0f), 
+		const glm::vec4& tint = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), const glm::vec4& border = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+
+	bool NewMainMenu();
+
+	void EndMainMenu();
+	
+	bool NewMenuBar();
+
+	void EndMenuBar();
+
+	bool NewMenu(const char* label);
+
+	void EndMenu();
+
+	bool MenuItem(const char* label, bool* selected, bool enabled = true);
+
+	bool NewChild();
+
+	void EndChild();
+
+	void SetupImage(size_t id, const TextureSampler& texture);
+
+	bool enabled = false;
+
+private:
+	std::vector<VkDescriptorSet> imageSets;
+	bool newWindow = false;
+	bool newMainMenu = false;
+	bool newMenuBar = false;
+	bool newMenu = false;
 
 };
 

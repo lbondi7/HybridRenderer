@@ -19,7 +19,7 @@ public:
 
     Texture depthImage;
 
-    void Create(GLFWwindow* window, VkSurfaceKHR surface, DeviceContext* _devices);
+    void Create(VkSurfaceKHR surface, DeviceContext* _devices, int* windowWidth, int* windowHeight);
 
     void Init();
 
@@ -35,5 +35,8 @@ private:
     void createSwapChain(GLFWwindow* window, VkSurfaceKHR surface);
     void createImageViews();
     void createDepthResources();
+
+    int* windowWidth;
+    int* windowHeight;
 };
 

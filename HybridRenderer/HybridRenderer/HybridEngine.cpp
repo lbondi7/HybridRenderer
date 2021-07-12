@@ -1,5 +1,7 @@
 #include "HybridEngine.h"
 
+#include "ImGUI_.h"
+
 HybridEngine::~HybridEngine()
 {
 }
@@ -11,16 +13,22 @@ void HybridEngine::run()
 
 	while (window->isActive() && !quit) {
 
+        window->resize();
+        timer.update();
 		prepare();
 		update();
 		render();
 	}
 
 	vkDeviceWaitIdle(core->deviceContext->logicalDevice);
+
+    deinitilise();
 }
 
 void HybridEngine::initialise()
 {
+    std::cout << "How many gameobjects?: " << std::endl;
+    std::cin >> gameObjectCount;
 
     window = std::make_unique<Window>();
     window->init(this);
@@ -48,14 +56,7 @@ void HybridEngine::initialise()
     resources.LoadShader("imgui/ui", VK_SHADER_STAGE_VERTEX_BIT);
     resources.LoadShader("imgui/ui", VK_SHADER_STAGE_FRAGMENT_BIT);
 
-  //  descriptorSetManager = new DescriptorSetManager();
-
-    //descriptorSetManager->init(core->deviceContext.get());
-
-    //DescriptorSetManager::initilise(descriptorSetManager);
-
     renderer->initialise(&resources, nullptr);
-
 
     float value = 0;
     float dist = 20.0f;
@@ -104,7 +105,6 @@ void HybridEngine::initialise()
         go.texture = resources.textures["texture"].get();
         go.Init(core->deviceContext.get());
 
-
         if (x >= max)
         {
             z += dist;
@@ -115,7 +115,6 @@ void HybridEngine::initialise()
         }
     }
 
-
     auto imageCount = core->deviceContext->imageCount;
 
     camera.lookAt = glm::vec3(0, 0, 0);
@@ -124,25 +123,12 @@ void HybridEngine::initialise()
 
     camera.init(core->deviceContext.get(), renderer->swapChain.extent);
 
-    //for (auto& go : gameObjects) {
-    //    go.uniformBuffers.resize(imageCount);
-
-    //    for (size_t i = 0; i < imageCount; i++) {
-    //        VkDeviceSize bufferSize = sizeof(ModelUBO);
-    //        go.uniformBuffers[i].Create2(core->deviceContext.get(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    //    }
-    //}
-
-    //uniformBuffers.offscreen.resize(swapChain.imageCount);
     lightBuffers.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++) {
         VkDeviceSize bufferSize = sizeof(LightUBO);
-        //camera.buffers[i].Create2(core->deviceContext.get(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        bufferSize = sizeof(LightUBO);
         lightBuffers[i].Create2(core->deviceContext.get(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     }
-
 
     using BindingType = std::pair<uint32_t, VkDescriptorType>;
     DescriptorSetRequest request;
@@ -153,47 +139,6 @@ void HybridEngine::initialise()
         request.data.push_back(&lightBuffers[i].descriptorInfo);
     }
     core->deviceContext->getDescriptors(lightDescriptor, request);
-
-    //lightDescriptor.initialise(core->deviceContext.get(), request);
-
-    //descriptorSetManager->createDescriptorSets(&lightDescSets, request);
-
-
-    //request.data.clear();
-    //request.data.reserve(imageCount);
-    //for (size_t i = 0; i < imageCount; i++) {
-
-    //    request.data.push_back(&camera.buffers[i].descriptorInfo);
-    //}
-    //descriptorSetManager->createDescriptorSets(&camera.cameraDescSets, request);
-    
-    //DescriptorSetRequest request2;
-    //request2.ids.reserve(2);
-    //request2.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-    //request2.ids.emplace_back(BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER));
-
-    //int i = 0;
-    //for (auto& go : gameObjects)
-    //{
-    //    request2.data.clear();
-    //    request2.data.reserve(imageCount);
-    //    for (size_t i = 0; i < imageCount; i++) {
-
-    //        request2.data.push_back(&go.uniformBuffers[i].descriptorInfo);
-    //        request2.data.push_back(&go.texture->descriptorInfo);
-    //    }
-    //    descriptorSetManager->createDescriptorSets(&go.descriptorSets, request2);
-
-    //    request.data.clear();
-    //    request.data.reserve(imageCount);
-    //    for (size_t i = 0; i < imageCount; i++) {
-
-    //        request.data.push_back(&go.uniformBuffers[i].descriptorInfo);
-    //    }
-    //    descriptorSetManager->createDescriptorSets(&go.offModelDescSets, request);
-    //}
-
-
 }
 
 void HybridEngine::prepare()
@@ -206,83 +151,81 @@ void HybridEngine::prepare()
 
 void HybridEngine::update()
 {
-    float time = 0.001f;
-
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
     {
         auto forward = camera.transform.forward;
         forward.y = 0;
-        camera.transform.position += forward * 10.0f * time;
+        camera.transform.position += forward * 10.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
     {
         auto forward = camera.transform.forward;
         forward.y = 0;
-        camera.transform.position -= forward * 10.0f * time;
+        camera.transform.position -= forward * 10.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
     {
         auto right = camera.transform.right;
         right.y = 0;
-        camera.transform.position += right * 10.0f * time;
+        camera.transform.position += right * 10.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
     {
         auto right = camera.transform.right;
         right.y = 0;
-        camera.transform.position -= right * 10.0f * time;
+        camera.transform.position -= right * 10.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
-        camera.transform.position += camera.worldUp * 10.0f * time;
+        camera.transform.position += camera.worldUp * 10.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
     {
-        camera.transform.position -= camera.worldUp * 10.0f * time;
+        camera.transform.position -= camera.worldUp * 10.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_Q) == GLFW_PRESS)
     {
-        camera.transform.rotation.y -= 50.0f * time;
+        camera.transform.rotation.y -= 50.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_E) == GLFW_PRESS)
     {
-        camera.transform.rotation.y += 50.0f * time;
+        camera.transform.rotation.y += 50.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_Z) == GLFW_PRESS)
     {
-        camera.transform.rotation.x -= 50.0f * time;
+        camera.transform.rotation.x -= 50.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_C) == GLFW_PRESS)
     {
-        camera.transform.rotation.x += 50.0f * time;
+        camera.transform.rotation.x += 50.0f * timer.dt;
     }
     
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_8) == GLFW_PRESS)
     {
-            lightPos += camera.transform.forward * 5.0f * time;
+            lightPos += camera.transform.forward * 5.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_5) == GLFW_PRESS)
     {
-            lightPos -= camera.transform.forward * 5.0f * time;
+            lightPos -= camera.transform.forward * 5.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_4) == GLFW_PRESS)
     {
-            lightPos += camera.transform.right * 5.0f * time;
+            lightPos += camera.transform.right * 5.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_6) == GLFW_PRESS)
     {
-            lightPos -= camera.transform.right * 5.0f * time;
+            lightPos -= camera.transform.right * 5.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_9) == GLFW_PRESS)
     {
-            lightPos.y += 5.0f * time;
+            lightPos.y += 5.0f * timer.dt;
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_7) == GLFW_PRESS)
     {
-            lightPos.y -= 5.0f * time;
+            lightPos.y -= 5.0f * timer.dt;
     }
 
-    camera.update(renderer->swapChain.extent);
+    camera.update({static_cast<uint32_t>(window->width), static_cast<uint32_t>(window->height)});
 
     float zNear = 1.0f;
     float zFar = 100.0f;
@@ -335,19 +278,43 @@ void HybridEngine::update()
 
 void HybridEngine::render()
 {
+
+    if (ImGUI::enabled && widget.enabled) {
+        if (widget.NewMainMenu())
+        {
+            if (widget.NewMenu("File")) {
+
+
+                widget.EndMenu();
+            }
+
+            if (widget.NewMenu("Objects")) {
+                widget.MenuItem("Camera", &camera.widget.enabled);
+                widget.MenuItem("ShadowMap", &renderer->shadowMap.widget.enabled);
+
+                widget.EndMenu();
+            }
+
+            widget.EndMainMenu();
+        }
+    }
+
+
+
     renderer->render(&camera, gameObjects, lightDescriptor);
 }
 
 void HybridEngine::deinitilise()
 {
-    //descriptorSetManager->destroy();
+    renderer->cleanup();
 
     for (auto& go : gameObjects) {
         go.Destroy();
     }
 
-    core->deinitialise();
+    resources.Destroy();
 
+    core->deinitialise();
 }
 
 void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -367,12 +334,13 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
             //Log(app->lightPos, "Light Pos");
             //app->ortho = !app->ortho;
 
-            auto enabled = app->renderer->imgui.enabled = !app->renderer->imgui.enabled;
+            auto enabled = ImGUI::enabled = !ImGUI::enabled;
+            app->widget.enabled = ImGUI::enabled;
             if (!enabled)
             {
                 app->renderer->commandBuffersReady = false;
                 vkQueueWaitIdle(app->core->deviceContext->presentQueue);
-            }//app->buildCommandBuffers();
+            }
         }
 
         if (key == GLFW_KEY_ESCAPE)
@@ -383,6 +351,8 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 void HybridEngine::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
     app->renderer->rebuildSwapChain = true;
+    app->window->width = width;
+    app->window->height = height;
 }
 
 void HybridEngine::mouseCallback(GLFWwindow* window, int button, int action, int mods) {

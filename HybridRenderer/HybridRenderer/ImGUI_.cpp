@@ -3,7 +3,12 @@
 #include "Initilizers.h"
 #include "Utility.h"
 
+#include "imgui/imgui_impl_vulkan.h"
+#include "imgui/imgui_impl_glfw.h"
+
 #include <array>
+
+bool ImGUI::enabled = false;
 
 ImGUI::~ImGUI()
 {
@@ -33,7 +38,6 @@ void ImGUI::createCommandBuffers(VkCommandBuffer* commandBuffer, uint32_t comman
 
 void ImGUI::create(GLFWwindow * window, VkInstance instance, VkSurfaceKHR surface, DeviceContext* _devices, SwapChain* _swapChain)
 {
-
 	devices = _devices;
 	swapChain = _swapChain;
 
@@ -60,8 +64,9 @@ void ImGUI::create(GLFWwindow * window, VkInstance instance, VkSurfaceKHR surfac
 	auto err = vkCreateDescriptorPool(devices->logicalDevice, &pool_info, nullptr, &descriptorPool);
 
 	RenderPassInfo info{};
-	info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+
 
 	info.dependencies.emplace_back(Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -69,44 +74,6 @@ void ImGUI::create(GLFWwindow * window, VkInstance instance, VkSurfaceKHR surfac
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT));
 
 	renderPass.Create(devices, info);
-
-	//VkAttachmentDescription attachment = {};
-	//attachment.format = swapChain->imageFormat;
-	//attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	//attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	//attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	//attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	//attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	//attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	//attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	//VkAttachmentReference color_attachment = {};
-	//color_attachment.attachment = 0;
-	//color_attachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	//VkSubpassDescription subpass = {};
-	//subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	//subpass.colorAttachmentCount = 1;
-	//subpass.pColorAttachments = &color_attachment;
-	//VkSubpassDependency dependency = {};
-	//dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	//dependency.dstSubpass = 0;
-	//dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	//dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	//dependency.srcAccessMask = 0;
-	//dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	//VkRenderPassCreateInfo cinfo = {};
-	//cinfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	//cinfo.attachmentCount = 1;
-	//cinfo.pAttachments = &attachment;
-	//cinfo.subpassCount = 1;
-	//cinfo.pSubpasses = &subpass;
-	//cinfo.dependencyCount = 1;
-	//cinfo.pDependencies = &dependency;
-
-	//if (vkCreateRenderPass(devices->logicalDevice, &cinfo, nullptr, &renderPass.vkRenderPass) != VK_SUCCESS) {
-	//	throw std::runtime_error("failed to create render pass!");
-	//}
-
-	//renderPass.devices = devices;
 
 	reinit();
 
@@ -166,8 +133,13 @@ void ImGUI::reinit()
 
 
 void ImGUI::startFrame() {
+
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+
+	startedFrame = true;
 }
 
 void ImGUI::NewWindow(const char* name, bool* close) {
@@ -187,7 +159,6 @@ void ImGUI::NewWindow(const char* name, bool* close) {
 	ImGui::EndMainMenuBar();
 
 	if (ImGui::Begin(name, close)) {
-		renderStuff = true;
 
 		if (ImGui::BeginMenuBar()) {
 			ImGui::MenuItem("Menu Item 1", "MI1");
@@ -223,7 +194,7 @@ void ImGUI::endFrame() {
 
 	ImGui::Render();
 
-	renderStuff = false;
+	startedFrame = false;
 }
 
 void ImGUI::deinit()
@@ -258,6 +229,27 @@ void ImGUI::update(VkExtent2D extent)
 	io.MouseDown[1] = rightMouse;
 
 	//newFrame();
+}
+
+void ImGUI::buildCommandBuffers(uint32_t i, const VkExtent2D& extent) {
+
+	clearValues.color = { 0.025f, 0.025f, 0.025f, 1.0f };
+	VkCommandBufferBeginInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	vkBeginCommandBuffer(commandBuffers[i], &info);
+	{
+
+		renderPass.Begin(commandBuffers[i], frameBuffer.frames[i].vkFrameBuffer, extent, &clearValues, 1);
+	}
+
+	if (drawn) {
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[i]);
+		drawn = false;
+	}
+	renderPass.End(commandBuffers[i]);
+	//vkCmdEndRenderPass(imgui.commandBuffers[i]);
+	vkEndCommandBuffer(commandBuffers[i]);
 }
 
 std::vector<VkVertexInputBindingDescription> ImGUI::bindingDescriptions()

@@ -9,13 +9,16 @@ SwapChain::~SwapChain()
 {
     devices = nullptr;
     window = nullptr;
+    windowWidth = nullptr;
+    windowHeight = nullptr;
     surface = VK_NULL_HANDLE;
 }
 
-void SwapChain::Create(GLFWwindow* _window, VkSurfaceKHR _surface, DeviceContext* _devices)
+void SwapChain::Create(VkSurfaceKHR _surface, DeviceContext* _devices, int* _windowWidth, int* _windowHeight)
 {
     devices = _devices;
-    window = _window;
+    windowWidth = _windowWidth;
+    windowHeight = _windowHeight;
     surface = _surface;
 
     Init();
@@ -51,7 +54,7 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
 
     VkSurfaceFormatKHR surfaceFormat = Utility::chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = Utility::chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D _extent = Utility::chooseSwapExtent(window, swapChainSupport.capabilities);
+    VkExtent2D _extent = Utility::chooseSwapExtent(*windowWidth, *windowHeight, swapChainSupport.capabilities);
 
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {

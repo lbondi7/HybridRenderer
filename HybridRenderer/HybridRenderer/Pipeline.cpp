@@ -17,14 +17,13 @@ Pipeline::~Pipeline()
     renderPass = nullptr;
 }
 
-void Pipeline::Create(DeviceContext* _devices, RenderPass* _renderPass, DescriptorSetManager* dsManager, const PipelineInfo& _pipelineInfo)
+void Pipeline::Create(DeviceContext* _devices, RenderPass* _renderPass, const PipelineInfo& _pipelineInfo)
 {
 
     devices = _devices;
     //swapChain = _swapChain;
     renderPass = _renderPass;
     pipelineInfo = _pipelineInfo;
-    descriptorSetManager = dsManager;
 
     createDescriptorSetLayouts();
     Init();
@@ -141,7 +140,9 @@ void Pipeline::createGraphicsPipeline() {
 
     pipelineCreateInfo.pViewportState = &viewportState;
 
-    VkPipelineRasterizationStateCreateInfo rasterizer = Initialisers::pipelineRasterizationStateCreateInfo(pipelineInfo.polygonMode, pipelineInfo.cullMode, VK_FRONT_FACE_COUNTER_CLOCKWISE, 1.0f, VK_FALSE, pipelineInfo.depthBiasEnable);
+    VkPipelineRasterizationStateCreateInfo rasterizer = 
+        Initialisers::pipelineRasterizationStateCreateInfo(
+            static_cast<VkPolygonMode>(pipelineInfo.polygonMode), pipelineInfo.cullMode, VK_FRONT_FACE_COUNTER_CLOCKWISE, 1.0f, VK_FALSE, pipelineInfo.depthBiasEnable);
 
     pipelineCreateInfo.pRasterizationState = &rasterizer;
 

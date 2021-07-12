@@ -28,6 +28,9 @@ public:
 
 	GLFWwindow* glfwWindow = nullptr;
 
+	int width;
+	int height;
+
 	bool active = true;
 	bool framebufferResized = false;
 };

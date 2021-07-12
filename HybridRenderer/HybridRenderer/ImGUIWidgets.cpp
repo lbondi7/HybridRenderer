@@ -2,117 +2,203 @@
 
 #include "imgui/imgui.h"
 
-void ImGUIWidgets::NewWindow(const char* name)
-{
-	ImGui::Begin(name);
+#include "imgui/imgui_impl_vulkan.h"
 
+bool ImGUIWidget::NewWindow(const char* name)
+{
+	newWindow = true;
+	return ImGui::Begin(name, &enabled);
 }
 
-void ImGUIWidgets::EndWindow()
+void ImGUIWidget::EndWindow()
 {
-	ImGui::End();
+	if(newWindow)
+		ImGui::End();
 
+	newWindow = false;
 }
 
-void ImGUIWidgets::Text(const char* text)
+void ImGUIWidget::Text(const char* text)
 {
 	ImGui::Text(text);
 }
 
-void ImGUIWidgets::TextColoured(const char* text, const glm::vec4& col)
+void ImGUIWidget::TextColoured(const char* text, const glm::vec4& col)
 {
 	ImVec4 imCol = { col.r, col.g, col.b, col.a };
 	ImGui::TextColored(imCol, text);
 }
 
-void ImGUIWidgets::TextColoured(const char* text, const glm::vec3& col)
+void ImGUIWidget::TextColoured(const char* text, const glm::vec3& col)
 {
 	ImVec4 imCol = { col.r, col.g, col.b, 1.0f };
 	ImGui::TextColored(imCol, text);
 }
 
-void ImGUIWidgets::CheckBox(bool* checked, const char * label)
+bool ImGUIWidget::CheckBox(const char * label, bool* checked)
 {
-	ImGui::Checkbox(label, checked);
+	return ImGui::Checkbox(label, checked);
 }
 
-void ImGUIWidgets::FloatSlider(float* value, float min, float max, const char* label)
+bool ImGUIWidget::Slider(const char * label, int* value, int min, int max)
 {
-	ImGui::SliderFloat(label, value, min, max);
+	return ImGui::SliderInt(label,  value, min, max);
 }
 
-void ImGUIWidgets::Float2Slider(float* values, float min, float max, const char* label)
+bool ImGUIWidget::Slider(const char* label, float* value, float min, float max)
 {
-	ImGui::SliderFloat2(label, values, min, max);
+	return ImGui::SliderFloat(label, value, min, max);
 }
 
-void ImGUIWidgets::Float3Slider(float* values, float min, float max, const char* label)
+bool ImGUIWidget::Slider2(const char* label, float* values, float min, float max)
 {
-	ImGui::SliderFloat3(label, values, min, max);
+	return ImGui::SliderFloat2(label, values, min, max);
 }
 
-void ImGUIWidgets::Float4Slider(float* values, float min, float max, const char* label)
+bool ImGUIWidget::Slider3(const char* label, float* values, float min, float max)
 {
-	ImGui::SliderFloat4(label, values, min, max);
+	return ImGui::SliderFloat3(label, values, min, max);
 }
 
-void ImGUIWidgets::Vec2Slider(glm::vec2& vec, float min, float max, const char* label)
+bool ImGUIWidget::Slider4(const char* label, float* values, float min, float max)
+{
+	return ImGui::SliderFloat4(label, values, min, max);
+}
+
+bool ImGUIWidget::Slider2(const char* label, glm::vec2& vec, float min, float max)
 {
 	float values[2] = { vec.x, vec.y };
-	ImGui::SliderFloat2(label, values, min, max);
+	auto result = ImGui::SliderFloat2(label, values, min, max);
 	vec = { values[0], values[1] };
+	return result;
 }
 
-void ImGUIWidgets::Vec3Slider(glm::vec3& vec, float min, float max, const char* label)
+bool ImGUIWidget::Slider3(const char* label, glm::vec3& vec, float min, float max)
 {
 	float values[3] = { vec.x, vec.y, vec.z };
-	ImGui::SliderFloat3(label, values, min, max);
+	auto result = ImGui::SliderFloat3(label, values, min, max);
 	vec = { values[0], values[1], values[2] };
+	return result;
+
 }
 
-void ImGUIWidgets::Vec4Slider(glm::vec4& vec, float min, float max, const char* label)
+bool ImGUIWidget::Slider4(const char* label, glm::vec4& vec, float min, float max)
 {
 	float values[4] = { vec.x, vec.y, vec.z, vec.w };
-	ImGui::SliderFloat4(label, values, min, max);
+	auto result = ImGui::SliderFloat4(label, values, min, max);
 	vec = { values[0], values[1], values[2], values[3] };
+	return result;
 }
 
-void ImGUIWidgets::ColourEdit(glm::vec3& vec, const char* label)
+bool ImGUIWidget::ColourEdit(const char* label, glm::vec3& vec)
 {
 	float values[3] = { vec.x, vec.y, vec.z };
-	ImGui::ColorEdit3(label, values);
+	auto result = ImGui::ColorEdit3(label, values);
 	vec = { values[0], values[1], values[2] };
+	return result;
 }
 
-void ImGUIWidgets::ColourEdit(glm::vec4& vec, const char* label)
+bool ImGUIWidget::ColourEdit(const char* label, glm::vec4& vec)
 {
 	float values[4] = { vec.x, vec.y, vec.z, vec.w };
-	ImGui::ColorEdit4(label, values);
+	auto result = ImGui::ColorEdit4(label, values);
 	vec = { values[0], values[1], values[2], values[3] };
+	return result;
 }
 
-void ImGUIWidgets::ColourPicker(glm::vec3& vec, const char* label)
+bool ImGUIWidget::ColourPicker(const char* label, glm::vec3& vec)
 {
 	float values[3] = { vec.x, vec.y, vec.z };
-	ImGui::ColorPicker3(label, values);
+	auto result = ImGui::ColorPicker3(label, values);
 	vec = { values[0], values[1], values[2] };
+	return result;
 }
 
-void ImGUIWidgets::ColourPicker(glm::vec4& vec, const char* label)
+bool ImGUIWidget::ColourPicker(const char* label, glm::vec4& vec)
 {
 	float values[4] = { vec.x, vec.y, vec.z, vec.w };
-	ImGui::ColorPicker4(label, values);
+	auto result = ImGui::ColorPicker4(label, values);
 	vec = { values[0], values[1], values[2], values[3] };
+	return result;
 }
 
-void ImGUIWidgets::Vec2(const glm::vec2& vec, const char* label)
+bool ImGUIWidget::Vec2(const char* label, const glm::vec2& vec)
 {
 	float values[2] = { vec.x, vec.y };
-	ImGui::InputFloat2(label, values);
+	return ImGui::InputFloat2(label, values);
 }
 
-void ImGUIWidgets::Vec3(const glm::vec3& vec, const char* label)
+bool ImGUIWidget::Vec3(const char* label, const glm::vec3& vec)
 {
 	float values[3] = { vec.x, vec.y, vec.z};
-	ImGui::InputFloat2(label, values);
+	return ImGui::InputFloat3(label, values);
+}
+
+void ImGUIWidget::Image(size_t id, glm::vec2 _size, glm::vec2 _uv0, glm::vec2 _uv1, const glm::vec4& _tint, const glm::vec4& _border)
+{
+
+	ImVec2 size = ImVec2(_size.x, _size.y);
+	ImVec2 uv0 = ImVec2(_uv0.x, _uv0.y);
+	ImVec2 uv1 = ImVec2(_uv1.x, _uv1.y);
+	ImVec4 tint = ImVec4(_tint.x, _tint.y, _tint.z, _tint.w);
+	ImVec4 border = ImVec4(_border.x, _border.y, _border.z, _border.w);
+	ImGui::Image((ImTextureID)imageSets[id], size, uv0, uv1, tint, border);
+
+}
+
+bool ImGUIWidget::NewMainMenu()
+{
+	return newMainMenu = ImGui::BeginMainMenuBar();
+}
+
+void ImGUIWidget::EndMainMenu()
+{
+	if (newMainMenu)
+		ImGui::EndMainMenuBar();
+}
+
+bool ImGUIWidget::NewMenuBar()
+{
+	return newMenuBar = ImGui::BeginMenuBar();
+}
+
+void ImGUIWidget::EndMenuBar()
+{
+	if (newMenuBar)
+		ImGui::EndMenuBar();
+}
+
+bool ImGUIWidget::NewMenu(const char* label)
+{
+	return newMenu = ImGui::BeginMenu(label);
+}
+
+void ImGUIWidget::EndMenu()
+{
+	if (newMenu)
+		ImGui::EndMenu();
+}
+
+bool ImGUIWidget::MenuItem(const char* label, bool* selected, bool enabled)
+{
+	return (newMenu || newMainMenu) ? ImGui::MenuItem(label, nullptr, selected, enabled) : false;
+}
+
+bool ImGUIWidget::NewChild()
+{
+	return ImGui::BeginChildFrame(0, {500, 500});
+}
+
+void ImGUIWidget::EndChild()
+{
+	ImGui::EndChildFrame();
+}
+
+void ImGUIWidget::SetupImage(size_t id, const TextureSampler& texture)
+{
+	if (id >= imageSets.size()) {
+		imageSets.resize(id + 1);
+	}
+	imageSets[id] = ImGui_ImplVulkan_AddTextureD(texture.sampler, texture.imageView, texture.descriptorInfo.imageLayout);
+
 }

@@ -4,7 +4,8 @@
 #include "RasterRenderer.h"
 #include "Camera.h"
 #include "GameObject.h"
-
+#include "Timer.h"
+#include "ImGUIWidgets.h"
 
 class HybridEngine
 {
@@ -65,6 +66,13 @@ private:
 	glm::vec3 lightPos = glm::vec3(-19.0f, 20.0f, -30.0f);
 
 	float lightFOV = 90.0f;
+
+	Timer timer;
+
+	ImGUIWidget widget;
+	bool selected = false;
+	bool cameraEnabled = false;
+	bool shadowMapEnabled = false;
 
 };
 

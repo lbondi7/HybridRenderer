@@ -6,6 +6,7 @@
 #include "Pipeline.h"
 #include "CubemapTexture.h"
 #include "Descriptor.h"
+#include "ImGUIWidgets.h"
 
 class ShadowMap
 {
@@ -17,11 +18,13 @@ public:
 	void update(bool& resize);
 	void Create(DeviceContext* _devices, SwapChain* _swapChain);
 
-	void Init(DescriptorSetManager* dsManager, const PipelineInfo& pipelineInfo);
+	void Init(const PipelineInfo& pipelineInfo);
 
 	void reinit(bool complete = true);
 
 	void Destroy(bool complete = true);
+
+	void update();
 
 	uint32_t width;
 	uint32_t height;
@@ -38,9 +41,9 @@ public:
 
 	std::vector<VkDescriptorSet> descriptorSets;
 
-	DescriptorSetManager* dsm;
-
 	Descriptor descriptor;
+
+	ImGUIWidget widget;
 
 };
 

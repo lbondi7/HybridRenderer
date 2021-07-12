@@ -97,13 +97,11 @@ VkPresentModeKHR Utility::chooseSwapPresentMode(const std::vector<VkPresentModeK
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D Utility::chooseSwapExtent(GLFWwindow * window, const VkSurfaceCapabilitiesKHR& capabilities) {
+VkExtent2D Utility::chooseSwapExtent(int width, int height, const VkSurfaceCapabilitiesKHR& capabilities) {
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     }
     else {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
 
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(200),

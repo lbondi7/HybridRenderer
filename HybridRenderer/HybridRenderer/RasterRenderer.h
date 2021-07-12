@@ -19,6 +19,7 @@
 #include "ImGUI_.h"
 #include "VulkanCore.h"
 #include "Descriptor.h"
+#include "ImGUIWidgets.h"
 
 class RasterRenderer {
 public:
@@ -74,19 +75,7 @@ public:
 
     glm::vec2 mousePos;
 
-    //struct CameraUBO {
-    //    alignas(16) glm::mat4 projection;
-    //    alignas(16) glm::mat4 view;
-    //    alignas(16) glm::vec3 camPos;
-    //}cameraUBO;
-
-    //struct LightUBO {
-    //    alignas(16) glm::mat4 depthBiasMVP;
-    //    alignas(16) glm::vec3 lightPos;
-    //}lightUBO;
-
     bool commandBuffersReady = false;
-
 
     int counted = 100;
 
@@ -97,25 +86,17 @@ public:
     float timer = 0.0f;
     bool countUp = true;
 
-    glm::vec3 lightInvDir = glm::vec3(0.5f, 2, 2);
-    glm::vec3 lightPos = glm::vec3(-19.0f, 20.0f, -30.0f);
-
-    float lightFOV = 90.0f;
-
-    bool conservativeRendering = false;
-    bool prevConservativeRendering = true;
+    ImGUIWidget widget;
 
     VkDescriptorSet descTest;
 
     uint32_t imageIndex;
 
 
+    void cleanup();
     void cleanupSwapChain();
 
-    void cleanup();
-
     void recreateSwapChain();
-
 
     void AllocateCommandBuffers();
 

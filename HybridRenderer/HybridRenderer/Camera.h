@@ -6,6 +6,8 @@
 
 #include "Descriptor.h"
 
+#include "ImGUIWidgets.h"
+
 
 struct CameraUBO {
 	alignas(16) glm::mat4 projection;
@@ -30,17 +32,16 @@ public:
 	glm::vec3 worldForward = glm::vec3(0);
 	glm::vec3 worldRight = glm::vec3(0);
 
-	VkViewport viewport;
-	VkRect2D scissor;
+	VkViewport vkViewport;
+	VkRect2D vkScissor;
+	glm::vec4 scissor = glm::vec4(0, 0, 1, 1);
+	glm::vec4 viewport = glm::vec4(0, 0, 1, 1);
 
 	VkExtent2D extent;
 
 	float FOV = 45.0f;
 	float nearPlane = 1.0f;
 	float farPlane = 1000.0f;
-
-	float x = 0.0f;
-	float y = 0.0f;
 
 	bool lookAtPlace = false;
 
@@ -52,24 +53,34 @@ public:
 
 	bool valuesUpdated(const VkExtent2D& _extent);
 
-	void setViewport(VkCommandBuffer cmdBuffer);
+	void vkSetViewport(VkCommandBuffer cmdBuffer);
+
+	void setViewport(glm::vec2 size, glm::vec2 offset);
+
+	void setScissor(glm::vec2 size, glm::vec2 offset);
 
 	std::vector<Buffer> buffers;
 
 	Descriptor descriptor;
 
-	std::vector<VkDescriptorSet> cameraDescSets;
+	void updateWindow(float windowWidth, float windowHeight);
 
+	ImGUIWidget widget;
 
 private:
 	bool valuesUpdated(float windowWidth, float windowHeight);
 	void updateValues(const VkExtent2D& _extent);
-	void updateValues(float windowWidth, float windowHeight);
 
+
+	float windowWidth = 0;
+	float windowHeight = 0;
 
 	Transform prevTransform;
 	glm::vec3 prevLookAt = glm::vec3(0, 0, 0);
 	glm::vec3 prevUp = glm::vec3(0, 1, 0);
+
+	glm::vec4 prevScissor = glm::vec4(0, 0, 1, 1);
+	glm::vec4 prevViewport = glm::vec4(0, 0, 1, 1);
 
 	float prevFOV;
 	float prevNearPlane;
@@ -79,4 +90,5 @@ private:
 	float prevWindowHeight;
 
 	bool prevLookAtPlace;
+
 };

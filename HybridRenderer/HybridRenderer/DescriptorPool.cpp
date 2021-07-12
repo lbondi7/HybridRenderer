@@ -298,8 +298,14 @@ void DescriptorPool::allocate(Descriptor& descriptor, VkDescriptorSetLayout layo
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
 
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        for (auto& r : request.ids)
+        {
+            data.count[r.second].first++;
+        }
+    }
 }
-
 
 //size_t getTypeID(VkDescriptorType type) {
 //

@@ -1,13 +1,13 @@
 #include "RasterRenderer.h"
 
 #include "DebugLogger.h"
-
+#include "ImGUI_.h"
 
 RasterRenderer::RasterRenderer(Window* window, VulkanCore* core)
 {
     deviceContext = core->deviceContext.get();
 
-    swapChain.Create(window->glfwWindow, core->surface, deviceContext);
+    swapChain.Create(core->surface, deviceContext, &window->width, &window->height);
 
     imgui.create(window->glfwWindow, core->instance, core->surface, deviceContext, &swapChain);
 }
@@ -25,7 +25,7 @@ void RasterRenderer::initialise(Resources* _resources, DescriptorSetManager* _de
 
     resources = _resources;
     descriptorSetManager = _descriptorSetManager;
-
+      
     //swapChain.Create(window.glfwWindow, surface, deviceContext);
 
     RenderPassInfo info{};
@@ -48,9 +48,9 @@ void RasterRenderer::initialise(Resources* _resources, DescriptorSetManager* _de
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
     pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    pipelineInfo.polygonMode = VK_POLYGON_MODE_LINE;
+    //pipelineInfo.polygonMode = VK_POLYGON_MODE_LINE;
 
-    pipeline.Create(deviceContext, &renderPass, descriptorSetManager, pipelineInfo);
+    pipeline.Create(deviceContext, &renderPass, pipelineInfo);
 
     frameBuffer.Create(deviceContext, renderPass.vkRenderPass);
     penultimateFrameBuffer.Create(deviceContext, penultimateRenderPass.vkRenderPass);
@@ -69,13 +69,13 @@ void RasterRenderer::initialise(Resources* _resources, DescriptorSetManager* _de
     pipelineInfo.conservativeRasterisation = true;
     pipelineInfo.collorAttachmentCount = 0;
 
-    shadowMap.Init(descriptorSetManager, pipelineInfo);
+    shadowMap.Init(pipelineInfo);
 
     AllocateCommandBuffers();
     createSyncObjects();
     auto& texture = shadowMap.depthTexture;
 
-    descTest = ImGui_ImplVulkan_AddTextureD(texture.sampler, texture.imageView, texture.descriptorInfo.imageLayout);
+    //descTest = ImGui_ImplVulkan_AddTextureD(texture.sampler, texture.imageView, texture.descriptorInfo.imageLayout);
 
     commandBuffersReady = false;
 }
@@ -109,7 +109,7 @@ void RasterRenderer::cleanup() {
     //    cameraBuffers[i].Destroy();
     //}
 
-    //imgui.destroy();
+    imgui.destroy();
 
     shadowMap.Destroy(true);
 
@@ -166,7 +166,7 @@ void RasterRenderer::recreateSwapChain() {
 
     auto& texture = shadowMap.depthTexture;
 
-    descTest = ImGui_ImplVulkan_AddTextureD(texture.sampler, texture.imageView, texture.descriptorInfo.imageLayout);
+   //descTest = ImGui_ImplVulkan_AddTextureD(texture.sampler, texture.imageView, texture.descriptorInfo.imageLayout);
 
     commandBuffersReady = false;
 
@@ -184,10 +184,12 @@ void RasterRenderer::AllocateCommandBuffers() {
 
 void RasterRenderer::buildCommandBuffers(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs) 
 {
+    vkQueueWaitIdle(deviceContext->presentQueue);
     for (int32_t i = 0; i < commandBuffers.size(); ++i)
     {
         rebuildCommandBuffer(i, camera, gameObjects, lightDescs);
     }
+    commandBuffersReady = true;
 }
 
 void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs) {
@@ -240,12 +242,12 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
         clearValues[0].color = { 0.025f, 0.025f, 0.025f, 1.0f };
         clearValues[1].depthStencil = { 1.0f, 0 };
 
-        if(!imgui.enabled)
+        if(!ImGUI::enabled)
             renderPass.Begin(commandBuffers[i], frameBuffer.frames[i].vkFrameBuffer, swapChain.extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
         else
             penultimateRenderPass.Begin(commandBuffers[i], penultimateFrameBuffer.frames[i].vkFrameBuffer, swapChain.extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
 
-        camera->setViewport(commandBuffers[i]);
+        camera->vkSetViewport(commandBuffers[i]);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
 
@@ -260,7 +262,7 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
             vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
         }
 
-        if (!imgui.enabled)
+        if (!ImGUI::enabled)
             renderPass.End(commandBuffers[i]);
         else
             penultimateRenderPass.End(commandBuffers[i]);
@@ -270,27 +272,9 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
         throw std::runtime_error("failed to record command buffer!");
     }
 
-    if (imgui.enabled) {
-        VkCommandBufferBeginInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(imgui.commandBuffers[i], &info);
-        {
-
-            imgui.renderPass.Begin(imgui.commandBuffers[i], imgui.frameBuffer.frames[i].vkFrameBuffer, swapChain.extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
-        }
-
-        if (imgui.drawn) {
-            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), imgui.commandBuffers[i]);
-            imgui.drawn = false;
-        }
-        imgui.renderPass.End(imgui.commandBuffers[i]);
-        //vkCmdEndRenderPass(imgui.commandBuffers[i]);
-        vkEndCommandBuffer(imgui.commandBuffers[i]);
-
+    if (ImGUI::enabled) {
+        imgui.buildCommandBuffers(i, swapChain.extent);
     }
-
-    commandBuffersReady = true;
 }
 
 void RasterRenderer::createSyncObjects() {
@@ -321,228 +305,6 @@ void RasterRenderer::createSyncObjects() {
 //    camera.init(swapChain.extent);
 //}
 
-//void RasterRenderer::updateUniformBuffer(uint32_t currentImage) {
-//
-//    auto currentTime = std::chrono::high_resolution_clock::now();
-//    float time = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - startTime).count() / 1000.0f;
-//    startTime = std::chrono::high_resolution_clock::now();
-//
-//    timer += time;
-//    /*if (countUp)
-//    {
-//        timer += time;
-//        if (timer >= 1.0f)
-//            countUp = !countUp;
-//    }
-//    else {
-//        timer -= time;
-//        if (timer <= -0.0f)
-//            countUp = !countUp;
-//    }*/
-//
-//    //lightPos.x = cos(glm::radians(timer * 360.0f)) * 4.0f;
-//    //lightPos.y = 5.0f + sin(glm::radians(timer * 360.0f)) * 2.0f;
-//    //lightPos.z = 2.5f + sin(glm::radians(timer * 360.0f)) * 5.0f;
-//
-//
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
-//    {
-//        auto forward = camera.transform.forward;
-//        forward.y = 0;
-//        camera.transform.position += forward * 10.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
-//    {
-//        auto forward = camera.transform.forward;
-//        forward.y = 0;
-//        camera.transform.position -= forward * 10.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
-//    {
-//        auto right = camera.transform.right;
-//        right.y = 0;
-//        camera.transform.position += right * 10.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
-//    {
-//        auto right = camera.transform.right;
-//        right.y = 0;
-//        camera.transform.position -= right * 10.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-//    {
-//        camera.transform.position += camera.worldUp * 10.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-//    {
-//        camera.transform.position -= camera.worldUp * 10.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_Q) == GLFW_PRESS)
-//    {
-//        camera.transform.rotation.y -= 50.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_E) == GLFW_PRESS)
-//    {
-//        camera.transform.rotation.y += 50.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_Z) == GLFW_PRESS)
-//    {
-//        camera.transform.rotation.x -= 50.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_C) == GLFW_PRESS)
-//    {
-//        camera.transform.rotation.x += 50.0f * time;
-//    }
-//
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_KP_8) == GLFW_PRESS)
-//    {
-//        if (ortho)
-//            lightInvDir += glm::vec3(0, 1, 0) * 5.0f * time;
-//        else
-//            lightPos += camera.transform.forward * 5.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_KP_5) == GLFW_PRESS)
-//    {
-//        if (ortho)
-//            lightInvDir -= glm::vec3(0, 1, 0) * 5.0f * time;
-//        else
-//            lightPos -= camera.transform.forward * 5.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_KP_4) == GLFW_PRESS)
-//    {
-//        if (ortho)
-//            lightInvDir -= glm::vec3(1, 0, 0) * 5.0f * time;
-//        else
-//            lightPos += camera.transform.right * 5.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_KP_6) == GLFW_PRESS)
-//    {
-//        if (ortho)
-//            lightInvDir += glm::vec3(1, 0, 0) * 5.0f * time;
-//        else
-//            lightPos -= camera.transform.right * 5.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_KP_9) == GLFW_PRESS)
-//    {
-//        if (ortho)
-//            lightInvDir += glm::vec3(0, 0, 1) * 5.0f * time;
-//        else
-//            lightPos.y += 5.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_KP_7) == GLFW_PRESS)
-//    {
-//        if (ortho)
-//            lightInvDir -= glm::vec3(0, 0, 1) * 5.0f * time;
-//        else
-//            lightPos.y -= 5.0f * time;
-//    }
-//
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_P) == GLFW_PRESS)
-//    {
-//        gameObjects[0].transform(+= glm::vec3(1.0f) * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_O) == GLFW_PRESS)
-//    {
-//        gameObjects[0].transform.scale -= glm::vec3(1.0f) * time;
-//    }
-//
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_M) == GLFW_PRESS)
-//    {
-//        lightFOV += 5.0f * time;
-//    }
-//    if (glfwGetKey(window.glfwWindow, GLFW_KEY_N) == GLFW_PRESS)
-//    {
-//        lightFOV -= 5.0f * time;
-//    }
-//
-//    camera.update(static_cast<float>(swapChain.extent.width), static_cast<float>(swapChain.extent.height));
-//
-//    float zNear = 1.0f;
-//    float zFar = 100.0f;
-//
-//    glm::vec3 lightLookAt = lightPos + glm::vec3(0.0f, -0.5f, 0.5f);
-//    //lightPos = camera.transform.position;
-//
-//    // Matrix from light's point of view
-//    glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
-//    glm::mat4 depthViewMatrix = glm::mat4(1.0f);
-//    if (!ortho)
-//    {
-//        depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-//        depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
-//    }
-//    //depthProjectionMatrix[1][1] *= -1;
-//    else
-//    {
-//        depthProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
-//        depthViewMatrix = glm::lookAt(lightInvDir, -lightInvDir, glm::vec3(0, 1, 0));
-//    }
-//    glm::mat4 depthModelMatrix = glm::mat4(1.0f);
-//
-//    //uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
-//
-//    lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
-//    lightUBO.lightPos = lightPos;
-//    lightBuffers[currentImage].Map2(&lightUBO);
-//
-//    cameraUBO.camPos = camera.transform.position;
-//    cameraUBO.view = camera.view;
-//    cameraUBO.projection = camera.projection;
-//    cameraBuffers[currentImage].Map2(&cameraUBO);
-//
-//    // uniformBuffers.offscreen[currentImage].Map(&uboOffscreenVS);
-//
-//    gameObjects[gameObjectCount - 1].transform.position = lightPos;
-//
-//    for (auto& go : gameObjects)
-//    {
-//        go.Update();
-//
-//        ModelUBO ubos;
-//        ubos.model = go.model;
-//        go.uniformBuffers[currentImage].Map2(&ubos);
-//    }
-//
-//    //if (imgui.enabled)
-//    //{
-//
-//    //    ImGui_ImplVulkan_NewFrame();
-//    //    ImGui_ImplGlfw_NewFrame();
-//    //    ImGui::NewFrame();
-//    //    ImGui::ShowDemoWindow();
-//
-//
-//    //    //imgui.update(swapChain.extent);
-//    //    bool temp = false;
-//    //    //imgui.startFrame();
-//
-//    //    ImGui::Begin("Options");
-//    //    ImGui::Checkbox("Orthographic", &ortho);
-//    //    if (ImGui::Checkbox("Conservative Rasterisation", &shadowMap.pipeline.pipelineInfo.conservativeRasterisation))
-//    //        window.framebufferResized = true;
-//    //    if (ImGui::SliderInt("Shadow Map Resultion", &shadowMap.resolution, 1, 8192))
-//    //        window.framebufferResized = true;
-//
-//    //    ImGui::Image((ImTextureID)descTest, {500, 500 });
-//    //    ImGui::End();
-//    //    ImGui::Render();
-//    //    imgui.drawn = true;
-//
-//    //   // imgui.endFrame();
-//
-//
-//    //}
-//
-//    //if (prevConservativeRendering != shadowMap.pipeline.pipelineInfo.conservativeRasterisation)
-//    //{
-//    //    prevConservativeRendering = shadowMap.pipeline.pipelineInfo.conservativeRasterisation;
-//    //    window.framebufferResized = true;
-//    //}
-//
-//    //shadowMap.update(window.framebufferResized);
-//
-//}
-
 void RasterRenderer::prepare()
 {
     VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
@@ -557,34 +319,9 @@ void RasterRenderer::prepare()
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    if (imgui.enabled)
+    if (ImGUI::enabled && !imgui.startedFrame)
     {
-
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        //ImGui::ShowDemoWindow();
-
-
-        //imgui.update(swapChain.extent);
-        bool temp = false;
-        //imgui.startFrame();
-
-        ImGui::Begin("Options");
-        ImGui::Checkbox("Orthographic", &ortho);
-        if (ImGui::Checkbox("Conservative Rasterisation", &shadowMap.pipeline.pipelineInfo.conservativeRasterisation))
-            rebuildSwapChain = true;
-        if (ImGui::SliderInt("Shadow Map Resultion", &shadowMap.resolution, 1, 2048))
-            rebuildSwapChain = true;
-
-        ImGui::Image((ImTextureID)descTest, { 500, 500 });
-        ImGui::End();
-        ImGui::Render();
-        imgui.drawn = true;
-
-        // imgui.endFrame();
-
-
+        imgui.startFrame();
     }
 
 
@@ -593,11 +330,14 @@ void RasterRenderer::prepare()
 
 void RasterRenderer::render(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs)
 {
-    if (!imgui.enabled && !commandBuffersReady)
+
+    shadowMap.update();
+
+    if (!ImGUI::enabled && !imgui.startedFrame &&  !commandBuffersReady)
     {
         buildCommandBuffers(camera, gameObjects, lightDescs);
     }
-
+    
 
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
@@ -608,7 +348,10 @@ void RasterRenderer::render(Camera* camera, std::vector<GameObject>& gameObjects
     std::vector<VkCommandBuffer> submitCommandBuffers =
     { commandBuffers[imageIndex] };
 
-    if (imgui.enabled) {
+    if (ImGUI::enabled || imgui.startedFrame) {
+
+        imgui.endFrame();
+        imgui.drawn = true;
 
         rebuildCommandBuffer(imageIndex, camera, gameObjects, lightDescs);
 

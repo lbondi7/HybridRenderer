@@ -7,7 +7,6 @@
 #include "Vertex.h"
 #include "Shader.h"
 #include "DescriptorSetLayout.h"
-#include "DescriptorSetManager.h"
 
 struct PipelineInfo {
     std::vector<Shader*> shaders;
@@ -17,7 +16,7 @@ struct PipelineInfo {
     //std::vector<VertexAttributes> attributes;
     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
     VkPrimitiveTopology topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    VkPolygonMode polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+    int polygonMode = 0;
     VkBool32 depthBiasEnable = VK_FALSE;
     uint32_t collorAttachmentCount = 1;
     VkBool32 blendEnabled = VK_FALSE;
@@ -48,7 +47,7 @@ public:
 
     //VkDescriptorPool descriptorPool;
 
-    void Create(DeviceContext* _devices, RenderPass* _renderPass, DescriptorSetManager* dsManager, const PipelineInfo& _pipelineInfo);
+    void Create(DeviceContext* _devices, RenderPass* _renderPass, const PipelineInfo& _pipelineInfo);
 
 
     void Init();
@@ -68,7 +67,6 @@ private:
     DeviceContext* devices = nullptr;
     //SwapChain* swapChain = nullptr;
     RenderPass* renderPass = nullptr;
-    DescriptorSetManager* descriptorSetManager = nullptr;
 
 };
 
