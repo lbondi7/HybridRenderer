@@ -2,6 +2,7 @@
 
 #include "VulkanCore.h"
 #include "RasterRenderer.h"
+#include "RayTracingRenderer.h"
 #include "Camera.h"
 #include "GameObject.h"
 #include "Timer.h"
@@ -42,6 +43,7 @@ private:
 	std::unique_ptr<Window> window;
 	std::unique_ptr<VulkanCore> core;
 
+	std::unique_ptr<RayTracingRenderer> rayTracing;
 
 	std::unique_ptr<RasterRenderer> renderer;
 
@@ -64,8 +66,9 @@ private:
 
 	glm::vec3 lightInvDir = glm::vec3(0.5f, 2, 2);
 	glm::vec3 lightPos = glm::vec3(-19.0f, 20.0f, -30.0f);
+	glm::vec3 lightRot = glm::vec3(0, 0, 0);
 
-	float lightFOV = 90.0f;
+	float lightFOV = 45.0f;
 
 	Timer timer;
 

@@ -27,8 +27,8 @@ void HybridEngine::run()
 
 void HybridEngine::initialise()
 {
-    std::cout << "How many gameobjects?: " << std::endl;
-    std::cin >> gameObjectCount;
+    //std::cout << "How many gameobjects?: " << std::endl;
+    //std::cin >> gameObjectCount;
 
     window = std::make_unique<Window>();
     window->init(this);
@@ -41,7 +41,8 @@ void HybridEngine::initialise()
     core = std::make_unique<VulkanCore>();
 	core->initialise(window->glfwWindow);
 
-    renderer = std::make_unique<RasterRenderer>(window.get(), core.get());
+    //renderer = std::make_unique<RasterRenderer>(window.get(), core.get());
+    rayTracing = std::make_unique<RayTracingRenderer>();
 
     resources.Init(core->deviceContext.get());
 
@@ -53,99 +54,104 @@ void HybridEngine::initialise()
     resources.LoadShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT);
     resources.LoadShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT);
     resources.LoadShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT);
-    resources.LoadShader("imgui/ui", VK_SHADER_STAGE_VERTEX_BIT);
-    resources.LoadShader("imgui/ui", VK_SHADER_STAGE_FRAGMENT_BIT);
+    resources.LoadShader("raytracingbasic/closesthit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    resources.LoadShader("raytracingbasic/miss", VK_SHADER_STAGE_MISS_BIT_KHR);
+    resources.LoadShader("raytracingbasic/raygen", VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
-    renderer->initialise(&resources, nullptr);
+    rayTracing->initialise(core->deviceContext.get(), core->surface, window.get(), &resources);
 
-    float value = 0;
-    float dist = 20.0f;
-    if (gameObjectCount < 3)
-        gameObjectCount = 3;
+   // renderer->initialise(&resources);
 
-    for (size_t i = 0; i < gameObjectCount - 2; i++)
-    {
-        if (i * i > gameObjectCount - 2)
-        {
-            value = i - 1;
-            break;
-        }
-    }
 
-    float max = ((value * dist) / 2.0f);
+    //float value = 0;
+    //float dist = 20.0f;
+    //if (gameObjectCount < 3)
+    //    gameObjectCount = 3;
 
-    float x = gameObjectCount > 3 ? -max : 0;
-    float z = gameObjectCount > 5 ? -max : 0;
+    //for (size_t i = 0; i < gameObjectCount - 2; i++)
+    //{
+    //    if (i * i > gameObjectCount - 2)
+    //    {
+    //        value = i - 1;
+    //        break;
+    //    }
+    //}
 
-    gameObjects.reserve(static_cast<uint32_t>(gameObjectCount));
+    //float max = ((value * dist) / 2.0f);
 
-    for (size_t i = 0; i < gameObjectCount; i++)
-    {
-        auto& go = gameObjects.emplace_back(GameObject());
-        if (i < gameObjectCount - 2) {
-            go.transform.position = glm::vec3(x, -1.0f, z);
-            go.transform.scale = glm::vec3(5, 5, 5);
-            go.mesh = resources.meshes["tree"].get();
-        }
-        if (i == gameObjectCount - 2)
-        {
-            go.transform.position = glm::vec3(0.0f, -1.0f, 0.0f);
-            go.transform.scale = glm::vec3(max > 5 ? max : 5, 1, max > 5 ? max : 5);
-            //go.shadowCaster = false;
-            go.mesh = resources.meshes["plane"].get();
+    //float x = gameObjectCount > 3 ? -max : 0;
+    //float z = gameObjectCount > 5 ? -max : 0;
 
-        }
-        else if (i == gameObjectCount - 1)
-        {
-            go.shadowCaster = false;
-            go.shadowReceiver = false;
-            go.transform.scale = glm::vec3(0.2f, 0.2f, 0.2f);
-            go.mesh = resources.meshes["sphere"].get();
-        }
-        go.texture = resources.textures["texture"].get();
-        go.Init(core->deviceContext.get());
+    //gameObjects.reserve(static_cast<uint32_t>(gameObjectCount));
 
-        if (x >= max)
-        {
-            z += dist;
-            x = -max;
-        }
-        else {
-            x += dist;
-        }
-    }
+    //for (size_t i = 0; i < gameObjectCount; i++)
+    //{
+    //    auto& go = gameObjects.emplace_back(GameObject());
+    //    if (i < gameObjectCount - 2) {
+    //        go.transform.position = glm::vec3(x, -1.0f, z);
+    //        go.transform.scale = glm::vec3(5, 5, 5);
+    //        go.mesh = resources.meshes["tree"].get();
+    //    }
+    //    if (i == gameObjectCount - 2)
+    //    {
+    //        go.transform.position = glm::vec3(0.0f, -1.0f, 0.0f);
+    //        go.transform.scale = glm::vec3(max > 5 ? max : 5, 1, max > 5 ? max : 5);
+    //        //go.shadowCaster = false;
+    //        go.mesh = resources.meshes["plane"].get();
 
-    auto imageCount = core->deviceContext->imageCount;
+    //    }
+    //    else if (i == gameObjectCount - 1)
+    //    {
+    //        go.shadowCaster = false;
+    //        go.shadowReceiver = false;
+    //        go.transform.scale = glm::vec3(0.2f, 0.2f, 0.2f);
+    //        go.mesh = resources.meshes["sphere"].get();
+    //    }
+    //    go.texture = resources.textures["texture"].get();
+    //    go.Init(core->deviceContext.get());
 
-    camera.lookAt = glm::vec3(0, 0, 0);
-    camera.transform.position = glm::vec3(0, 0, 10);
-    camera.transform.rotation.y = 180.f;
+    //    if (x >= max)
+    //    {
+    //        z += dist;
+    //        x = -max;
+    //    }
+    //    else {
+    //        x += dist;
+    //    }
+    //}
 
-    camera.init(core->deviceContext.get(), renderer->swapChain.extent);
+    //auto imageCount = core->deviceContext->imageCount;
 
-    lightBuffers.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++) {
-        VkDeviceSize bufferSize = sizeof(LightUBO);
-        lightBuffers[i].Create2(core->deviceContext.get(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    //camera.lookAt = glm::vec3(0, 0, 0);
+    //camera.transform.position = glm::vec3(0, 0, 10);
+    //camera.transform.rotation.y = 180.f;
 
-    }
+    //camera.init(core->deviceContext.get(), renderer->swapChain.extent);
+    ////camera.init(core->deviceContext.get(), rayTracing->swapChain.extent);
 
-    using BindingType = std::pair<uint32_t, VkDescriptorType>;
-    DescriptorSetRequest request;
-    request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-    request.data.reserve(imageCount);
-    for (size_t i = 0; i < imageCount; i++) {
+    //lightBuffers.resize(imageCount);
+    //for (size_t i = 0; i < imageCount; i++) {
+    //    VkDeviceSize bufferSize = sizeof(LightUBO);
+    //    lightBuffers[i].Create2(core->deviceContext.get(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        request.data.push_back(&lightBuffers[i].descriptorInfo);
-    }
-    core->deviceContext->getDescriptors(lightDescriptor, request);
+    //}
+
+    //using BindingType = std::pair<uint32_t, VkDescriptorType>;
+    //DescriptorSetRequest request;
+    //request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
+    //request.data.reserve(imageCount);
+    //for (size_t i = 0; i < imageCount; i++) {
+
+    //    request.data.push_back(&lightBuffers[i].descriptorInfo);
+    //}
+    //core->deviceContext->getDescriptors(lightDescriptor, request);
 }
 
 void HybridEngine::prepare()
 {
 
-    renderer->prepare();
-    imageIndex = renderer->imageIndex;
+    //renderer->prepare();
+    //imageIndex = renderer->imageIndex;
 
 }
 
@@ -224,84 +230,92 @@ void HybridEngine::update()
     {
             lightPos.y -= 5.0f * timer.dt;
     }
-
-    camera.update({static_cast<uint32_t>(window->width), static_cast<uint32_t>(window->height)});
-
-    float zNear = 1.0f;
-    float zFar = 100.0f;
-
-    glm::vec3 lightLookAt = lightPos + glm::vec3(0.0f, -0.5f, 0.5f);
-
-        // Matrix from light's point of view
-    glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
-    glm::mat4 depthViewMatrix = glm::mat4(1.0f);
-    depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-    depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
-
-    //if (!ortho)
-    //{
-    //    depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-    //    depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
-    //}
-    ////depthProjectionMatrix[1][1] *= -1;
-    //else
-    //{
-    //    depthProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
-    //    depthViewMatrix = glm::lookAt(lightInvDir, -lightInvDir, glm::vec3(0, 1, 0));
-    //}
-    glm::mat4 depthModelMatrix = glm::mat4(1.0f);
-
-    //uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
-
-    lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
-    lightUBO.lightPos = lightPos;
-    lightBuffers[imageIndex].Map2(&lightUBO);
-
-    CameraUBO cameraUBO{};
-    cameraUBO.camPos = camera.transform.position;
-    cameraUBO.view = camera.view;
-    cameraUBO.projection = camera.projection;
-    camera.buffers[imageIndex].Map2(&cameraUBO);
-
-    gameObjects[gameObjectCount - 1].transform.position = lightPos;
-
-    for (auto& go : gameObjects)
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_1) == GLFW_PRESS)
     {
-        go.Update();
-
-        ModelUBO ubos;
-        ubos.model = go.model;
-        go.uniformBuffers[imageIndex].Map2(&ubos);
+        lightRot.y -= 5.0f * timer.dt;
     }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_3) == GLFW_PRESS)
+    {
+        lightRot.y -= 5.0f * timer.dt;
+    }
+
+    //camera.update({static_cast<uint32_t>(window->width), static_cast<uint32_t>(window->height)});
+
+    //float zNear = 1.0f;
+    //float zFar = 100.0f;
+
+    //glm::vec3 lightLookAt = glm::vec3(0, 0, 0);
+    //    // Matrix from light's point of view
+    //glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
+    //glm::mat4 depthViewMatrix = glm::mat4(1.0f);
+    //depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
+    //depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
+    //depthProjectionMatrix[1][1] *= -1;
+
+    ////if (!ortho)
+    ////{
+    ////    depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
+    ////    depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
+    ////}
+    //////depthProjectionMatrix[1][1] *= -1;
+    ////else
+    ////{
+    ////    depthProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
+    ////    depthViewMatrix = glm::lookAt(lightInvDir, -lightInvDir, glm::vec3(0, 1, 0));
+    ////}
+    //glm::mat4 depthModelMatrix = glm::yawPitchRoll(lightRot.y, lightRot.x, lightRot.z);
+
+    ////uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
+
+    //lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+    //lightUBO.lightPos = lightPos;
+    //lightBuffers[imageIndex].Map2(&lightUBO);
+
+    //CameraUBO cameraUBO{};
+    //cameraUBO.camPos = camera.transform.position;
+    //cameraUBO.view = camera.view;
+    //cameraUBO.projection = camera.projection;
+    //camera.buffers[imageIndex].Map2(&cameraUBO);
+
+    //gameObjects[gameObjectCount - 1].transform.position = lightPos;
+
+    //for (auto& go : gameObjects)
+    //{
+    //    go.Update();
+
+    //    ModelUBO ubos;
+    //    ubos.model = go.model;
+    //    go.uniformBuffers[imageIndex].Map2(&ubos);
+    //}
 
 }
 
 void HybridEngine::render()
 {
 
-    if (ImGUI::enabled && widget.enabled) {
-        if (widget.NewMainMenu())
-        {
-            if (widget.NewMenu("File")) {
+    //if (ImGUI::enabled && widget.enabled) {
+    //    if (widget.NewMainMenu())
+    //    {
+    //        if (widget.NewMenu("File")) {
 
 
-                widget.EndMenu();
-            }
+    //            widget.EndMenu();
+    //        }
 
-            if (widget.NewMenu("Objects")) {
-                widget.MenuItem("Camera", &camera.widget.enabled);
-                widget.MenuItem("ShadowMap", &renderer->shadowMap.widget.enabled);
+    //        if (widget.NewMenu("Objects")) {
+    //            widget.MenuItem("Camera", &camera.widget.enabled);
+    //            widget.MenuItem("ShadowMap", &renderer->shadowMap.widget.enabled);
 
-                widget.EndMenu();
-            }
+    //            widget.EndMenu();
+    //        }
 
-            widget.EndMainMenu();
-        }
-    }
+    //        widget.EndMainMenu();
+    //    }
+    //}
 
+    //renderer->render(&camera, gameObjects, lightDescriptor);
 
-
-    renderer->render(&camera, gameObjects, lightDescriptor);
+    rayTracing->render();
 }
 
 void HybridEngine::deinitilise()
@@ -338,8 +352,8 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
             app->widget.enabled = ImGUI::enabled;
             if (!enabled)
             {
-                app->renderer->commandBuffersReady = false;
-                vkQueueWaitIdle(app->core->deviceContext->presentQueue);
+               // app->renderer->commandBuffersReady = false;
+                //vkQueueWaitIdle(app->core->deviceContext->presentQueue);
             }
         }
 
@@ -350,30 +364,27 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 
 void HybridEngine::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
-    app->renderer->rebuildSwapChain = true;
+    //app->renderer->rebuildSwapChain = true;
     app->window->width = width;
     app->window->height = height;
+   //app->camera.update({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
 }
 
 void HybridEngine::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    app->renderer->imgui.leftMouse = button == GLFW_MOUSE_BUTTON_LEFT && action != GLFW_RELEASE;
-    app->renderer->imgui.rightMouse = button == GLFW_MOUSE_BUTTON_RIGHT && action != GLFW_RELEASE;
+    //app->renderer->imgui.leftMouse = button == GLFW_MOUSE_BUTTON_LEFT && action != GLFW_RELEASE;
+    //app->renderer->imgui.rightMouse = button == GLFW_MOUSE_BUTTON_RIGHT && action != GLFW_RELEASE;
 }
 
 void HybridEngine::scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
-
-
     //app->imgui.mouseWheel += static_cast<float>(yOffset) * 0.01f;
 }
 
 void HybridEngine::cursorCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    app->renderer->imgui.mousePos.x = xOffset;
-    app->renderer->imgui.mousePos.y = yOffset;
-
-
+    //app->renderer->imgui.mousePos.x = xOffset;
+    //app->renderer->imgui.mousePos.y = yOffset;
 }

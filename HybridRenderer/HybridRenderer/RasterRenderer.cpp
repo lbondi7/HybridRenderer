@@ -20,11 +20,10 @@ void RasterRenderer::run() {
     //cleanup();
 }
 
-void RasterRenderer::initialise(Resources* _resources, DescriptorSetManager* _descriptorSetManager)
+void RasterRenderer::initialise(Resources* _resources)
 {
 
     resources = _resources;
-    descriptorSetManager = _descriptorSetManager;
       
     //swapChain.Create(window.glfwWindow, surface, deviceContext);
 
@@ -44,11 +43,10 @@ void RasterRenderer::initialise(Resources* _resources, DescriptorSetManager* _de
 
     PipelineInfo pipelineInfo{};
 
-    pipelineInfo.shaders = { resources->vertexShaders["scene"].get(), resources->fragmentShaders["scene"].get() };
+    resources->getShaders(pipelineInfo.shaders, {"scene"});
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
     pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    //pipelineInfo.polygonMode = VK_POLYGON_MODE_LINE;
 
     pipeline.Create(deviceContext, &renderPass, pipelineInfo);
 
@@ -62,20 +60,17 @@ void RasterRenderer::initialise(Resources* _resources, DescriptorSetManager* _de
     }
 
     shadowMap.Create(deviceContext, &swapChain);
-    pipelineInfo.shaders = { resources->vertexShaders["offscreen"].get() };
+    resources->getShaders(pipelineInfo.shaders, { "offscreen" });
     pipelineInfo.depthBiasEnable = VK_TRUE;
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS };
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION});
     pipelineInfo.conservativeRasterisation = true;
-    pipelineInfo.collorAttachmentCount = 0;
+    pipelineInfo.colourAttachmentCount = 0;
 
     shadowMap.Init(pipelineInfo);
 
     AllocateCommandBuffers();
     createSyncObjects();
-    auto& texture = shadowMap.depthTexture;
-
-    //descTest = ImGui_ImplVulkan_AddTextureD(texture.sampler, texture.imageView, texture.descriptorInfo.imageLayout);
 
     commandBuffersReady = false;
 }
@@ -113,33 +108,14 @@ void RasterRenderer::cleanup() {
 
     shadowMap.Destroy(true);
 
-
-    //resources.Destroy();
-
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(deviceContext->logicalDevice, renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(deviceContext->logicalDevice, imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(deviceContext->logicalDevice, inFlightFences[i], nullptr);
     }
-
-    //vkDestroyCommandPool(deviceContext->logicalDevice, deviceContext->commandPool, nullptr);
-
-    //deviceContext->Destroy();
-
-    //if (enableValidationLayers) {
-    //    DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-    //}
-
-    //vkDestroySurfaceKHR(instance, surface, nullptr);
-    //vkDestroyInstance(instance, nullptr);
-
-    //window.destroy();
 }
 
 void RasterRenderer::recreateSwapChain() {
-
-    //window.resize();
-    //vkDeviceWaitIdle(deviceContext->logicalDevice);
 
     cleanupSwapChain();
 
@@ -156,17 +132,14 @@ void RasterRenderer::recreateSwapChain() {
         penultimateFrameBuffer.createFramebuffer(attachments, swapChain.extent);
     }
 
-    shadowMap.reinit(true);
+    shadowMap.reinitialise(true);
     pipeline.Init();
-    //camera.init(swapChain.extent);
     imgui.reinit();
     AllocateCommandBuffers();
 
     imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
 
     auto& texture = shadowMap.depthTexture;
-
-   //descTest = ImGui_ImplVulkan_AddTextureD(texture.sampler, texture.imageView, texture.descriptorInfo.imageLayout);
 
     commandBuffersReady = false;
 
@@ -198,21 +171,17 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
 
     std::array<VkClearValue, 2> clearValues;
 
-    //if(imgui.enabled)
-    //    imgui.updateBuffers();
-
     if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
     {
+        clearValues[0].color= { 0.0f, 1.0f, 1.0f, 1.0f };
         clearValues[0].depthStencil = { 1.0f, 0 };
 
         auto& frame = shadowMap.frameBuffer.frames[i];
         shadowMap.renderPass.Begin(commandBuffers[i], frame.vkFrameBuffer, frame.extent, &clearValues[0]);
 
-        // Set depth bias (aka "Polygon offset")
-        // Required to avoid shadow mapping artifacts
         vkCmdSetDepthBias(commandBuffers[i], 1.25f, 0.0f, 1.75f);
 
         VkViewport viewport = Initialisers::viewport(0, 0, (float)frame.extent.width, (float)frame.extent.height);
@@ -223,7 +192,6 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.vkPipeline);
 
-        int j = 0;
         for (auto& go : gameObjects) {
             if (!go.shadowCaster)
                 continue;
@@ -232,7 +200,6 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
             vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
             go.mesh->Bind(commandBuffers[i]);
             vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
-            j++;
         }
 
         shadowMap.renderPass.End(commandBuffers[i]);

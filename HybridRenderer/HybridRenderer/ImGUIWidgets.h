@@ -49,6 +49,10 @@ public:
 	void Image(size_t id, glm::vec2 size, glm::vec2 uv0 = glm::vec2(0.0f, 0.0f), glm::vec2 uv1 = glm::vec2(1.0f, 1.0f), 
 		const glm::vec4& tint = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), const glm::vec4& border = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
+	void Image(size_t id, glm::vec2 _size, const glm::vec4& tint, 
+		const glm::vec4& border = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 
+		glm::vec2 uv0 = glm::vec2(0.0f, 0.0f), glm::vec2 uv1 = glm::vec2(1.0f, 1.0f));
+
 
 	bool NewMainMenu();
 

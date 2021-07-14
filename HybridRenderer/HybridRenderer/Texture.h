@@ -20,13 +20,7 @@ public:
 	virtual void createVkImage();
 
 	void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask,
-		VkPipelineStageFlags dstStageMask, 
-		VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-		uint32_t layerCount = 1,
-		uint32_t baseArrayLayer = 0,
-		uint32_t baseMipLevel = 0,
-		uint32_t levelCount = 1
-	);
+		VkPipelineStageFlags dstStageMask, const VkImageSubresourceRange& subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
 	virtual void createImageView(VkImageAspectFlags aspectFlags);
 

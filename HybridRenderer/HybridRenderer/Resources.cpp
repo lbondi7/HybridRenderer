@@ -44,6 +44,31 @@ void Resources::Destroy()
 
 }
 
+void Resources::getShaders(std::vector<Shader*>& shaders, const std::vector<std::string>& shaderNames)
+{
+    size_t reserveSize = 0;
+    for (auto& name : shaderNames) {
+        if (vertexShaders.contains(name))
+            reserveSize++;
+        if (fragmentShaders.contains(name))
+            reserveSize++;
+    }
+    shaders.resize(reserveSize);
+    size_t i = 0;
+    for (auto& name : shaderNames) {
+        if (vertexShaders.contains(name))
+        {
+            shaders[i] = vertexShaders[name].get();
+            i++;
+        }
+        if (fragmentShaders.contains(name))
+        {
+            shaders[i] = fragmentShaders[name].get();
+            i++;
+        }
+    }
+}
+
 void Resources::LoadMesh(const std::string& name)
 {
     meshes.emplace(name, std::make_unique<Mesh>());
@@ -151,12 +176,18 @@ void Resources::LoadShader(const std::string& name, VkShaderStageFlagBits stage)
     case VK_SHADER_STAGE_COMPUTE_BIT:
         break;
     case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+        raygenShaders.emplace(trimmedName, std::make_unique<Shader>());
+        InitShader(name, raygenShaders[trimmedName].get(), stage);
         break;
     case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
         break;
     case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+        rayclosesthitShaders.emplace(trimmedName, std::make_unique<Shader>());
+        InitShader(name, rayclosesthitShaders[trimmedName].get(), stage);
         break;
     case VK_SHADER_STAGE_MISS_BIT_KHR:
+        raymissShaders.emplace(trimmedName, std::make_unique<Shader>());
+        InitShader(name, raymissShaders[trimmedName].get(), stage);
         break;
     case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
         break;

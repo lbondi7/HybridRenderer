@@ -155,7 +155,7 @@ void Pipeline::createGraphicsPipeline() {
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = Initialisers::pipelineColourBlendAttachmentState(0xf, pipelineInfo.blendEnabled);
 
-    VkPipelineColorBlendStateCreateInfo colorBlending = Initialisers::pipelineColourBlendStateCreateInfo(&colorBlendAttachment, 1, VK_FALSE, VK_LOGIC_OP_COPY);
+    VkPipelineColorBlendStateCreateInfo colorBlending = Initialisers::pipelineColourBlendStateCreateInfo(&colorBlendAttachment, pipelineInfo.colourAttachmentCount, VK_FALSE, VK_LOGIC_OP_COPY);
     pipelineCreateInfo.pColorBlendState = &colorBlending;
 
 

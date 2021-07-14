@@ -141,5 +141,17 @@ const char* Shader::getShaderTypeExtention(VkShaderStageFlagBits _stage) {
     {
         return ".comp";
     }
+    case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+    {
+        return ".rgen";
+    }
+    case VK_SHADER_STAGE_MISS_BIT_KHR:
+    {
+        return ".rmiss";
+    }
+    case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+    {
+        return ".rchit";
+    }
     }
 }

@@ -29,31 +29,11 @@ void FrameBuffer::Create(DeviceContext* _devices, VkRenderPass _vkRenderPass)
 void FrameBuffer::Init(VkRenderPass _vkRenderPass)
 {
 	vkRenderPass = _vkRenderPass;
+	frames.reserve(devices->imageCount);
 }
 
-void FrameBuffer::createFramebuffers() {
-  // vkFrameBuffers.resize(swapChain->imageCount);
-
-    //for (size_t i = 0; i < swapChain->imageCount; i++) {
-    //    std::array<VkImageView, 2> attachments = {
-    //        swapChain->images[i].imageView,
-    //        swapChain->depthImage.imageView
-    //    };
-
-    //    VkFramebufferCreateInfo framebufferInfo = Initialisers::framebufferCreateInfo(vkRenderPass, attachments.data(), static_cast<uint32_t>(attachments.size()), swapChain->extent, 1);
-
-    //    if (vkCreateFramebuffer(devices->logicalDevice, &framebufferInfo, nullptr, &vkFrameBuffers[i]) != VK_SUCCESS) {
-    //        throw std::runtime_error("failed to create framebuffer!");
-    //    }
-    //}
-}
 
 void FrameBuffer::createFramebuffer(const std::vector<VkImageView>& attachments, VkExtent2D extent) {
-
-	//vkFrameBuffers.emplace_back(VkFramebuffer());
-
-	//size_t idx = vkFrameBuffers.size() - 1;
-
 
 	frames.emplace_back(FrameData());
 

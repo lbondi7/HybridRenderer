@@ -13,12 +13,11 @@ struct PipelineInfo {
     bool emptyVertexInputState = false;
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
     std::vector<VkVertexInputBindingDescription> vertexInputBindings;
-    //std::vector<VertexAttributes> attributes;
     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
     VkPrimitiveTopology topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     int polygonMode = 0;
     VkBool32 depthBiasEnable = VK_FALSE;
-    uint32_t collorAttachmentCount = 1;
+    uint32_t colourAttachmentCount = 1;
     VkBool32 blendEnabled = VK_FALSE;
     std::vector<VkViewport> viewports;
     std::vector<VkRect2D> scissors;

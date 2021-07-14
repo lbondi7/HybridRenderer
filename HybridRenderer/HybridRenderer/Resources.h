@@ -20,6 +20,8 @@ public:
 	void Destroy();
 
 
+	void getShaders(std::vector<Shader*>& shaders, const std::vector<std::string>& shaderNames);
+
 	void LoadMesh(const std::string& name);
 
 	void LoadTexture(const std::string& name);
@@ -30,6 +32,9 @@ public:
 	std::map<std::string, std::unique_ptr<TextureSampler>> textures;
 	std::map<std::string, std::unique_ptr<Shader>> vertexShaders;
 	std::map<std::string, std::unique_ptr<Shader>> fragmentShaders;
+	std::map<std::string, std::unique_ptr<Shader>> raygenShaders;
+	std::map<std::string, std::unique_ptr<Shader>> rayclosesthitShaders;
+	std::map<std::string, std::unique_ptr<Shader>> raymissShaders;
 
 	DeviceContext* devices;
 

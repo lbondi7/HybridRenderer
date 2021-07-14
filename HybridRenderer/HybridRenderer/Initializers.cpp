@@ -627,6 +627,22 @@ namespace Initialisers {
 		return barrier;
 	}
 
+	VkImageMemoryBarrier imageMemoryBarrier(VkImage image,
+		VkImageLayout oldLayout, VkImageLayout newLayout,
+		uint32_t srcQueueFamilyIndex, uint32_t dstQueueFamilyIndex,
+		const VkImageSubresourceRange& subresourceRange) {
+
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.image = image;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newLayout;
+		barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
+		barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
+		barrier.subresourceRange = subresourceRange;
+		return barrier;
+	}
+
 	VkImageMemoryBarrier imageMemoryBarrier() {
 
 		VkImageMemoryBarrier barrier{};

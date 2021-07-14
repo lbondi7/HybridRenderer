@@ -55,17 +55,14 @@ void Texture::createVkImage() {
 }
 
 void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask,
-    VkPipelineStageFlags dstStageMask, VkImageAspectFlags aspectMask,
-    uint32_t layerCount, uint32_t baseArrayLayer,
-    uint32_t baseMipLevel, uint32_t levelCount) {
+    VkPipelineStageFlags dstStageMask, const VkImageSubresourceRange& subresourceRange) {
     VkCommandBuffer commandBuffer = devices->generateCommandBuffer();
 
     VkImageMemoryBarrier barrier = 
         Initialisers::imageMemoryBarrier(image, 
             oldLayout, newLayout, 
             VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, 
-            aspectMask, baseMipLevel, 
-            levelCount, baseArrayLayer, layerCount);
+            subresourceRange);
 
 
     switch (oldLayout)
@@ -133,38 +130,6 @@ void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLa
 
     descriptorInfo.imageLayout = newLayout;
 }
-
-//void Texture::createSampler() {
-//    VkPhysicalDeviceProperties properties{};
-//    vkGetPhysicalDeviceProperties(devices->physicalDevice, &properties);
-//
-//    //VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_TRUE, properties.limits.maxSamplerAnisotropy, VK_SAMPLER_MIPMAP_MODE_LINEAR);
-//    VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, properties.limits.maxSamplerAnisotropy, VK_SAMPLER_MIPMAP_MODE_LINEAR, 
-//        VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_INT_OPAQUE_BLACK);
-//
-//    if (vkCreateSampler(devices->logicalDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
-//        throw std::runtime_error("failed to create texture sampler!");
-//    }
-//
-//    descriptorInfo.sampler = sampler;
-//    hasSampler = true;
-//}
-//
-//void Texture::createSampler(const VkSamplerCreateInfo& samplerInfo) {
-//    VkPhysicalDeviceProperties properties{};
-//    vkGetPhysicalDeviceProperties(devices->physicalDevice, &properties);
-//
-//    ////VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_TRUE, properties.limits.maxSamplerAnisotropy, VK_SAMPLER_MIPMAP_MODE_LINEAR);
-//    //VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, properties.limits.maxSamplerAnisotropy, VK_SAMPLER_MIPMAP_MODE_LINEAR,
-//    //    VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_INT_OPAQUE_BLACK);
-//
-//    if (vkCreateSampler(devices->logicalDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
-//        throw std::runtime_error("failed to create texture sampler!");
-//    }
-//
-//    descriptorInfo.sampler = sampler;
-//    hasSampler = true;
-//}
 
 void Texture::createImageView(VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo viewInfo = Initialisers::imageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format, aspectFlags);

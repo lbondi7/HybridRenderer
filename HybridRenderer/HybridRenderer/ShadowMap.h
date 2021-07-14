@@ -20,7 +20,7 @@ public:
 
 	void Init(const PipelineInfo& pipelineInfo);
 
-	void reinit(bool complete = true);
+	void reinitialise(bool complete = true);
 
 	void Destroy(bool complete = true);
 

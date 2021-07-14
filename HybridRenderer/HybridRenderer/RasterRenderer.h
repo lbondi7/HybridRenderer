@@ -30,7 +30,7 @@ public:
 
     void run();
 
-    void initialise(Resources* _resources, DescriptorSetManager* _descriptorSetManager);
+    void initialise(Resources* _resources);
 
     void prepare();
 
@@ -45,16 +45,9 @@ public:
     FrameBuffer penultimateFrameBuffer;
     Pipeline pipeline;
 
-    //Camera camera;
     Resources* resources;
 
-    //std::vector<GameObject> gameObjects;
-
-    //int gameObjectCount = 2;
-
     ShadowMap shadowMap;
-
-    DescriptorSetManager* descriptorSetManager;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -63,6 +56,7 @@ public:
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
+    uint32_t imageIndex;
 
     bool framebufferResized = false;
     bool rebuildSwapChain = false;
@@ -88,12 +82,9 @@ public:
 
     ImGUIWidget widget;
 
-    VkDescriptorSet descTest;
-
-    uint32_t imageIndex;
-
 
     void cleanup();
+
     void cleanupSwapChain();
 
     void recreateSwapChain();

@@ -113,14 +113,42 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.fillModeNonSolid = VK_TRUE;
+    deviceFeatures.robustBufferAccess = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+    // Enable features required for ray tracing using feature chaining via pNext		
+    enabledBufferDeviceAddresFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    enabledBufferDeviceAddresFeatures.bufferDeviceAddress = VK_TRUE;
+
+    enabledRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    enabledRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+    enabledRayTracingPipelineFeatures.pNext = &enabledBufferDeviceAddresFeatures;
+
+    enabledAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+    enabledAccelerationStructureFeatures.pNext = &enabledRayTracingPipelineFeatures;
+
+    //void* deviceCreatepNextChain = &enabledAccelerationStructureFeatures;
+
+    rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+    VkPhysicalDeviceProperties2 deviceProperties2{};
+    deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    deviceProperties2.pNext = &rayTracingPipelineProperties;
+    vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+
+    // Get acceleration structure properties, which will be used later on in the sample
+    VkPhysicalDeviceFeatures2 deviceFeatures2{};
+    deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    deviceFeatures2.pNext = &enabledAccelerationStructureFeatures;
+    vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
 
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
     createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.pNext = &deviceFeatures2;
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();

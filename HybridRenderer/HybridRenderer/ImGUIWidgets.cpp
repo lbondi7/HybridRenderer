@@ -146,6 +146,18 @@ void ImGUIWidget::Image(size_t id, glm::vec2 _size, glm::vec2 _uv0, glm::vec2 _u
 
 }
 
+void ImGUIWidget::Image(size_t id, glm::vec2 _size, const glm::vec4& _tint, const glm::vec4& _border, glm::vec2 _uv0, glm::vec2 _uv1)
+{
+
+	ImVec2 size = ImVec2(_size.x, _size.y);
+	ImVec2 uv0 = ImVec2(_uv0.x, _uv0.y);
+	ImVec2 uv1 = ImVec2(_uv1.x, _uv1.y);
+	ImVec4 tint = ImVec4(_tint.x, _tint.y, _tint.z, _tint.w);
+	ImVec4 border = ImVec4(_border.x, _border.y, _border.z, _border.w);
+	ImGui::Image((ImTextureID)imageSets[id], size, uv0, uv1, tint, border);
+
+}
+
 bool ImGUIWidget::NewMainMenu()
 {
 	return newMainMenu = ImGui::BeginMainMenuBar();

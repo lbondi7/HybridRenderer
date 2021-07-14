@@ -47,6 +47,13 @@ public:
 	DescriptorSetManager dsm;
 
 
+	VkPhysicalDeviceRayTracingPipelinePropertiesKHR  rayTracingPipelineProperties{};
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
+
+	VkPhysicalDeviceBufferDeviceAddressFeatures enabledBufferDeviceAddresFeatures{};
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabledRayTracingPipelineFeatures{};
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures{};
+
 private:
 	void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
 	void createLogicalDevice(VkSurfaceKHR surface);

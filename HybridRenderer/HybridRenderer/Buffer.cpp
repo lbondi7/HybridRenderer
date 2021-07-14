@@ -54,6 +54,13 @@ void Buffer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
     //allocInfo.allocationSize = memRequirements.size;
     //allocInfo.memoryTypeIndex = Utility::findMemoryType(memRequirements.memoryTypeBits, devices->physicalDevice, properties);
 
+    VkMemoryAllocateFlagsInfoKHR allocFlagsInfo{};
+    if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+        allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+        allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+        allocInfo.pNext = &allocFlagsInfo;
+    }
+
     if (vkAllocateMemory(devices->logicalDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate buffer memory!");
     }

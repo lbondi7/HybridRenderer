@@ -35,19 +35,19 @@ void ShadowMap::update() {
 
 			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
 				vkQueueWaitIdle(devices->presentQueue);
-				reinit();
+				reinitialise();
 			}
 			if (widget.Slider("Resolution", &resolution, 1, 2048))
 			{
 				vkQueueWaitIdle(devices->presentQueue);
-				reinit();
+				reinitialise();
 
 			}
 			widget.Image(0, { 300, 300 });
 		}
 		widget.EndWindow();
 	}
-
+	 
 
 }
 
@@ -56,7 +56,7 @@ void ShadowMap::Init(const PipelineInfo& pipelineInfo)
 {
 	//render pass
 	RenderPassInfo info{};
-	info.attachments.push_back({ AttachmentType::DEPTH, Utility::findDepthFormat(devices->physicalDevice), VK_ATTACHMENT_LOAD_OP_CLEAR,
+	info.attachments.push_back({ AttachmentType::DEPTH, devices->getDepthFormat(), VK_ATTACHMENT_LOAD_OP_CLEAR,
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
 
 	info.dependencies.emplace_back(Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
@@ -70,9 +70,6 @@ void ShadowMap::Init(const PipelineInfo& pipelineInfo)
 
 	//pipeline
 
-    //Shader shader;
-    //shader.Init(devices, "shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT);
-
 	height = width = static_cast<uint32_t>(resolution);
 
     pipeline.Create(devices, &renderPass, pipelineInfo);
@@ -84,10 +81,8 @@ void ShadowMap::Init(const PipelineInfo& pipelineInfo)
 	VkFilter shadowmap_filter = devices->formatIsFilterable(devices->getDepthFormat(), VK_IMAGE_TILING_OPTIMAL) ?
 		VK_FILTER_LINEAR :
 		VK_FILTER_NEAREST;
-	depthTexture.createSampler(Initialisers::samplerCreateInfo(
-		shadowmap_filter, 1.0f, 
+	depthTexture.createSampler(Initialisers::samplerCreateInfo(shadowmap_filter, 1.0f, 
 		VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_INT_OPAQUE_WHITE));
-
 
     depthTexture.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
@@ -100,13 +95,14 @@ void ShadowMap::Init(const PipelineInfo& pipelineInfo)
 		frameBuffer.createFramebuffer(attachments, extent);
 	}
 
-
 	DescriptorSetRequest request;
 	request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
 
+	request.data.reserve(devices->imageCount * request.ids.size());
+
 	for (size_t i = 0; i < devices->imageCount; i++) {
 
-		request.data.push_back(&depthTexture.descriptorInfo);
+		request.data.emplace_back(&depthTexture.descriptorInfo);
 	}
 
 	devices->getDescriptors(descriptor, request);
@@ -114,7 +110,7 @@ void ShadowMap::Init(const PipelineInfo& pipelineInfo)
 	widget.SetupImage(0, depthTexture);
 }
 
-void ShadowMap::reinit(bool complete)
+void ShadowMap::reinitialise(bool complete)
 {
 	Destroy(complete);
 
@@ -134,12 +130,9 @@ void ShadowMap::reinit(bool complete)
 		shadowmap_filter, 1.0f,
 		VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_INT_OPAQUE_WHITE));
 
-
-
 	//depthCubemap.Create(devices, width, height, devices->getDepthFormat(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 	//depthCubemap.createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 	//depthCubemap.createSampler();
-
 
 	depthTexture.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 

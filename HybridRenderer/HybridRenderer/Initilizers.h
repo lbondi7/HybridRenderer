@@ -196,6 +196,8 @@ namespace Initialisers {
 		uint32_t baseArrayLayer = 0,
 		uint32_t layerCount = 1);
 
+	VkImageMemoryBarrier imageMemoryBarrier(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t srcQueueFamilyIndex, uint32_t dstQueueFamilyIndex, const VkImageSubresourceRange& subresourceRange);
+
 	VkImageMemoryBarrier imageMemoryBarrier();
 
 	// Present

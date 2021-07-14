@@ -61,7 +61,7 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
-    VkSwapchainCreateInfoKHR createInfo = Initialisers::swapchainCreateInfoKHR(surface, imageCount, surfaceFormat.format, surfaceFormat.colorSpace, 
+    VkSwapchainCreateInfoKHR createInfo = Initialisers::swapchainCreateInfoKHR(surface, imageCount, surfaceFormat.format, surfaceFormat.colorSpace,
         _extent, swapChainSupport.capabilities.currentTransform, presentMode);
 
     QueueFamilyIndices indices = Utility::findQueueFamilies(devices->physicalDevice, surface);
@@ -74,6 +74,19 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
     }
     else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
+
+    VkSurfaceCapabilitiesKHR surfaceCapabilities{};
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(devices->physicalDevice, surface, &surfaceCapabilities);
+
+    // Enable transfer source on swap chain images if supported
+    if (surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
+        createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
+
+    // Enable transfer destination on swap chain images if supported
+    if (surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT) {
+        createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     }
 
 
