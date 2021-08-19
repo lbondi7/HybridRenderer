@@ -184,6 +184,7 @@
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="ImGUI_.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="RasterRenderer.cpp" />
     <ClCompile Include="RayTracingRenderer.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -220,6 +221,7 @@
     <ClInclude Include="DescriptorSetManager.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="FrameBuffer.h" />
+    <ClInclude Include="Frustum.hpp" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="HybridEngine.h" />
     <ClInclude Include="Allocator.h" />
@@ -233,6 +235,8 @@
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="ImGUI_.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="RasterRenderer.h" />
     <ClInclude Include="RayTracingRenderer.h" />
     <ClInclude Include="Shader.h" />

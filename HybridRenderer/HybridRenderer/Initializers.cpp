@@ -57,6 +57,13 @@ namespace Initialisers {
 		return imageInfo;
 	}
 
+	VkWriteDescriptorSetAccelerationStructureKHR descriptorSetAccelerationStructureInfo(const VkAccelerationStructureKHR* pAccerlerationStructures, uint32_t accelerationStructureCount) {
+		VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo{};
+		descriptorAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+		descriptorAccelerationStructureInfo.accelerationStructureCount = accelerationStructureCount;
+		descriptorAccelerationStructureInfo.pAccelerationStructures = pAccerlerationStructures;
+		return descriptorAccelerationStructureInfo;
+	}
 
 	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkDescriptorBufferInfo* pBufferInfo, uint32_t descriptorCount, uint32_t descriptorArrayElement) {
 
@@ -77,10 +84,23 @@ namespace Initialisers {
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrite.dstSet = descriptorSet;
 		descriptorWrite.dstBinding = descriptorBinding;
-		//descriptorWrite.dstArrayElement = descriptorArrayElement;
+		descriptorWrite.dstArrayElement = descriptorArrayElement;
 		descriptorWrite.descriptorType = descriptorType;
 		descriptorWrite.descriptorCount = descriptorCount;
 		descriptorWrite.pImageInfo = pImageInfo;
+		return descriptorWrite;
+	}
+
+	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkWriteDescriptorSetAccelerationStructureKHR* pAccelerationStructureInfo, uint32_t descriptorCount, uint32_t descriptorArrayElement) {
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = descriptorSet;
+		descriptorWrite.dstBinding = descriptorBinding;
+		descriptorWrite.dstArrayElement = descriptorArrayElement;
+		descriptorWrite.descriptorType = descriptorType;
+		descriptorWrite.descriptorCount = descriptorCount;
+		descriptorWrite.pNext = pAccelerationStructureInfo;
 		return descriptorWrite;
 	}
 
@@ -381,6 +401,29 @@ namespace Initialisers {
 			height,
 			depth
 		};
+		return region;
+	}
+
+	VkImageCopy imageCopy(uint32_t width, uint32_t height, uint32_t depth,
+		const VkImageSubresourceLayers& srcSubresource, const VkImageSubresourceLayers& dstSubresource, const VkOffset3D& srcOffset, const VkOffset3D& dstOffset) {
+
+		VkImageCopy region{};
+		region.srcSubresource = srcSubresource;
+		region.srcOffset = srcOffset;
+		region.dstSubresource = dstSubresource;
+		region.dstOffset = dstOffset;
+		region.extent = {width, height, depth};
+		return region;
+	}
+
+	VkImageCopy imageCopy(uint32_t width, uint32_t height, uint32_t depth, const VkOffset3D& srcOffset, const VkOffset3D& dstOffset, const VkImageSubresourceLayers& srcSubresource, const VkImageSubresourceLayers& dstSubresource)
+	{
+		VkImageCopy region{};
+		region.srcSubresource = srcSubresource;
+		region.srcOffset = srcOffset;
+		region.dstSubresource = dstSubresource;
+		region.dstOffset = dstOffset;
+		region.extent = { width, height, depth };
 		return region;
 	}
 
@@ -733,6 +776,115 @@ namespace Initialisers {
 		attributeDescription.format = format;
 		attributeDescription.offset = offset;
 		return attributeDescription;
+	}
+
+
+	// Ray Tracing
+
+	VkRayTracingShaderGroupCreateInfoKHR rayTracingGeneralShaderGroup(uint32_t shaderCount) {
+		VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
+		shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+		shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+		shaderGroup.generalShader = shaderCount;
+		shaderGroup.closestHitShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
+		return shaderGroup;
+	}
+
+	VkRayTracingShaderGroupCreateInfoKHR rayTracingClosestHitShaderGroup(uint32_t shaderCount) {
+		VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
+		shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+		shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+		shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.closestHitShader = shaderCount;
+		shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
+		return shaderGroup;
+	}
+
+	// Acceleration Structures
+
+	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo(VkBuffer buffer, VkDeviceSize size, VkAccelerationStructureTypeKHR type) {
+		VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
+		accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+		accelerationStructureCreateInfo.buffer = buffer;
+		accelerationStructureCreateInfo.size = size;
+		accelerationStructureCreateInfo.type = type;
+		return accelerationStructureCreateInfo;
+	}
+	VkAccelerationStructureGeometryKHR triangleAccelerationStructureGeometry(const VkDeviceOrHostAddressConstKHR& vertexData, VkDeviceSize vertexStride,
+		uint32_t maxVertex, VkDeviceOrHostAddressConstKHR indexData, VkDeviceOrHostAddressConstKHR transformData) {
+		VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
+		accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+		accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+		accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+		accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+		accelerationStructureGeometry.geometry.triangles.vertexData = vertexData;
+		accelerationStructureGeometry.geometry.triangles.maxVertex = maxVertex;
+		accelerationStructureGeometry.geometry.triangles.vertexStride = vertexStride;
+		accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+		accelerationStructureGeometry.geometry.triangles.indexData = indexData;
+		accelerationStructureGeometry.geometry.triangles.transformData = transformData;
+
+		return accelerationStructureGeometry;
+	}
+
+	VkAccelerationStructureGeometryKHR instanceAccelerationStructureGeometry(VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress) {
+		VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
+		accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+		accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+		accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+		accelerationStructureGeometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+		accelerationStructureGeometry.geometry.instances.arrayOfPointers = VK_FALSE;
+		accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddress;
+
+		return accelerationStructureGeometry;
+	}
+
+
+	VkAccelerationStructureBuildGeometryInfoKHR bottomLevelAccelerationBuildGeometryInfo(VkAccelerationStructureKHR dstAccelerationStructure, 
+		VkDeviceAddress scratchBufferAddress, const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount) {
+		VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
+		accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+		accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+		accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+		accelerationBuildGeometryInfo.dstAccelerationStructure = dstAccelerationStructure;
+		accelerationBuildGeometryInfo.geometryCount = geometryCount;
+		accelerationBuildGeometryInfo.pGeometries = pGeometries;
+		accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBufferAddress;
+		return accelerationBuildGeometryInfo;
+	}
+
+	VkAccelerationStructureBuildGeometryInfoKHR topLevelAccelerationBuildGeometryInfo(const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount) {
+		VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
+		accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+		accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+		accelerationBuildGeometryInfo.geometryCount = geometryCount;
+		accelerationBuildGeometryInfo.pGeometries = pGeometries;
+		return accelerationBuildGeometryInfo;
+	}
+
+	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo(uint32_t primitiveCount, uint32_t primitiveOffset, uint32_t firstVertex, uint32_t transformOffset) {
+		VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+		accelerationStructureBuildRangeInfo.primitiveCount = primitiveCount;
+		accelerationStructureBuildRangeInfo.primitiveOffset = primitiveOffset;
+		accelerationStructureBuildRangeInfo.firstVertex = firstVertex;
+		accelerationStructureBuildRangeInfo.transformOffset = transformOffset;
+		return accelerationStructureBuildRangeInfo;
+	}
+
+	VkAccelerationStructureInstanceKHR accelerationStructureInstance(VkTransformMatrixKHR transformMatrix, VkGeometryInstanceFlagsKHR flags, uint32_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset, uint32_t mask) {
+		VkAccelerationStructureInstanceKHR instance{};
+		instance.transform = transformMatrix;
+		instance.flags = flags;
+		instance.accelerationStructureReference = accelerationStructureReference;
+		instance.instanceCustomIndex = instanceCustomIndex;
+		instance.mask = mask;
+		instance.instanceShaderBindingTableRecordOffset = instanceShaderBindingTableRecordOffset;
+		return instance;
 	}
 
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Mesh.h"
+#include "Model.h"
 #include "TextureSampler.h"
 #include "Shader.h"
 #include "Device.h"
@@ -20,14 +21,23 @@ public:
 	void Destroy();
 
 
-	void getShaders(std::vector<Shader*>& shaders, const std::vector<std::string>& shaderNames);
+	void GetShaders(std::vector<Shader*>& shaders, const std::vector<std::string>& shaderNames);
+
+	Shader* GetShader(const std::string& shaderName, VkShaderStageFlagBits shaderStage);
 
 	void LoadMesh(const std::string& name);
+
+	Model* GetModel(const std::string& name);
+
+	void LoadModel(const std::string& name);
+
+	TextureSampler* GetTexture(const std::string& name);
 
 	void LoadTexture(const std::string& name);
 
 	void LoadShader(const std::string& name, VkShaderStageFlagBits stage);
 
+	std::map<std::string, std::unique_ptr<Model>> models;
 	std::map<std::string, std::unique_ptr<Mesh>> meshes;
 	std::map<std::string, std::unique_ptr<TextureSampler>> textures;
 	std::map<std::string, std::unique_ptr<Shader>> vertexShaders;

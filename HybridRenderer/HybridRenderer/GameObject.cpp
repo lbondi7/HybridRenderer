@@ -6,8 +6,10 @@ GameObject::~GameObject()
 
 void GameObject::Init(DeviceContext* deviceContext)
 {
-	transform.getMatrix(model);
-	prevTransform = transform;
+	transform.getMatrix(modelMatrix);
+
+	min = modelMatrix * glm::vec4(model->min, 1.0f);
+	max = modelMatrix * glm::vec4(model->max, 1.0f);
 
 	auto imageCount = deviceContext->imageCount;
 	uniformBuffers.resize(imageCount);
@@ -23,22 +25,22 @@ void GameObject::Init(DeviceContext* deviceContext)
 	DescriptorSetRequest request;
 	request.ids.reserve(2);
 	request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-	request.ids.emplace_back(BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER));
+	//request.ids.emplace_back(BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER));
 
 	DescriptorSetRequest request2;
 	request2.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
 
 	request.data.reserve(imageCount);
-	request2.data.reserve(imageCount);
+	//request2.data.reserve(imageCount);
 	for (size_t i = 0; i < imageCount; i++) {
 
 		request.data.push_back(&uniformBuffers[i].descriptorInfo);
-		request.data.push_back(&texture->descriptorInfo);
-		request2.data.push_back(&uniformBuffers[i].descriptorInfo);
+		//request.data.push_back(&texture->descriptorInfo);
+		//request2.data.push_back(&uniformBuffers[i].descriptorInfo);
 	}
 
 	deviceContext->getDescriptors(descriptor, request);
-	deviceContext->getDescriptors(offscreenDescriptor, request2);
+	//deviceContext->getDescriptors(offscreenDescriptor, request2);
 
 	//descriptor.initialise(deviceContext, request);
 	//offscreenDescriptor.initialise(deviceContext, request2);
@@ -48,15 +50,18 @@ void GameObject::Update()
 {
 	if (transform != prevTransform)
 	{
-
-		transform.getMatrix(model);
+		transform.getMatrix(modelMatrix);
+	
+		min = modelMatrix * glm::vec4(model->min, 1.0f);
+		max = modelMatrix * glm::vec4(model->max, 1.0f);
+		
 		prevTransform = transform;
 	}
 }
 
 void GameObject::Destroy()
 {
-	mesh = nullptr;
+	model = nullptr;
 	texture = nullptr;
 	for (auto& buffer : uniformBuffers)
 	{

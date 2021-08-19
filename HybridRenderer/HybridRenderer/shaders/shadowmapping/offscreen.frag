@@ -1,8 +1,13 @@
-#version 450
+#version 460
 
-layout(location = 0) out vec4 color;
+layout(set = 2, binding = 0) uniform sampler2D meshTexture;
+
+layout (location = 0) in vec2 inUV;
 
 void main() 
 {	
-	color = vec4(1.0, 1.0, 1.0, 1.0);
+	float alpha = texture(meshTexture, inUV).a;
+	if (alpha < 0.5) {
+		discard;
+	}
 }

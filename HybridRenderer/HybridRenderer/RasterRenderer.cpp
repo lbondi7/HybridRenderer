@@ -24,12 +24,12 @@ void RasterRenderer::initialise(Resources* _resources)
 {
 
     resources = _resources;
-      
+
     //swapChain.Create(window.glfwWindow, surface, deviceContext);
 
     RenderPassInfo info{};
     info.attachments.push_back({ AttachmentType::COLOUR, swapChain.imageFormat, VK_ATTACHMENT_LOAD_OP_CLEAR,
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED});
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
     info.attachments.push_back({ AttachmentType::DEPTH, Utility::findDepthFormat(deviceContext->physicalDevice), VK_ATTACHMENT_LOAD_OP_CLEAR,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
 
@@ -42,8 +42,9 @@ void RasterRenderer::initialise(Resources* _resources)
     penultimateRenderPass.Create(deviceContext, info);
 
     PipelineInfo pipelineInfo{};
-
-    resources->getShaders(pipelineInfo.shaders, {"scene"});
+    pipelineInfo.shaders = { resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT) ,
+        resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT) };
+    //resources->GetShaders(pipelineInfo.shaders, {"scene"});
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
     pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -60,10 +61,11 @@ void RasterRenderer::initialise(Resources* _resources)
     }
 
     shadowMap.Create(deviceContext, &swapChain);
-    resources->getShaders(pipelineInfo.shaders, { "offscreen" });
+    pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
+        resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_FRAGMENT_BIT) };
     pipelineInfo.depthBiasEnable = VK_TRUE;
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS };
-    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION});
+    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION , VertexAttributes::UV_COORD});
     pipelineInfo.conservativeRasterisation = true;
     pipelineInfo.colourAttachmentCount = 0;
 
@@ -125,11 +127,12 @@ void RasterRenderer::recreateSwapChain() {
 
     frameBuffer.Create(deviceContext, renderPass.vkRenderPass);
     penultimateFrameBuffer.Create(deviceContext, penultimateRenderPass.vkRenderPass);
+    VkExtent2D _extent = { swapChain.extent.width * 2, swapChain.extent.height};
     for (size_t i = 0; i < swapChain.imageCount; i++)
     {
         std::vector<VkImageView> attachments{ swapChain.images[i].imageView, swapChain.depthImage.imageView };
-        frameBuffer.createFramebuffer(attachments, swapChain.extent);
-        penultimateFrameBuffer.createFramebuffer(attachments, swapChain.extent);
+        frameBuffer.createFramebuffer(attachments, _extent);
+        penultimateFrameBuffer.createFramebuffer(attachments, _extent);
     }
 
     shadowMap.reinitialise(true);
@@ -176,7 +179,6 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
     }
 
     {
-        clearValues[0].color= { 0.0f, 1.0f, 1.0f, 1.0f };
         clearValues[0].depthStencil = { 1.0f, 0 };
 
         auto& frame = shadowMap.frameBuffer.frames[i];
@@ -192,14 +194,31 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.vkPipeline);
 
+        Mesh* prevMesh = nullptr;
+
+        std::vector<VkDescriptorSet> descriptorSets;
+        descriptorSets.resize(3);
+        descriptorSets[0] = lightDescs.sets[i];
         for (auto& go : gameObjects) {
             if (!go.shadowCaster)
                 continue;
 
-            std::array<VkDescriptorSet, 2> descriptorSets = { lightDescs.sets[i] , go.offscreenDescriptor.sets[i] };
-            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
-            go.mesh->Bind(commandBuffers[i]);
-            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
+            descriptorSets[1] = go.descriptor.sets[i];
+
+            for (auto& mesh : go.model->meshes)
+            {
+                descriptorSets[2] =  mesh->descriptor.sets[i];
+
+                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+
+                if (prevMesh != mesh.get())
+                {
+                    mesh->Bind(commandBuffers[i]);
+                    prevMesh = mesh.get();
+                }
+
+                vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+            }
         }
 
         shadowMap.renderPass.End(commandBuffers[i]);
@@ -208,25 +227,37 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
     {
         clearValues[0].color = { 0.025f, 0.025f, 0.025f, 1.0f };
         clearValues[1].depthStencil = { 1.0f, 0 };
-
         if(!ImGUI::enabled)
-            renderPass.Begin(commandBuffers[i], frameBuffer.frames[i].vkFrameBuffer, swapChain.extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
+            renderPass.Begin(commandBuffers[i], frameBuffer.frames[i].vkFrameBuffer, frameBuffer.frames[i].extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
         else
-            penultimateRenderPass.Begin(commandBuffers[i], penultimateFrameBuffer.frames[i].vkFrameBuffer, swapChain.extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
+            penultimateRenderPass.Begin(commandBuffers[i], penultimateFrameBuffer.frames[i].vkFrameBuffer, penultimateFrameBuffer.frames[i].extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
 
         camera->vkSetViewport(commandBuffers[i]);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
 
+        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, lightDescs.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE };
+
         for (auto& go : gameObjects) {
 
-            std::array<VkDescriptorSet, 4> descriptorSets = { camera->descriptor.sets[i], go.descriptor.sets[i], lightDescs.sets[i], shadowMap.descriptor.sets[i] };
+            //if (!camera->frustum.IsBoxVisible(go.min, go.max))
+            //    continue;
 
-            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+            descriptorSets[1] = go.descriptor.sets[i];
+            for (auto& mesh : go.model->meshes)
+            {
+                descriptorSets[4] = mesh->descriptor.sets[i];
 
-            go.mesh->Bind(commandBuffers[i]);
+                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
 
-            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
+                mesh->Bind(commandBuffers[i]);
+
+                vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+            }
+
+            //go.mesh->Bind(commandBuffers[i]);
+
+            //vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
         }
 
         if (!ImGUI::enabled)

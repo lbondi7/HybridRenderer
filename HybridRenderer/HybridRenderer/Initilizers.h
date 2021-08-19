@@ -23,9 +23,13 @@ namespace Initialisers {
 
 	VkDescriptorImageInfo descriptorImageInfo(VkImageView imageView, VkSampler sampler, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+	VkWriteDescriptorSetAccelerationStructureKHR descriptorSetAccelerationStructureInfo(const VkAccelerationStructureKHR* pAccerlerationStructures, uint32_t accelerationStructureCount = 1);
+
 	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkDescriptorBufferInfo* pBufferInfo, uint32_t descriptorCount = 1, uint32_t descriptorArrayElement = 0);
 	
 	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo, uint32_t descriptorCount = 1, uint32_t descriptorArrayElement = 0);
+
+	VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t descriptorBinding, VkDescriptorType descriptorType, const VkWriteDescriptorSetAccelerationStructureKHR* pAccelerationStructureInfo, uint32_t descriptorCount = 1, uint32_t descriptorArrayElement = 0);
 
 	// Descriptor Pools
 
@@ -43,7 +47,7 @@ namespace Initialisers {
 
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo(VkPipelineLayout layout, VkRenderPass renderPass, uint32_t subpasses, VkPipeline basePipelineHandle = VK_NULL_HANDLE);
 
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(const VkDescriptorSetLayout* pSetLayouts, uint32_t setLayoutCount);
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(const VkDescriptorSetLayout* pSetLayouts, uint32_t setLayoutCount = 1);
 
 	VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char* pName);
 
@@ -110,6 +114,18 @@ namespace Initialisers {
 		uint32_t mipLevel = 0,
 		uint32_t baseArrayLayer = 0,
 		uint32_t layerCount = 1);
+
+	VkImageCopy imageCopy(uint32_t width, uint32_t height, uint32_t depth = 1, 
+		const VkImageSubresourceLayers& srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
+		const VkImageSubresourceLayers& dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 }, 
+		const VkOffset3D& srcOffset = {0, 0, 0},
+		const VkOffset3D& dstOffset = {0, 0, 0});
+
+	VkImageCopy imageCopy(uint32_t width, uint32_t height, uint32_t depth,
+		const VkOffset3D& srcOffset,
+		const VkOffset3D& dstOffset,
+		const VkImageSubresourceLayers& srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
+		const VkImageSubresourceLayers& dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 });
 
 	//Image Views
 
@@ -227,4 +243,27 @@ namespace Initialisers {
 	VkVertexInputBindingDescription vertexInputBindingDescription(uint32_t binding, uint32_t stride, VkVertexInputRate inputRate = VK_VERTEX_INPUT_RATE_VERTEX);
 
 	VkVertexInputAttributeDescription vertexInputAttributeDescription(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset);
+
+	// Ray Tracing
+
+	VkRayTracingShaderGroupCreateInfoKHR rayTracingGeneralShaderGroup(uint32_t shaderCount);
+
+	VkRayTracingShaderGroupCreateInfoKHR rayTracingClosestHitShaderGroup(uint32_t shaderCount);
+
+	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo(VkBuffer buffer, VkDeviceSize size, VkAccelerationStructureTypeKHR type);
+
+	VkAccelerationStructureGeometryKHR triangleAccelerationStructureGeometry(const VkDeviceOrHostAddressConstKHR& vertexData, VkDeviceSize vertexStride, uint32_t maxVertex, VkDeviceOrHostAddressConstKHR indexData, VkDeviceOrHostAddressConstKHR transformData);
+
+	VkAccelerationStructureGeometryKHR instanceAccelerationStructureGeometry(VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress);
+
+	VkAccelerationStructureBuildGeometryInfoKHR bottomLevelAccelerationBuildGeometryInfo(VkAccelerationStructureKHR dstAccelerationStructure, 
+		VkDeviceAddress scratchBufferAddress, const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount = 1);
+
+	VkAccelerationStructureBuildGeometryInfoKHR topLevelAccelerationBuildGeometryInfo(const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount = 1);
+
+	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo(uint32_t primitiveCount, uint32_t primitiveOffset = 0, uint32_t firstVertex = 0, uint32_t transformOffset = 0);
+
+	VkAccelerationStructureInstanceKHR accelerationStructureInstance(VkTransformMatrixKHR transformMatrix, VkGeometryInstanceFlagsKHR flags, uint32_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset = 0, uint32_t mask = 0xFF);
+
+
 }

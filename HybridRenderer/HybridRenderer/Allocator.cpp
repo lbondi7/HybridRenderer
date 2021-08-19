@@ -8,36 +8,41 @@ Allocator::~Allocator()
 
 void Allocator::init(VkDevice _logicalDevice, VkPhysicalDevice _physicalDevice)
 {
-	logicalDevice = _logicalDevice;
-	physicalDevice = _physicalDevice;
+    logicalDevice = _logicalDevice;
+    physicalDevice = _physicalDevice;
 
-	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 }
 
 void Allocator::allocateBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
-	getBuffer(bufferInfo, size, usage, properties);
+    getBuffer(bufferInfo, size, usage, properties);
 }
 
 void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProperties) {
 
-
-    auto minAlignment = properties.limits.minUniformBufferOffsetAlignment;
-    int amount = static_cast<int>(std::ceil(static_cast<float>(size) / static_cast<float>(minAlignment)));
-    minAlignment = minAlignment * static_cast<VkDeviceSize>(amount);
-
+    VkDeviceSize minAlignment = VK_WHOLE_SIZE;
+    if (usage == VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+    {
+        minAlignment = properties.limits.minUniformBufferOffsetAlignment;
+        int amount = static_cast<int>(std::ceil(static_cast<float>(size) / static_cast<float>(minAlignment)));
+        minAlignment = minAlignment * static_cast<VkDeviceSize>(amount);
+    }
+    else {
+        minAlignment = size;
+    }
     for (auto& buffer : bufferPool) {
         if (usage == buffer.usage && (minAlignment + buffer.size <= maxBufferSize)) {
 
             bufferInfo.buffer = buffer.buffer;
             bufferInfo.memoryData = buffer.memoryData;
             bufferInfo.offset = buffer.size;
-            bufferInfo.memOffset = buffer.memoryData->currentOffset;
+            bufferInfo.memOffset += buffer.memStartOffset + buffer.currentMemoryOffset;
             bufferInfo.usage = usage;
             bufferInfo.size = size;
 
             buffer.size += minAlignment;
-            buffer.memoryData->currentOffset += minAlignment;
+            buffer.currentMemoryOffset += minAlignment;
 
             return;
         }
@@ -60,27 +65,28 @@ void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsa
     vkGetBufferMemoryRequirements(logicalDevice, buffer.buffer, &memRequirements);
 
     auto memoryData = getMemory(memRequirements, memProperties);
-
-    vkBindBufferMemory(logicalDevice, buffer.buffer, memoryData->memory, 0);
+    vkBindBufferMemory(logicalDevice, buffer.buffer, memoryData->memory, memoryData->size);
     buffer.size += minAlignment;
     buffer.memoryData = memoryData;
+    buffer.memStartOffset = memoryData->size;
+    buffer.currentMemoryOffset += minAlignment;
 
     bufferInfo.buffer = buffer.buffer;
     bufferInfo.memoryData = buffer.memoryData;
     bufferInfo.offset = 0;
-    bufferInfo.memOffset = buffer.memoryData->currentOffset;
+    bufferInfo.memOffset = 0;
     bufferInfo.usage = usage;
     bufferInfo.size = size;
 
-    memoryData->currentOffset += minAlignment;
+    memoryData->size += memRequirements.size;
 }
 
 
 MemoryData* Allocator::getMemory(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags properties) {
 
     for (auto& mem : memoryPool) {
-        if (mem.properties == properties &&
-            memRequirements.size + mem.currentOffset < maxMemorySize) {
+        if (mem.properties& properties&&
+            memRequirements.size + mem.size < maxMemorySize) {
             return &mem;
         }
     }

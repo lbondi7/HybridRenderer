@@ -6,6 +6,8 @@
 
 #include "Descriptor.h"
 
+#include "Frustum.hpp"
+
 #include "ImGUIWidgets.h"
 
 
@@ -64,6 +66,8 @@ public:
 	Descriptor descriptor;
 
 	void updateWindow(float windowWidth, float windowHeight);
+
+	Frustum frustum;
 
 	ImGUIWidget widget;
 

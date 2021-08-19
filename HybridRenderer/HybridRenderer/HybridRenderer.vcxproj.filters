@@ -201,6 +201,9 @@
     <ClCompile Include="imgui\imgui_impl_vulkan.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vertex.h">
@@ -346,6 +349,15 @@
     </ClInclude>
     <ClInclude Include="imgui\imgui_impl_vulkan.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Frustum.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

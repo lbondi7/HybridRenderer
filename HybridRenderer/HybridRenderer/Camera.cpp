@@ -44,6 +44,8 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 
 	deviceContext->getDescriptors(descriptor, request);
 	//descriptor.initialise(deviceContext, request);
+
+	update(_extent.width, _extent.height);
 }
 
 void Camera::update(float windowWidth, float windowHeight)
@@ -55,8 +57,11 @@ void Camera::update(float windowWidth, float windowHeight)
 		view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
 
 		projection = glm::perspective(glm::radians(FOV), windowWidth / windowHeight, nearPlane, farPlane);
-		//projection[1][1] *= -1;
+		projection[1][1] *= -1;
 		//updateValues(windowWidth, windowHeight);
+
+		frustum.update(projection * view);
+
 	}
 }
 

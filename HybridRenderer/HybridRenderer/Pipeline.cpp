@@ -135,7 +135,8 @@ void Pipeline::createGraphicsPipeline() {
         viewportState = Initialisers::pipelineViewportStateCreateInfo(nullptr, 1, nullptr, 1);
     else {
         viewportState = 
-            Initialisers::pipelineViewportStateCreateInfo(pipelineInfo.viewports.data(), static_cast<uint32_t>(pipelineInfo.viewports.size()), pipelineInfo.scissors.data(), static_cast<uint32_t>(pipelineInfo.scissors.size()));
+            Initialisers::pipelineViewportStateCreateInfo(pipelineInfo.viewports.data(), static_cast<uint32_t>(pipelineInfo.viewports.size()), 
+                pipelineInfo.scissors.data(), static_cast<uint32_t>(pipelineInfo.scissors.size()));
     }
 
     pipelineCreateInfo.pViewportState = &viewportState;
@@ -172,8 +173,6 @@ void Pipeline::createGraphicsPipeline() {
     VkPipelineDynamicStateCreateInfo dynamicState = Initialisers::pipelineDynamicStateCreateInfo(pipelineInfo.dynamicStates.data(), static_cast<uint32_t>(pipelineInfo.dynamicStates.size()));
     //dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     pipelineCreateInfo.pDynamicState = &dynamicState;
-
-    float shu = 0.0f;
 
     VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterStateCI{};
 

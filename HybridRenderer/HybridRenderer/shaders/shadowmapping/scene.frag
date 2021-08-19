@@ -1,7 +1,7 @@
 #version 450
 
 layout (set = 3, binding = 0) uniform sampler2D shadowMap;
-layout (set = 1, binding = 1) uniform sampler2D samp;
+layout (set = 4, binding = 0) uniform sampler2D sampledTexture;
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;
@@ -82,6 +82,10 @@ vec3 shadingGGX(vec3 N, vec3 V, vec3 L, vec3 color, float roughness, float metal
 
 void main() {
 
+	vec4 col = texture(sampledTexture, inUV);
+	if(col.a < 0.5)
+		discard;
+
 	float shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
 
 	vec3 normal = normalize(inNormal);
@@ -96,5 +100,5 @@ void main() {
 	vec3 invLightDir = normalize(lightPos - fragVert);
 	totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.5, 0.5);
 
-	outFragColor = texture(samp, inUV) * vec4(totalLight, 1.0) * shadow;
+	outFragColor = col * vec4(totalLight, 1.0) * shadow;
 }

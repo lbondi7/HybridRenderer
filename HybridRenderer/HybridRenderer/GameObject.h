@@ -1,7 +1,7 @@
 #pragma once
 #include "Constants.h"
 #include "Transform.h"
-#include "Mesh.h"
+#include "Model.h"
 #include "TextureSampler.h"
 #include "Descriptor.h"
 
@@ -24,8 +24,9 @@ public:
 	void Destroy();
 
 	Transform transform;
-	glm::mat4 model;
+	glm::mat4 modelMatrix;
 
+	Model* model = nullptr;
 	Mesh* mesh = nullptr;
 	TextureSampler* texture = nullptr;
 
@@ -40,6 +41,8 @@ public:
 	Descriptor descriptor;
 	Descriptor offscreenDescriptor;
 
+	glm::vec3 min;
+	glm::vec3 max;
 
 private:
 	Transform prevTransform;

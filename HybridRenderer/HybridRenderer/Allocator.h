@@ -14,6 +14,8 @@ struct BufferData {
     MemoryData* memoryData;
     VkBuffer buffer;
     VkDeviceSize offset;
+    VkDeviceSize currentMemoryOffset = 0;
+    VkDeviceSize memStartOffset = 0;
     VkDeviceSize size = 0;
     VkDeviceSize allocatedSize = 0;
     VkBufferUsageFlags usage;

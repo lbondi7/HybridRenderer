@@ -183,7 +183,6 @@ void DeviceContext::createCommandPool(VkSurfaceKHR surface) {
 
 VkFormat DeviceContext::getDepthFormat()
 {
-
     if (!hasDepthFormat)
     {
         const std::vector<VkFormat> candidates = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
