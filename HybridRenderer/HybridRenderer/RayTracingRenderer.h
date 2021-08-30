@@ -32,6 +32,8 @@ public:
 
 	void initialise(DeviceContext* _deviceContext, VkSurfaceKHR surface, Window* _window, Resources* _resources);
 
+	void cleanup();
+
 
 	void render();
 
@@ -62,9 +64,6 @@ public:
 	void buildCommandBuffers();
 
 	void updateUniformBuffers();
-
-	void getEnabledFeatures();
-
 
 	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
 	PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;

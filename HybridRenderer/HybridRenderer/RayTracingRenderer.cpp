@@ -6,25 +6,6 @@
 
 RayTracingRenderer::~RayTracingRenderer()
 {
-	vkDestroyPipeline(deviceContext->logicalDevice, pipeline, nullptr);
-	vkDestroyPipelineLayout(deviceContext->logicalDevice, pipelineLayout, nullptr);
-	vkDestroyDescriptorSetLayout(deviceContext->logicalDevice, descriptorSetLayout, nullptr);
-	vkDestroyImageView(deviceContext->logicalDevice, storageImage.view, nullptr);
-	vkDestroyImage(deviceContext->logicalDevice, storageImage.image, nullptr);
-	vkFreeMemory(deviceContext->logicalDevice, storageImage.memory, nullptr);
-	vkFreeMemory(deviceContext->logicalDevice, bottomLevelAS.memory, nullptr);
-	vkDestroyBuffer(deviceContext->logicalDevice, bottomLevelAS.buffer, nullptr);
-	vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, bottomLevelAS.handle, nullptr);
-	vkFreeMemory(deviceContext->logicalDevice, topLevelAS.memory, nullptr);
-	vkDestroyBuffer(deviceContext->logicalDevice, topLevelAS.buffer, nullptr);
-	vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, topLevelAS.handle, nullptr);
-	vertexBuffer.Destroy();
-	indexBuffer.Destroy();
-	transformBuffer.Destroy();
-	raygenShaderBindingTable.Destroy();
-	missShaderBindingTable.Destroy();
-	hitShaderBindingTable.Destroy();
-	ubo.Destroy();
 
 }
 
@@ -58,7 +39,6 @@ void RayTracingRenderer::initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	camera.transform.position = glm::vec3(0, 0, 10);
 	camera.transform.rotation.y = 180.f;
 
-	//camera.init(core->deviceContext.get(), renderer->swapChain.extent);
 	camera.init(deviceContext, swapChain.extent);
 
 	camera.update(window->width, window->height);
@@ -105,6 +85,39 @@ void RayTracingRenderer::initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	createDescriptorSets();
 	buildCommandBuffers();
 
+}
+
+
+void RayTracingRenderer::cleanup() {
+	vkDestroyPipeline(deviceContext->logicalDevice, pipeline, nullptr);
+	vkDestroyPipelineLayout(deviceContext->logicalDevice, pipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(deviceContext->logicalDevice, descriptorSetLayout, nullptr);
+	vkDestroyImageView(deviceContext->logicalDevice, storageImage.view, nullptr);
+	vkDestroyImage(deviceContext->logicalDevice, storageImage.image, nullptr);
+	vkFreeMemory(deviceContext->logicalDevice, storageImage.memory, nullptr);
+	vkFreeMemory(deviceContext->logicalDevice, bottomLevelAS.memory, nullptr);
+	vkDestroyBuffer(deviceContext->logicalDevice, bottomLevelAS.buffer, nullptr);
+	vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, bottomLevelAS.handle, nullptr);
+	vkFreeMemory(deviceContext->logicalDevice, topLevelAS.memory, nullptr);
+	vkDestroyBuffer(deviceContext->logicalDevice, topLevelAS.buffer, nullptr);
+	vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, topLevelAS.handle, nullptr);
+	swapChain.Destroy();
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(deviceContext->logicalDevice, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(deviceContext->logicalDevice, imageAvailableSemaphores[i], nullptr);
+		vkDestroyFence(deviceContext->logicalDevice, inFlightFences[i], nullptr);
+	}
+
+	vkDestroyDescriptorPool(deviceContext->logicalDevice, descriptorPool, nullptr);
+
+	vertexBuffer.Destroy();
+	indexBuffer.Destroy();
+	transformBuffer.Destroy();
+	raygenShaderBindingTable.Destroy();
+	missShaderBindingTable.Destroy();
+	hitShaderBindingTable.Destroy();
+	ubo.Destroy();
 }
 
 void RayTracingRenderer::render()
@@ -604,21 +617,21 @@ void RayTracingRenderer::createRayTracingPipeline()
 
 	// Ray generation group
 	{
-		shaderStages.push_back(resources->raygenShaders["raygen"]->createInfo());
+		shaderStages.push_back(resources->GetShader("raytracing/raygen", VK_SHADER_STAGE_RAYGEN_BIT_KHR)->createInfo());
 		VkRayTracingShaderGroupCreateInfoKHR shaderGroup = Initialisers::rayTracingGeneralShaderGroup(static_cast<uint32_t>(shaderStages.size()) - 1);
 		shaderGroups.push_back(shaderGroup);
 	}
 
 	// Miss group
 	{
-		shaderStages.push_back(resources->raymissShaders["miss"]->createInfo());
+		shaderStages.push_back(resources->GetShader("raytracing/miss", VK_SHADER_STAGE_MISS_BIT_KHR)->createInfo());
 		VkRayTracingShaderGroupCreateInfoKHR shaderGroup = Initialisers::rayTracingGeneralShaderGroup(static_cast<uint32_t>(shaderStages.size()) - 1);
 		shaderGroups.push_back(shaderGroup);
 	}
 
 	// Closest hit group
 	{
-		shaderStages.push_back(resources->rayclosesthitShaders["closesthit"]->createInfo());
+		shaderStages.push_back(resources->GetShader("raytracing/closesthit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)->createInfo());
 		VkRayTracingShaderGroupCreateInfoKHR shaderGroup = Initialisers::rayTracingClosestHitShaderGroup(static_cast<uint32_t>(shaderStages.size()) - 1);
 		shaderGroups.push_back(shaderGroup);
 	}
