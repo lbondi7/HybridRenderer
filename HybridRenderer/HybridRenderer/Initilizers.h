@@ -250,20 +250,35 @@ namespace Initialisers {
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingClosestHitShaderGroup(uint32_t shaderCount);
 
-	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo(VkBuffer buffer, VkDeviceSize size, VkAccelerationStructureTypeKHR type);
 
-	VkAccelerationStructureGeometryKHR triangleAccelerationStructureGeometry(const VkDeviceOrHostAddressConstKHR& vertexData, VkDeviceSize vertexStride, uint32_t maxVertex, VkDeviceOrHostAddressConstKHR indexData, VkDeviceOrHostAddressConstKHR transformData);
+	// Acceleration Structure
 
-	VkAccelerationStructureGeometryKHR instanceAccelerationStructureGeometry(VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress);
+	VkAccelerationStructureCreateInfoKHR ASCreateInfo(VkBuffer buffer, VkDeviceSize size, VkAccelerationStructureTypeKHR type);
 
-	VkAccelerationStructureBuildGeometryInfoKHR bottomLevelAccelerationBuildGeometryInfo(VkAccelerationStructureKHR dstAccelerationStructure, 
+	VkAccelerationStructureGeometryTrianglesDataKHR ASGTriangleData(const VkDeviceOrHostAddressConstKHR& vertexData, VkDeviceSize vertexStride, uint32_t maxVertex, VkDeviceOrHostAddressConstKHR indexData, VkDeviceOrHostAddressConstKHR transformData);
+
+	VkAccelerationStructureGeometryInstancesDataKHR ASGInstanceData(const VkDeviceOrHostAddressConstKHR& instanceData, VkBool32 arrayOfPointers = VK_FALSE);
+
+	VkAccelerationStructureGeometryKHR ASG(const VkAccelerationStructureGeometryTrianglesDataKHR& triangles);
+
+	VkAccelerationStructureGeometryKHR ASG(const VkAccelerationStructureGeometryInstancesDataKHR& instances);
+
+	VkAccelerationStructureBuildSizesInfoKHR ASBuildSizesInfo();
+
+	VkAccelerationStructureBuildGeometryInfoKHR BLABuildGeometryInfo(const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount = 1, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+
+	VkAccelerationStructureBuildGeometryInfoKHR BLABuildGeometryInfo(const VkAccelerationStructureKHR& dstAccelerationStructure, const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount = 1, VkDeviceAddress scratchBufferAddress = 0U, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+
+	VkAccelerationStructureBuildGeometryInfoKHR ABuildGeometryInfo(const VkAccelerationStructureBuildGeometryInfoKHR& prevAccelerationBuildGeometryInfo, const VkAccelerationStructureKHR& dstAccelerationStructure, VkDeviceAddress scratchBufferAddress = 0U);
+
+	VkAccelerationStructureBuildGeometryInfoKHR BLABuildGeometryInfo(VkAccelerationStructureKHR dstAccelerationStructure,
 		VkDeviceAddress scratchBufferAddress, const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount = 1);
 
-	VkAccelerationStructureBuildGeometryInfoKHR topLevelAccelerationBuildGeometryInfo(const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount = 1);
+	VkAccelerationStructureBuildGeometryInfoKHR TLABuildGeometryInfo(const VkAccelerationStructureGeometryKHR* pGeometries, uint32_t geometryCount = 1);
 
-	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo(uint32_t primitiveCount, uint32_t primitiveOffset = 0, uint32_t firstVertex = 0, uint32_t transformOffset = 0);
+	VkAccelerationStructureBuildRangeInfoKHR ASBuildRangeInfo(uint32_t primitiveCount, uint32_t primitiveOffset = 0, uint32_t firstVertex = 0, uint32_t transformOffset = 0);
 
-	VkAccelerationStructureInstanceKHR accelerationStructureInstance(VkTransformMatrixKHR transformMatrix, VkGeometryInstanceFlagsKHR flags, uint32_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset = 0, uint32_t mask = 0xFF);
+	VkAccelerationStructureInstanceKHR ASInstance(VkTransformMatrixKHR transformMatrix, VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset = 0, uint32_t mask = 0xFF);
 
-
+	VkAccelerationStructureDeviceAddressInfoKHR ADeviceAddressInfo(const VkAccelerationStructureKHR& accelerationStructure);
 }

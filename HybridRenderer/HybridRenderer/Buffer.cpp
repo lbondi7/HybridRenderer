@@ -5,16 +5,17 @@
 
 Buffer::~Buffer()
 {
-	devices = nullptr;
+	deviceContext = nullptr;
 }
 
 void Buffer::Create(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageFlags _usage, VkMemoryPropertyFlags _properties, void* _data)
 {
-    devices = _devices;
+    deviceContext = _devices;
     size = _size;
     usage = _usage;
     properties = _properties;
 
+    vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(deviceContext->logicalDevice, "vkGetBufferDeviceAddressKHR"));
 
     createBuffer(size, usage, properties);
 
@@ -24,10 +25,12 @@ void Buffer::Create(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageFl
 
 void Buffer::Create(DeviceContext* _devices, VkDeviceSize _size, void* _data)
 {
-    devices = _devices;
+    deviceContext = _devices;
     size = _size;
     usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(deviceContext->logicalDevice, "vkGetBufferDeviceAddressKHR"));
 
     createBuffer(size, usage, properties);
     Map(_data);
@@ -41,15 +44,15 @@ void Buffer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
     //bufferInfo.usage = usage;
     //bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateBuffer(devices->logicalDevice, &bufferInfo, nullptr, &vkBuffer) != VK_SUCCESS) {
+    if (vkCreateBuffer(deviceContext->logicalDevice, &bufferInfo, nullptr, &vkBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to create buffer!");
     }
 
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(devices->logicalDevice, vkBuffer, &memRequirements);
+    vkGetBufferMemoryRequirements(deviceContext->logicalDevice, vkBuffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo = Initialisers::memoryAllocateInfo(memRequirements.size,
-        Utility::findMemoryType(memRequirements.memoryTypeBits, devices->physicalDevice, properties));
+        Utility::findMemoryType(memRequirements.memoryTypeBits, deviceContext->physicalDevice, properties));
     //allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     //allocInfo.allocationSize = memRequirements.size;
     //allocInfo.memoryTypeIndex = Utility::findMemoryType(memRequirements.memoryTypeBits, devices->physicalDevice, properties);
@@ -61,19 +64,19 @@ void Buffer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
         allocInfo.pNext = &allocFlagsInfo;
     }
 
-    if (vkAllocateMemory(devices->logicalDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
+    if (vkAllocateMemory(deviceContext->logicalDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate buffer memory!");
     }
 
 
-    vkBindBufferMemory(devices->logicalDevice, vkBuffer, memory, 0);
+    vkBindBufferMemory(deviceContext->logicalDevice, vkBuffer, memory, 0);
 
     descriptorInfo = Initialisers::descriptorBufferInfo(vkBuffer, size);
 }
 
 void Buffer::Create2(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageFlags _usage, VkMemoryPropertyFlags _properties, void* _data)
 {
-    devices = _devices;
+    deviceContext = _devices;
     size = _size;
     usage = _usage;
     properties = _properties;
@@ -87,7 +90,7 @@ void Buffer::Create2(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsageF
 
 void Buffer::createBuffer2(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
 
-    devices->allocator.allocateBuffer(bufferInfo, size, usage, properties);
+    deviceContext->allocator.allocateBuffer(bufferInfo, size, usage, properties);
 
     descriptorInfo = Initialisers::descriptorBufferInfo(bufferInfo.buffer, bufferInfo.size, bufferInfo.offset);
 }
@@ -95,18 +98,18 @@ void Buffer::createBuffer2(VkDeviceSize size, VkBufferUsageFlags usage, VkMemory
 
 void Buffer::CopyFrom(Buffer* other) {
 
-    VkCommandBuffer commandBuffer = devices->generateCommandBuffer();
+    VkCommandBuffer commandBuffer = deviceContext->generateCommandBuffer();
 
     VkBufferCopy copyRegion = Initialisers::bufferCopy(size);
     //copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, other->vkBuffer, vkBuffer, 1, &copyRegion);
 
-    devices->EndCommandBuffer(commandBuffer);
+    deviceContext->EndCommandBuffer(commandBuffer);
 }
 
 void Buffer::CopyFrom2(Buffer* other) {
 
-    VkCommandBuffer commandBuffer = devices->generateCommandBuffer();
+    VkCommandBuffer commandBuffer = deviceContext->generateCommandBuffer();
 
     VkBufferCopy copyRegion{};
     copyRegion.size = other->size;
@@ -115,7 +118,7 @@ void Buffer::CopyFrom2(Buffer* other) {
     vkCmdCopyBuffer(commandBuffer, other->vkBuffer, bufferInfo.buffer, 1, &copyRegion);
 
 
-    devices->EndCommandBuffer(commandBuffer);
+    deviceContext->EndCommandBuffer(commandBuffer);
 }
 
 
@@ -124,40 +127,40 @@ void Buffer::Destroy() {
     Unmap();
     if (vkBuffer != VK_NULL_HANDLE)
     {
-        vkDestroyBuffer(devices->logicalDevice, vkBuffer, nullptr);
+        vkDestroyBuffer(deviceContext->logicalDevice, vkBuffer, nullptr);
     }
     if (memory != VK_NULL_HANDLE)
     {
-        vkFreeMemory(devices->logicalDevice, memory, nullptr);
+        vkFreeMemory(deviceContext->logicalDevice, memory, nullptr);
     }
 }
 
 void Buffer::Map(void* _data) {
 
-    vkMapMemory(devices->logicalDevice, memory, 0, size, 0, &data);
+    vkMapMemory(deviceContext->logicalDevice, memory, 0, size, 0, &data);
     memcpy(data, _data, (size_t)size);
-    vkUnmapMemory(devices->logicalDevice, memory);
+    vkUnmapMemory(deviceContext->logicalDevice, memory);
 }
 
 void Buffer::Map()
 {
-    vkMapMemory(devices->logicalDevice, memory, 0, size, 0, &data);
+    vkMapMemory(deviceContext->logicalDevice, memory, 0, size, 0, &data);
     mapped = true;
 }
 
 void Buffer::Unmap()
 {
     if (mapped)
-        vkUnmapMemory(devices->logicalDevice, memory);
+        vkUnmapMemory(deviceContext->logicalDevice, memory);
 
     mapped = false;
 }
 
 void Buffer::Map2(const void* src_data) {
 
-    vkMapMemory(devices->logicalDevice, bufferInfo.memoryData->memory, bufferInfo.memOffset, descriptorInfo.range, 0, &data);
+    vkMapMemory(deviceContext->logicalDevice, bufferInfo.memoryData->memory, bufferInfo.memOffset, descriptorInfo.range, 0, &data);
     memcpy(data, src_data, static_cast<size_t>(descriptorInfo.range));
-    vkUnmapMemory(devices->logicalDevice, bufferInfo.memoryData->memory);
+    vkUnmapMemory(deviceContext->logicalDevice, bufferInfo.memoryData->memory);
 }
 
 void Buffer::Flush(VkDeviceSize size, VkDeviceSize offset)
@@ -167,5 +170,22 @@ void Buffer::Flush(VkDeviceSize size, VkDeviceSize offset)
     mappedRange.memory = memory;
     mappedRange.offset = offset;
     mappedRange.size = size;
-    vkFlushMappedMemoryRanges(devices->logicalDevice, 1, &mappedRange);
+    vkFlushMappedMemoryRanges(deviceContext->logicalDevice, 1, &mappedRange);
 }
+
+uint64_t Buffer::GetDeviceAddress()
+{
+    VkBufferDeviceAddressInfoKHR buffer_device_address_info{};
+    buffer_device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    buffer_device_address_info.buffer = vkBuffer;
+    return vkGetBufferDeviceAddressKHR(deviceContext->logicalDevice, &buffer_device_address_info);
+}
+
+//
+//uint64_t Buffer::GetDeviceAddress2()
+//{
+//    VkBufferDeviceAddressInfoKHR buffer_device_address_info{};
+//    buffer_device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+//    buffer_device_address_info.buffer = bufferInfo.buffer;
+//    return vkGetBufferDeviceAddressKHR(deviceContext->logicalDevice, &buffer_device_address_info);
+//}

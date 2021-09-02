@@ -7,6 +7,7 @@
 #include "Window.h"
 #include "Resources.h"
 #include "Camera.h"
+#include "AccelerationStructure.h"
 
 struct RayTracingScratchBuffer
 {
@@ -16,7 +17,7 @@ struct RayTracingScratchBuffer
 };
 
 // Ray tracing acceleration structure
-struct AccelerationStructure {
+struct AccelerationStructure2 {
 	VkAccelerationStructureKHR handle;
 	uint64_t deviceAddress = 0;
 	VkDeviceMemory memory;
@@ -37,19 +38,9 @@ public:
 
 	void render();
 
-	RayTracingScratchBuffer createScratchBuffer(VkDeviceSize size);
-
-	void deleteScratchBuffer(RayTracingScratchBuffer& scratchBuffer);
-
-	void createAccelerationStructureBuffer(AccelerationStructure& accelerationStructure, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
-
-	uint64_t getBufferDeviceAddress(VkBuffer buffer);
+	void createAccelerationStructureBuffer(AccelerationStructure2& accelerationStructure, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
 
 	void createStorageImage();
-
-	void createBottomLevelAccelerationStructure();
-
-	void createTopLevelAccelerationStructure();
 
 	void createShaderBindingTable();
 
@@ -77,8 +68,10 @@ public:
 	PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
 
 
-	AccelerationStructure bottomLevelAS{};
-	AccelerationStructure topLevelAS{};
+	AccelerationStructure2 bottomLevelAS{};
+	std::vector<AccelerationStructure2> bottomLevelASs;
+	std::vector<AccelerationStructure> blas;
+	AccelerationStructure tlas;
 
 	Buffer vertexBuffer;
 	Buffer indexBuffer;
@@ -93,7 +86,6 @@ public:
 		VkDeviceMemory memory;
 		VkImage image;
 		VkImageView view;
-		VkFormat format;
 	} storageImage;
 
 	struct UniformData {
@@ -104,7 +96,7 @@ public:
 
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSet;
+	VkDescriptorSet descriptorSets;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
 

@@ -27,9 +27,9 @@ void HybridEngine::run()
 
 void HybridEngine::initialise()
 {
-    std::cout << "How many trees?: " << std::endl;
-    std::cin >> gameObjectCount;
-    gameObjectCount += 2;
+    //std::cout << "How many trees?: " << std::endl;
+    //std::cin >> gameObjectCount;
+    //gameObjectCount += 2;
 
     window = std::make_unique<Window>();
     window->init(this);
@@ -145,54 +145,54 @@ void HybridEngine::prepare()
 
 void HybridEngine::update()
 {
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
-    //{
-    //    auto forward = camera.transform.forward;
-    //    forward.y = 0;
-    //    camera.transform.position += forward * 10.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
-    //{
-    //    auto forward = camera.transform.forward;
-    //    forward.y = 0;
-    //    camera.transform.position -= forward * 10.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
-    //{
-    //    auto right = camera.transform.right;
-    //    right.y = 0;
-    //    camera.transform.position += right * 10.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
-    //{
-    //    auto right = camera.transform.right;
-    //    right.y = 0;
-    //    camera.transform.position -= right * 10.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-    //{
-    //    camera.transform.position += camera.worldUp * 10.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-    //{
-    //    camera.transform.position -= camera.worldUp * 10.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_Q) == GLFW_PRESS)
-    //{
-    //    camera.transform.rotation.y -= 50.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_E) == GLFW_PRESS)
-    //{
-    //    camera.transform.rotation.y += 50.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_Z) == GLFW_PRESS)
-    //{
-    //    camera.transform.rotation.x -= 50.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_C) == GLFW_PRESS)
-    //{
-    //    camera.transform.rotation.x += 50.0f * timer.dt;
-    //}
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        auto forward = camera.transform.forward;
+        forward.y = 0;
+        camera.transform.position += forward * 10.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        auto forward = camera.transform.forward;
+        forward.y = 0;
+        camera.transform.position -= forward * 10.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        auto right = camera.transform.right;
+        right.y = 0;
+        camera.transform.position += right * 10.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        auto right = camera.transform.right;
+        right.y = 0;
+        camera.transform.position -= right * 10.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    {
+        camera.transform.position += camera.worldUp * 10.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    {
+        camera.transform.position -= camera.worldUp * 10.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        camera.transform.rotation.y -= 50.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        camera.transform.rotation.y += 50.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_Z) == GLFW_PRESS)
+    {
+        camera.transform.rotation.x -= 50.0f * timer.dt;
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_C) == GLFW_PRESS)
+    {
+        camera.transform.rotation.x += 50.0f * timer.dt;
+    }
     //
     //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_8) == GLFW_PRESS)
     //{

@@ -2,6 +2,7 @@
 #include "ValidationLayers.h"
 
 #include "Utility.h"
+#include "DebugLogger.h"
 
 #include <set>
 #include <stdexcept>
@@ -54,15 +55,33 @@ VkCommandBuffer DeviceContext::generateCommandBuffer()
 
 void DeviceContext::EndCommandBuffer(VkCommandBuffer cmdBuffer)
 {
-    vkEndCommandBuffer(cmdBuffer);
-
+    // Submit to the queue
+    if (vkEndCommandBuffer(cmdBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to end 1 time command buffer!");
+    }
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmdBuffer;
 
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
+    VkFence fence;
+    VkFenceCreateInfo fence_info{};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    if (vkCreateFence(logicalDevice, &fence_info, nullptr, &fence) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create fence!");
+    }
+
+    // Submit to the queue
+    if (Log(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence)) != VK_SUCCESS) {
+
+        throw std::runtime_error("failed to submit 1 time command buffer!");
+    }
+    // Wait for the fence to signal that command buffer has finished executing
+    if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT) != VK_SUCCESS) {
+        throw std::runtime_error("failed to wait for fence!");
+    }
+
+    vkDestroyFence(logicalDevice, fence, nullptr);
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &cmdBuffer);
 }

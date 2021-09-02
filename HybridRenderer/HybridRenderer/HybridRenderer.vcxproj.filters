@@ -70,6 +70,12 @@
     <Filter Include="Source Files\Vulkan\Shader">
       <UniqueIdentifier>{95af11ce-9d9c-4d30-ac6e-01a735d426f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Vulkan\RayTracing">
+      <UniqueIdentifier>{8711dfaf-a0e0-46e1-ba5d-255505abf1bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vulkan\RayTracing">
+      <UniqueIdentifier>{ceebe8ae-d64c-4522-a69d-38c09f64764f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -203,6 +209,9 @@
     </ClCompile>
     <ClCompile Include="Model.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AccelerationStructure.cpp">
+      <Filter>Source Files\Vulkan\RayTracing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -358,6 +367,9 @@
     </ClInclude>
     <ClInclude Include="Frustum.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AccelerationStructure.h">
+      <Filter>Header Files\Vulkan\RayTracing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

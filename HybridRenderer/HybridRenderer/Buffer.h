@@ -35,6 +35,10 @@ public:
 
 	void Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
+	uint64_t GetDeviceAddress();
+
+	//uint64_t GetDeviceAddress2();
+
 	VkBuffer vkBuffer;
 	VkDeviceMemory memory;
 	VkDeviceSize size;
@@ -49,8 +53,8 @@ public:
 
 private:
 
-	DeviceContext* devices;
-
+	DeviceContext* deviceContext;
+	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
 };
 
 
