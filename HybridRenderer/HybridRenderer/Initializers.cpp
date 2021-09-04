@@ -806,11 +806,12 @@ namespace Initialisers {
 
 	// Acceleration Structures
 
-	VkAccelerationStructureCreateInfoKHR ASCreateInfo(VkBuffer buffer, VkDeviceSize size, VkAccelerationStructureTypeKHR type) {
+	VkAccelerationStructureCreateInfoKHR ASCreateInfo(VkBuffer buffer, VkDeviceSize size, VkDeviceSize offset, VkAccelerationStructureTypeKHR type) {
 		VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
 		accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
 		accelerationStructureCreateInfo.buffer = buffer;
 		accelerationStructureCreateInfo.size = size;
+		accelerationStructureCreateInfo.offset;
 		accelerationStructureCreateInfo.type = type;
 		return accelerationStructureCreateInfo;
 	}

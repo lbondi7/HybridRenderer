@@ -29,16 +29,20 @@ public:
 
 	void createTopLevelAccelerationStructure(std::vector<AccelerationStructure>& blas);
 
+	void CreateBuildRange(const VkAccelerationStructureBuildGeometryInfoKHR& accelerationStructureBuildGeometryInfo, uint32_t primitiveCount);
+
 	//void createBottomLevelAccelerationStructure(Mesh* mesh);
 
 	VkAccelerationStructureKHR handle;
 	uint64_t deviceAddress = 0;
 	VkBuffer buffer = VK_NULL_HANDLE;
+	Buffer asBuffer;
 	VkDeviceMemory memory = VK_NULL_HANDLE;
 	Buffer vertexBuffer;
 	Buffer indexBuffer;
 	Buffer transformBuffer;
 	uint32_t indexCount;
+	VkAccelerationStructureTypeKHR type;
 	//Buffer buffer;
 
 private:

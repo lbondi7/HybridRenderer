@@ -253,7 +253,7 @@ namespace Initialisers {
 
 	// Acceleration Structure
 
-	VkAccelerationStructureCreateInfoKHR ASCreateInfo(VkBuffer buffer, VkDeviceSize size, VkAccelerationStructureTypeKHR type);
+	VkAccelerationStructureCreateInfoKHR ASCreateInfo(VkBuffer buffer, VkDeviceSize size, VkDeviceSize offset, VkAccelerationStructureTypeKHR type);
 
 	VkAccelerationStructureGeometryTrianglesDataKHR ASGTriangleData(const VkDeviceOrHostAddressConstKHR& vertexData, VkDeviceSize vertexStride, uint32_t maxVertex, VkDeviceOrHostAddressConstKHR indexData, VkDeviceOrHostAddressConstKHR transformData);
 

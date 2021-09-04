@@ -7,6 +7,7 @@ struct MemoryData {
     VkDeviceSize size = 0;
     uint32_t memoryType = 0;
     VkMemoryPropertyFlags properties;
+    VkMemoryAllocateFlags flags;
     uint32_t id = 0;
 };
 
@@ -47,11 +48,9 @@ public:
 
     void getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
-    MemoryData* getMemory(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags properties);
+    MemoryData* getMemory(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags properties, VkBufferUsageFlags usage);
 
     void destroy();
-
-
 
     std::vector<MemoryData> memoryPool;
     std::vector<BufferData> bufferPool;
@@ -62,8 +61,8 @@ public:
 
     VkPhysicalDeviceProperties properties;
 
-    VkDeviceSize maxMemorySize = 268435456;
-    VkDeviceSize maxBufferSize = 67108864;
+    VkDeviceSize baseMemorySize = 256000000;
+    VkDeviceSize baseBufferSize = 64000000;
 
     uint32_t availableMemoryID = 0;
     uint32_t availableBufferID = 0;

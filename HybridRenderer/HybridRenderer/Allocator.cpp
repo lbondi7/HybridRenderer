@@ -32,7 +32,7 @@ void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsa
         minAlignment = size;
     }
     for (auto& buffer : bufferPool) {
-        if (usage == buffer.usage && (minAlignment + buffer.size <= maxBufferSize)) {
+        if (usage == buffer.usage && (minAlignment + buffer.size <= baseBufferSize)) {
 
             bufferInfo.buffer = buffer.buffer;
             bufferInfo.memoryData = buffer.memoryData;
@@ -54,7 +54,7 @@ void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsa
 
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCreateInfo.size = maxBufferSize > size ? maxBufferSize : size;
+    bufferCreateInfo.size = baseBufferSize > size ? baseBufferSize : size;
     bufferCreateInfo.usage = usage;
 
     if (vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &buffer.buffer) != VK_SUCCESS) {
@@ -64,7 +64,7 @@ void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsa
     VkMemoryRequirements memRequirements{};
     vkGetBufferMemoryRequirements(logicalDevice, buffer.buffer, &memRequirements);
 
-    auto memoryData = getMemory(memRequirements, memProperties);
+    auto memoryData = getMemory(memRequirements, memProperties, usage);
     vkBindBufferMemory(logicalDevice, buffer.buffer, memoryData->memory, memoryData->size);
     buffer.size += minAlignment;
     buffer.memoryData = memoryData;
@@ -82,27 +82,43 @@ void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsa
 }
 
 
-MemoryData* Allocator::getMemory(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags properties) {
+MemoryData* Allocator::getMemory(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags properties, VkBufferUsageFlags usage) {
 
-    for (auto& mem : memoryPool) {
-        if (mem.properties& properties&&
-            memRequirements.size + mem.size < maxMemorySize) {
-            return &mem;
+    for (auto& memory : memoryPool) {
+        if (usage | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+        {
+            if (memory.flags == VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR && memory.properties & properties &&
+                memRequirements.size + memory.size < baseMemorySize) {
+                return &memory;
+            }
+            continue;
+        }
+
+        if (memory.properties & properties &&
+            memRequirements.size + memory.size < baseMemorySize) {
+            return &memory;
         }
     }
-    auto& mem = memoryPool.emplace_back();
-    mem.id = availableMemoryID++;
-    mem.properties = properties;
+    auto& memory = memoryPool.emplace_back();
+    memory.id = availableMemoryID++;
+    memory.properties = properties;
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = maxMemorySize > memRequirements.size ? maxMemorySize : memRequirements.size;
+    allocInfo.allocationSize = baseMemorySize > memRequirements.size ? baseMemorySize : memRequirements.size;
     allocInfo.memoryTypeIndex = Utility::findMemoryType(memRequirements.memoryTypeBits, physicalDevice, properties);
+    if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    {
+        VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
+        memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+        memoryAllocateFlagsInfo.flags = memory.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+        allocInfo.pNext = &memoryAllocateFlagsInfo;
+    }
 
-    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &mem.memory) != VK_SUCCESS) {
+    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory.memory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate buffer memory!");
     }
 
-    return &mem;
+    return &memory;
 }
 
 void Allocator::destroy() {

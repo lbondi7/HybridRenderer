@@ -84,7 +84,6 @@ void RayTracingRenderer::initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	}
 	tlas.Initialise(deviceContext);
 	tlas.createTopLevelAccelerationStructure(blas);
-//	createTopLevelAccelerationStructure();
 
 	createStorageImage();
 	createUniformBuffer();
@@ -92,7 +91,6 @@ void RayTracingRenderer::initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	createShaderBindingTable();
 	createDescriptorSets();
 	buildCommandBuffers();
-
 }
 
 
@@ -177,27 +175,6 @@ void RayTracingRenderer::render()
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void RayTracingRenderer::createAccelerationStructureBuffer(AccelerationStructure2& accelerationStructure, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo)
-{
-	VkBufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size = buildSizeInfo.accelerationStructureSize;
-	bufferCreateInfo.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-	vkCreateBuffer(deviceContext->logicalDevice, &bufferCreateInfo, nullptr, &accelerationStructure.buffer);
-	VkMemoryRequirements memoryRequirements{};
-	vkGetBufferMemoryRequirements(deviceContext->logicalDevice, accelerationStructure.buffer, &memoryRequirements);
-	VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
-	memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
-	memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-	VkMemoryAllocateInfo memoryAllocateInfo{};
-	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
-	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	memoryAllocateInfo.memoryTypeIndex = Utility::findMemoryType(memoryRequirements.memoryTypeBits, deviceContext->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	vkAllocateMemory(deviceContext->logicalDevice, &memoryAllocateInfo, nullptr, &accelerationStructure.memory);
-	vkBindBufferMemory(deviceContext->logicalDevice, accelerationStructure.buffer, accelerationStructure.memory, 0);
-}
-
 /*
 	Set up a storage image that the ray generation shader will be writing to
 */
@@ -225,14 +202,6 @@ void RayTracingRenderer::createStorageImage()
 		{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 	deviceContext->EndCommandBuffer(cmdBuffer);
 }
-
-/*
-	Create the bottom level acceleration structure contains the scene's actual geometry (vertices, triangles)
-*/
-
-/*
-	The top level acceleration structure contains the scene's object instances
-*/
 
 /*
 	Create the Shader Binding Tables that binds the programs and top-level acceleration structure

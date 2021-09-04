@@ -38,8 +38,6 @@ public:
 
 	void render();
 
-	void createAccelerationStructureBuffer(AccelerationStructure2& accelerationStructure, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
-
 	void createStorageImage();
 
 	void createShaderBindingTable();
