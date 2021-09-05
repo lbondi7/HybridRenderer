@@ -5,6 +5,7 @@
 #include "Device.h"
 #include "SwapChain.h"
 #include "Window.h"
+#include "VulkanCore.h"
 #include "Resources.h"
 #include "Camera.h"
 #include "Scene.h"
@@ -30,11 +31,14 @@ class RayTracingRenderer
 {
 public:
 	RayTracingRenderer() = default;
+	RayTracingRenderer(VulkanCore* core, Window* _window);
 	~RayTracingRenderer();
 
-	void Initialise(DeviceContext* _deviceContext, VkSurfaceKHR surface, Window* _window, Resources* _resources, Scene* scene);
+	void Initialise(DeviceContext* _deviceContext, Window* _window, SwapChain* swapChain, Resources* _resources, Scene* scene);
 
 	void cleanup();
+
+	void GetCommandBuffers(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers);
 
 	void Render(Camera* camera);
 
@@ -48,7 +52,7 @@ public:
 
 	void createUniformBuffer();
 
-	void handleResize();
+	void Reinitialise();
 
 	void buildCommandBuffers();
 
@@ -65,26 +69,16 @@ public:
 	PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR;
 	PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
 
-
-	AccelerationStructure2 bottomLevelAS{};
-	std::vector<AccelerationStructure2> bottomLevelASs;
 	std::vector<AccelerationStructure> blas;
 	AccelerationStructure tlas;
 
-	Buffer vertexBuffer;
-	Buffer indexBuffer;
 	uint32_t indexCount;
-	Buffer transformBuffer;
 	std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
 	Buffer raygenShaderBindingTable;
 	Buffer missShaderBindingTable;
 	Buffer hitShaderBindingTable;
 
-	struct StorageImage {
-		VkDeviceMemory memory;
-		VkImage image;
-		VkImageView view;
-	} storageImage;
+	Texture storageImage;
 
 	struct UniformData {
 		glm::mat4 viewInverse;
@@ -95,26 +89,26 @@ public:
 
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSets;
+	std::vector<VkDescriptorSet> descriptorSets;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
 
 	DeviceContext* deviceContext;
-	SwapChain swapChain;
+	SwapChain* swapChain;
 	Window* window;
 	Resources* resources;
 	std::vector<VkCommandBuffer> drawCmdBuffers;
 
-	Camera camera;
+	//Camera camera;
 
 	bool resized = false;
 
-	size_t currentFrame = 0;
-	uint32_t imageIndex;
+	//size_t currentFrame = 0;
+	//uint32_t imageIndex;
 
-	std::vector<VkSemaphore> nextImageSemaphores;
-	std::vector<VkSemaphore> presentSemphores;
-	std::vector<VkFence> inFlightFences;
-	std::vector<VkFence> imagesInFlight;
+	//std::vector<VkSemaphore> nextImageSemaphores;
+	//std::vector<VkSemaphore> presentSemphores;
+	//std::vector<VkFence> inFlightFences;
+	//std::vector<VkFence> imagesInFlight;
 };
 

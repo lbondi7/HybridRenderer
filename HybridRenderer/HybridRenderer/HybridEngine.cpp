@@ -44,18 +44,18 @@ void HybridEngine::initialise()
 
     swapChain.Create(core->surface, core->deviceContext.get(), &window->width, &window->height);
 
-    //rayTracing = std::make_unique<RayTracingRenderer>();
+    rayTracing = std::make_unique<RayTracingRenderer>();
 
     resources.Init(core->deviceContext.get());
 
     resources.LoadTexture("texture.jpg");
 
-    raster = std::make_unique<RasterRenderer>(window.get(), core.get(), &swapChain);
-    raster->Initialise(&resources);
+    //raster = std::make_unique<RasterRenderer>(window.get(), core.get(), &swapChain);
+    //raster->Initialise(&resources);
 
     scene.Initialise(core->deviceContext.get(), &resources);
 
-    //rayTracing->Initialise(core->deviceContext.get(), core->surface, window.get(), &resources, &scene);
+    rayTracing->Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources, &scene);
 
 
     auto imageCount = core->deviceContext->imageCount;
@@ -98,7 +98,7 @@ void HybridEngine::prepare()
     {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
-    raster->Prepare();
+    //raster->Prepare();
 }
 
 void HybridEngine::update()
@@ -234,8 +234,11 @@ void HybridEngine::render()
     std::vector<VkCommandBuffer> submitCommandBuffers;
     submitCommandBuffers.reserve(3);
 
-    raster->GetCommandBuffer(imageIndex, submitCommandBuffers, &camera, &scene);
-    raster->GetImGuiCommandBuffer(imageIndex, submitCommandBuffers, swapChain.extent);
+    //raster->GetCommandBuffer(imageIndex, submitCommandBuffers, &camera, &scene);
+    //raster->GetImGuiCommandBuffer(imageIndex, submitCommandBuffers, swapChain.extent);
+
+    rayTracing->updateUniformBuffers(&camera);
+    rayTracing->GetCommandBuffers(imageIndex, submitCommandBuffers);
 
     VkSemaphore nis = nextImageSemaphores[currentFrame];
     VkSemaphore ps = presentSemaphores[currentFrame];
@@ -260,12 +263,13 @@ void HybridEngine::RecreateSwapChain() {
     swapChain.Init();
     imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
     raster->Reinitialise();
+    rayTracing->Reinitialise();
 }
 
 void HybridEngine::deinitilise()
 {
-    raster->Deinitialise(true);
-    //rayTracing->cleanup();
+    //raster->Deinitialise(true);
+    rayTracing->cleanup();
 
     swapChain.Destroy();
 
@@ -334,6 +338,6 @@ void HybridEngine::scrollCallback(GLFWwindow* window, double xOffset, double yOf
 void HybridEngine::cursorCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    app->raster->imgui.mousePos.x = xOffset;
-    app->raster->imgui.mousePos.y = yOffset;
+    //app->raster->imgui.mousePos.x = xOffset;
+    //app->raster->imgui.mousePos.y = yOffset;
 }

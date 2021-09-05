@@ -65,7 +65,7 @@ void DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets,
 	{
 		if (pool.isAvailable(request))
 		{
-			for (auto& layout :layouts)
+			for (auto& layout : layouts)
 			{
 				if (layout->matches(request))
 				{

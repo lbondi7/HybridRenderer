@@ -4,37 +4,43 @@
 #include "Utility.h"
 
 
+RayTracingRenderer::RayTracingRenderer(VulkanCore* core, Window* _window)
+{
+	
+}
+
 RayTracingRenderer::~RayTracingRenderer()
 {
 
 }
 
-void RayTracingRenderer::Initialise(DeviceContext* _deviceContext, VkSurfaceKHR surface, 
-	Window* _window, Resources* _resources, Scene* scene) {
+void RayTracingRenderer::Initialise(DeviceContext* _deviceContext, 
+	Window* _window, SwapChain* swapChain, Resources* _resources, Scene* scene) {
 
 
 	deviceContext = _deviceContext;
 	resources = _resources;
 	window = _window;
+	this->swapChain = swapChain;
 
 	//swapChain.Create(surface, deviceContext, &window->width, &window->height);
 
-	nextImageSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	presentSemphores.resize(MAX_FRAMES_IN_FLIGHT);
-	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-	imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
+	//nextImageSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	//presentSemphores.resize(MAX_FRAMES_IN_FLIGHT);
+	//inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+	//imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
 
-	VkSemaphoreCreateInfo semaphoreInfo = Initialisers::semaphoreCreateInfo();
+	//VkSemaphoreCreateInfo semaphoreInfo = Initialisers::semaphoreCreateInfo();
 
-	VkFenceCreateInfo fenceInfo = Initialisers::fenceCreateInfo();
+	//VkFenceCreateInfo fenceInfo = Initialisers::fenceCreateInfo();
 
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		if (vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &nextImageSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &presentSemphores[i]) != VK_SUCCESS ||
-			vkCreateFence(deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create synchronization objects for a frame!");
-		}
-	}
+	//for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	//	if (vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &nextImageSemaphores[i]) != VK_SUCCESS ||
+	//		vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &presentSemphores[i]) != VK_SUCCESS ||
+	//		vkCreateFence(deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+	//		throw std::runtime_error("failed to create synchronization objects for a frame!");
+	//	}
+	//}
 
 	//rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
 	//VkPhysicalDeviceProperties2 deviceProperties2{};
@@ -85,13 +91,14 @@ void RayTracingRenderer::Initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	//	blas[i].Initialise(deviceContext);
 	//	blas[i].createBottomLevelAccelerationStructure(model->meshes[i].get());
 	//}
-	tlas.Initialise(deviceContext);
-	tlas.createTopLevelAccelerationStructure(blas);
 
 	createStorageImage();
 	createUniformBuffer();
 	CreateRayTracingPipeline();
 	CreateShaderBindingTable();
+	
+	tlas.Initialise(deviceContext);
+	tlas.createTopLevelAccelerationStructure(blas);
 	CreateDescriptorSets();
 	buildCommandBuffers();
 }
@@ -106,17 +113,11 @@ void RayTracingRenderer::cleanup() {
 	vkDestroyPipeline(deviceContext->logicalDevice, pipeline, nullptr);
 	vkDestroyPipelineLayout(deviceContext->logicalDevice, pipelineLayout, nullptr);
 	vkDestroyDescriptorSetLayout(deviceContext->logicalDevice, descriptorSetLayout, nullptr);
-	vkDestroyImageView(deviceContext->logicalDevice, storageImage.view, nullptr);
-	vkDestroyImage(deviceContext->logicalDevice, storageImage.image, nullptr);
-	vkFreeMemory(deviceContext->logicalDevice, storageImage.memory, nullptr);
+	//vkDestroyImageView(deviceContext->logicalDevice, storageImage.view, nullptr);
+	//vkDestroyImage(deviceContext->logicalDevice, storageImage.image, nullptr);
+	//vkFreeMemory(deviceContext->logicalDevice, storageImage.memory, nullptr);
 
-	swapChain.Destroy();
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		vkDestroySemaphore(deviceContext->logicalDevice, presentSemphores[i], nullptr);
-		vkDestroySemaphore(deviceContext->logicalDevice, nextImageSemaphores[i], nullptr);
-		vkDestroyFence(deviceContext->logicalDevice, inFlightFences[i], nullptr);
-	}
+	storageImage.Destroy();
 
 	vkDestroyDescriptorPool(deviceContext->logicalDevice, descriptorPool, nullptr);
 
@@ -130,50 +131,9 @@ void RayTracingRenderer::cleanup() {
 	hitShaderBindingTable.Destroy();
 	ubo.Destroy();
 }
-
-void RayTracingRenderer::Render(Camera* camera)
+void RayTracingRenderer::GetCommandBuffers(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers)
 {
-	updateUniformBuffers(camera);
-	VkSemaphore iAS = nextImageSemaphores[currentFrame];
-
-	VkResult result;
-	if ((result = swapChain.AquireNextImage(iAS, imageIndex)) == VK_ERROR_OUT_OF_DATE_KHR)
-	{
-		return;
-	}
-
-	imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-	vkWaitForFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
-
-	std::vector<VkCommandBuffer> submitCommandBuffers =
-	{ drawCmdBuffers[imageIndex] };
-
-	VkSemaphore rFS = presentSemphores[currentFrame];
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	VkSubmitInfo submitInfo = Initialisers::submitInfo(
-		submitCommandBuffers.data(), static_cast<uint32_t>(submitCommandBuffers.size()), &iAS, 1, &rFS, 1, waitStages);
-
-
-	if (vkQueueSubmit(deviceContext->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	//VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
-	//VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&rFS, 1, swapChains, 1, &imageIndex);
-	//result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
-
-	result = swapChain.Present(rFS, imageIndex);
-	//if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-	//	//rebuildSwapChain = false;
-	//	//recreateSwapChain();
-	//}
-	//else if (result != VK_SUCCESS) {
-	//	throw std::runtime_error("failed to present swap chain image!");
-	//}
-
-	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	submitCommandBuffers.emplace_back(drawCmdBuffers[imageIndex]);
 }
 
 /*
@@ -181,20 +141,11 @@ void RayTracingRenderer::Render(Camera* camera)
 */
 void RayTracingRenderer::createStorageImage()
 {
-	VkImageCreateInfo image = Initialisers::imageCreateInfo(VK_IMAGE_TYPE_2D, window->width, window->height, 1, swapChain.imageFormat,
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL, VK_SAMPLE_COUNT_1_BIT
+
+	storageImage.Create(deviceContext, window->width, window->height, swapChain->imageFormat,
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_SAMPLE_COUNT_1_BIT
 	);
-
-	vkCreateImage(deviceContext->logicalDevice, &image, nullptr, &storageImage.image);
-
-	VkMemoryRequirements memReqs;
-	vkGetImageMemoryRequirements(deviceContext->logicalDevice, storageImage.image, &memReqs);
-	VkMemoryAllocateInfo memoryAllocateInfo = Initialisers::memoryAllocateInfo(memReqs.size, Utility::findMemoryType(memReqs.memoryTypeBits, deviceContext->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-	vkAllocateMemory(deviceContext->logicalDevice, &memoryAllocateInfo, nullptr, &storageImage.memory);
-	vkBindImageMemory(deviceContext->logicalDevice, storageImage.image, storageImage.memory, 0);
-
-	VkImageViewCreateInfo colorImageView = Initialisers::imageViewCreateInfo(storageImage.image, VK_IMAGE_VIEW_TYPE_2D, swapChain.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-	vkCreateImageView(deviceContext->logicalDevice, &colorImageView, nullptr, &storageImage.view);
+	storageImage.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
 	VkCommandBuffer cmdBuffer = deviceContext->generateCommandBuffer();
 	Utility::setImageLayout(cmdBuffer, storageImage.image,
@@ -253,25 +204,29 @@ void RayTracingRenderer::CreateDescriptorSets()
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 }
 	};
-	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = Initialisers::descriptorPoolCreateInfo(poolSizes.size(), poolSizes.data(), 1);
+	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = Initialisers::descriptorPoolCreateInfo(poolSizes.size(), poolSizes.data(), 9);
 	vkCreateDescriptorPool(deviceContext->logicalDevice, &descriptorPoolCreateInfo, nullptr, &descriptorPool);
 
-	//descriptorSets.resize(swapChain.imageCount);
-	VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = Initialisers::descriptorSetAllocateInfo(descriptorPool, 1, &descriptorSetLayout);
-	vkAllocateDescriptorSets(deviceContext->logicalDevice, &descriptorSetAllocateInfo, &descriptorSets);
+	descriptorSets.resize(deviceContext->imageCount);
+	std::vector<VkDescriptorSetLayout> layouts(deviceContext->imageCount, descriptorSetLayout);
+	VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = 
+		Initialisers::descriptorSetAllocateInfo(descriptorPool, deviceContext->imageCount, layouts.data());
+	vkAllocateDescriptorSets(deviceContext->logicalDevice, &descriptorSetAllocateInfo, descriptorSets.data());
 
-	//for (size_t i = 0; i < swapChain.imageCount; i++)
-	//{
-		VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = Initialisers::descriptorSetAccelerationStructureInfo(&tlas.handle);
+	VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo =
+		Initialisers::descriptorSetAccelerationStructureInfo(&tlas.handle);
+	VkDescriptorImageInfo storageImageDescriptor{};
+	storageImageDescriptor.imageView = storageImage.imageView;
+	storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-		VkWriteDescriptorSet accelerationStructureWrite = Initialisers::writeDescriptorSet(descriptorSets, 0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &descriptorAccelerationStructureInfo);
-
-		VkDescriptorImageInfo storageImageDescriptor{};
-		storageImageDescriptor.imageView = storageImage.view;
-		storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		VkWriteDescriptorSet resultImageWrite = Initialisers::writeDescriptorSet(descriptorSets, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageDescriptor);
-		VkWriteDescriptorSet uniformBufferWrite = Initialisers::writeDescriptorSet(descriptorSets, 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &ubo.descriptorInfo);
+	for (size_t i = 0; i < deviceContext->imageCount; i++)
+	{
+		VkWriteDescriptorSet accelerationStructureWrite = 
+			Initialisers::writeDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &descriptorAccelerationStructureInfo);
+		VkWriteDescriptorSet resultImageWrite = 
+			Initialisers::writeDescriptorSet(descriptorSets[i], 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageDescriptor);
+		VkWriteDescriptorSet uniformBufferWrite = 
+			Initialisers::writeDescriptorSet(descriptorSets[i], 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &ubo.descriptorInfo);
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
 			accelerationStructureWrite,
@@ -279,7 +234,7 @@ void RayTracingRenderer::CreateDescriptorSets()
 			uniformBufferWrite
 		};
 		vkUpdateDescriptorSets(deviceContext->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
-	//}
+	}
 }
 
 /*
@@ -308,9 +263,6 @@ void RayTracingRenderer::CreateRayTracingPipeline()
 	VkPipelineLayoutCreateInfo pipelineLayoutCI = Initialisers::pipelineLayoutCreateInfo(&descriptorSetLayout);
 	vkCreatePipelineLayout(deviceContext->logicalDevice, &pipelineLayoutCI, nullptr, &pipelineLayout);
 
-	/*
-		Setup ray tracing shader groups
-	*/
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
 	// Ray generation group
@@ -353,45 +305,29 @@ void RayTracingRenderer::createUniformBuffer()
 		&ubo);
 
 	ubo.Map();
-	//VK_CHECK_RESULT(vulkanDevice->createBuffer(
-	//	VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-	//	VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	//	&ubo,
-	//	sizeof(uniformData),
-	//	&uniformData));
-	//VK_CHECK_RESULT(ubo.map());
 }
 
 /*
 	If the window has been resized, we need to recreate the storage image and it's descriptor
 */
-void RayTracingRenderer::handleResize()
+void RayTracingRenderer::Reinitialise()
 {
 	// Delete allocated resources
-	vkDestroyImageView(deviceContext->logicalDevice, storageImage.view, nullptr);
-	vkDestroyImage(deviceContext->logicalDevice, storageImage.image, nullptr);
-	vkFreeMemory(deviceContext->logicalDevice, storageImage.memory, nullptr);
+	storageImage.Destroy();
 	// Recreate image
 	createStorageImage();
 	// Update descriptor
-	VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, storageImage.view, VK_IMAGE_LAYOUT_GENERAL };
-	//for (size_t i = 0; i < swapChain.imageCount; i++)
-	//{
-		VkWriteDescriptorSet resultImageWrite = Initialisers::writeDescriptorSet(descriptorSets, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageDescriptor);
+	VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, storageImage.imageView, VK_IMAGE_LAYOUT_GENERAL };
+	for (size_t i = 0; i < deviceContext->imageCount; i++)
+	{
+		VkWriteDescriptorSet resultImageWrite = Initialisers::writeDescriptorSet(descriptorSets[i], 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageDescriptor);
 		vkUpdateDescriptorSets(deviceContext->logicalDevice, 1, &resultImageWrite, 0, VK_NULL_HANDLE);
-	//}
+	}
+	buildCommandBuffers();
 }
 
-/*
-	Command buffer generation
-*/
 void RayTracingRenderer::buildCommandBuffers()
 {
-	if (resized)
-	{
-		handleResize();
-	}
-
 	VkCommandBufferBeginInfo cmdBufInfo = Initialisers::commandBufferBeginInfo();
 
 	VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
@@ -408,7 +344,7 @@ void RayTracingRenderer::buildCommandBuffers()
 		VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
 		vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline);
-		vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout, 0, 1, &descriptorSets, 0, 0);
+		vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout, 0, 1, &descriptorSets[i], 0, 0);
 
 		vkCmdTraceRaysKHR(drawCmdBuffers[i],
 			&raygenShaderSbtEntry, &missShaderSbtEntry,
@@ -416,7 +352,7 @@ void RayTracingRenderer::buildCommandBuffers()
 			window->width, window->height,
 			1);
 
-		Utility::setImageLayout(drawCmdBuffers[i], swapChain.images[i].image,
+		Utility::setImageLayout(drawCmdBuffers[i], swapChain->images[i].image,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			subresourceRange);
 
@@ -424,12 +360,11 @@ void RayTracingRenderer::buildCommandBuffers()
 			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			subresourceRange);
 
-
 		VkImageCopy copyRegion = Initialisers::imageCopy(static_cast<uint32_t>(window->width), static_cast<uint32_t>(window->height));
-		vkCmdCopyImage(drawCmdBuffers[i], storageImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.images[i].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+		vkCmdCopyImage(drawCmdBuffers[i], storageImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+			swapChain->images[i].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-
-		Utility::setImageLayout(drawCmdBuffers[i], swapChain.images[i].image,
+		Utility::setImageLayout(drawCmdBuffers[i], swapChain->images[i].image,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			subresourceRange);
 
