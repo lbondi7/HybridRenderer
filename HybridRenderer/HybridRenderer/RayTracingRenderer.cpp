@@ -9,7 +9,8 @@ RayTracingRenderer::~RayTracingRenderer()
 
 }
 
-void RayTracingRenderer::initialise(DeviceContext* _deviceContext, VkSurfaceKHR surface, Window* _window, Resources* _resources) {
+void RayTracingRenderer::Initialise(DeviceContext* _deviceContext, VkSurfaceKHR surface, 
+	Window* _window, Resources* _resources, Scene* scene) {
 
 
 	deviceContext = _deviceContext;
@@ -34,14 +35,6 @@ void RayTracingRenderer::initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 			throw std::runtime_error("failed to create synchronization objects for a frame!");
 		}
 	}
-
-	camera.lookAt = glm::vec3(0, 0, 0);
-	camera.transform.position = glm::vec3(0, 0, 10);
-	camera.transform.rotation.y = 180.f;
-
-	camera.init(deviceContext, swapChain.extent);
-
-	camera.update(window->width, window->height);
 
 	//rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
 	//VkPhysicalDeviceProperties2 deviceProperties2{};
@@ -74,27 +67,42 @@ void RayTracingRenderer::initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(vkGetDeviceProcAddr(deviceContext->logicalDevice, "vkGetRayTracingShaderGroupHandlesKHR"));
 	vkCreateRayTracingPipelinesKHR = reinterpret_cast<PFN_vkCreateRayTracingPipelinesKHR>(vkGetDeviceProcAddr(deviceContext->logicalDevice, "vkCreateRayTracingPipelinesKHR"));
 
-	bottomLevelASs.resize(2);
-	auto model = resources->GetModel("tree2");
-	blas.resize(2);
-	for (size_t i = 0; i < 2; i++)
+	//auto model = resources->GetModel("tree2");
+	blas.reserve(scene->gameObjectCount * 2);
+	for (auto& go : scene->gameObjects)
 	{
-		blas[i].Initialise(deviceContext);
-		blas[i].createBottomLevelAccelerationStructure(model->meshes[i].get());
+		auto model = go.model;
+		for (auto& mesh : model->meshes)
+		{
+			AccelerationStructure as;
+			as.Initialise(deviceContext);
+			as.createBottomLevelAccelerationStructure(mesh.get());
+			blas.emplace_back(as);
+		}
 	}
+	//for (size_t i = 0; i < 2; i++)
+	//{
+	//	blas[i].Initialise(deviceContext);
+	//	blas[i].createBottomLevelAccelerationStructure(model->meshes[i].get());
+	//}
 	tlas.Initialise(deviceContext);
 	tlas.createTopLevelAccelerationStructure(blas);
 
 	createStorageImage();
 	createUniformBuffer();
-	createRayTracingPipeline();
-	createShaderBindingTable();
-	createDescriptorSets();
+	CreateRayTracingPipeline();
+	CreateShaderBindingTable();
+	CreateDescriptorSets();
 	buildCommandBuffers();
 }
 
 
 void RayTracingRenderer::cleanup() {
+
+	vkDeviceWaitIdle(deviceContext->logicalDevice);
+	vkFreeCommandBuffers(deviceContext->logicalDevice, deviceContext->commandPool,
+		static_cast<uint32_t>(drawCmdBuffers.size()), drawCmdBuffers.data());
+
 	vkDestroyPipeline(deviceContext->logicalDevice, pipeline, nullptr);
 	vkDestroyPipelineLayout(deviceContext->logicalDevice, pipelineLayout, nullptr);
 	vkDestroyDescriptorSetLayout(deviceContext->logicalDevice, descriptorSetLayout, nullptr);
@@ -112,18 +120,20 @@ void RayTracingRenderer::cleanup() {
 
 	vkDestroyDescriptorPool(deviceContext->logicalDevice, descriptorPool, nullptr);
 
-	vertexBuffer.Destroy();
-	indexBuffer.Destroy();
-	transformBuffer.Destroy();
+	tlas.Destroy();
+	for (auto& bla : blas)
+	{
+		bla.Destroy();
+	}
 	raygenShaderBindingTable.Destroy();
 	missShaderBindingTable.Destroy();
 	hitShaderBindingTable.Destroy();
 	ubo.Destroy();
 }
 
-void RayTracingRenderer::render()
+void RayTracingRenderer::Render(Camera* camera)
 {
-
+	updateUniformBuffers(camera);
 	VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
 
 	auto result = vkAcquireNextImageKHR(deviceContext->logicalDevice, swapChain.vkSwapChain, UINT64_MAX, iAS, VK_NULL_HANDLE, &imageIndex);
@@ -212,7 +222,7 @@ void RayTracingRenderer::createStorageImage()
 		\-----------/
 
 */
-void RayTracingRenderer::createShaderBindingTable() {
+void RayTracingRenderer::CreateShaderBindingTable() {
 
 	const uint32_t handleSize = deviceContext->rayTracingPipelineProperties.shaderGroupHandleSize;
 	const uint32_t handleSizeAligned = Utility::alignedSize(deviceContext->rayTracingPipelineProperties.shaderGroupHandleSize, deviceContext->rayTracingPipelineProperties.shaderGroupHandleAlignment);
@@ -240,7 +250,7 @@ void RayTracingRenderer::createShaderBindingTable() {
 /*
 	Create the descriptor sets used for the ray tracing dispatch
 */
-void RayTracingRenderer::createDescriptorSets()
+void RayTracingRenderer::CreateDescriptorSets()
 {
 	std::vector<VkDescriptorPoolSize> poolSizes = {
 		{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 3 },
@@ -279,7 +289,7 @@ void RayTracingRenderer::createDescriptorSets()
 /*
 	Create our ray tracing pipeline
 */
-void RayTracingRenderer::createRayTracingPipeline()
+void RayTracingRenderer::CreateRayTracingPipeline()
 {
 	VkDescriptorSetLayoutBinding accelerationStructureLayoutBinding = 
 		Initialisers::descriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
@@ -333,6 +343,7 @@ void RayTracingRenderer::createRayTracingPipeline()
 	*/
 	VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI = Initialisers::RayTracingPipelineCreateInfo(pipelineLayout, 
 		shaderStages.data(), static_cast<uint32_t>(shaderStages.size()), shaderGroups.data(), static_cast<uint32_t>(shaderGroups.size()));
+
 	vkCreateRayTracingPipelinesKHR(deviceContext->logicalDevice, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCI, nullptr, &pipeline);
 }
 
@@ -353,8 +364,6 @@ void RayTracingRenderer::createUniformBuffer()
 	//	sizeof(uniformData),
 	//	&uniformData));
 	//VK_CHECK_RESULT(ubo.map());
-
-	updateUniformBuffers();
 }
 
 /*
@@ -436,9 +445,9 @@ void RayTracingRenderer::buildCommandBuffers()
 	}
 }
 
-void RayTracingRenderer::updateUniformBuffers()
+void RayTracingRenderer::updateUniformBuffers(Camera* camera)
 {
-	uniformData.projInverse = glm::inverse(camera.projection);
-	uniformData.viewInverse = glm::inverse(camera.view);
+	uniformData.projInverse = glm::inverse(camera->projection);
+	uniformData.viewInverse = glm::inverse(camera->view);
 	memcpy(ubo.data, &uniformData, sizeof(uniformData));
 }

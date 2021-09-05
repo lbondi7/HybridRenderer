@@ -73,7 +73,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
         go.Init(deviceContext);
     }
 
-    auto imageCount = deviceContext->imageCount;
+    auto imageCount = 3;
     lightBuffers.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++) {
         VkDeviceSize bufferSize = sizeof(LightUBO);

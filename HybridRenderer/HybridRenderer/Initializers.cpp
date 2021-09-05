@@ -794,6 +794,13 @@ namespace Initialisers {
 		return rayTracingPipelineCI;
 	}
 
+	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(uint32_t maxRecursionDepth) {
+		VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI{};
+		rayTracingPipelineCI.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+		rayTracingPipelineCI.maxPipelineRayRecursionDepth = maxRecursionDepth;
+		return rayTracingPipelineCI;
+	}
+
 	// Ray Tracing Shader Group
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingGeneralShaderGroup(uint32_t shaderCount) {

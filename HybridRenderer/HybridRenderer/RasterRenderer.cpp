@@ -76,7 +76,8 @@ void RasterRenderer::cleanupSwapChain() {
     frameBuffer.Destroy();
     penultimateFrameBuffer.Destroy();
 
-    vkFreeCommandBuffers(deviceContext->logicalDevice, deviceContext->commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+    vkFreeCommandBuffers(deviceContext->logicalDevice, deviceContext->commandPool, 
+        static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
     pipeline.Destroy(false);
     renderPass.Destroy();
@@ -286,14 +287,6 @@ void RasterRenderer::createSyncObjects() {
         }
     }
 }
-
-//void RasterRenderer::createCamera() {
-//    camera.lookAt = glm::vec3(0, 0, 0);
-//    camera.transform.position = glm::vec3(0, 0, 10);
-//    camera.transform.rotation.y = 180.f;
-//
-//    camera.init(swapChain.extent);
-//}
 
 void RasterRenderer::Prepare()
 {

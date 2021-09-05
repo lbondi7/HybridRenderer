@@ -22,6 +22,14 @@ void AccelerationStructure::Initialise(DeviceContext* _deviceContext)
 
 void AccelerationStructure::Destroy() {
 	
+	vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, handle, nullptr);
+	asBuffer.Destroy();
+	if (type == VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR) 
+	{
+		vertexBuffer.Destroy();
+		indexBuffer.Destroy();
+	}
+	transformBuffer.Destroy();
 }
 
 ScratchBuffer AccelerationStructure::createScratchBuffer(VkDeviceSize size)

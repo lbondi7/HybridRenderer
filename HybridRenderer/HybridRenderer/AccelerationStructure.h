@@ -37,9 +37,7 @@ public:
 
 	VkAccelerationStructureKHR handle;
 	uint64_t deviceAddress = 0;
-	VkBuffer buffer = VK_NULL_HANDLE;
 	Buffer asBuffer;
-	VkDeviceMemory memory = VK_NULL_HANDLE;
 	Buffer vertexBuffer;
 	Buffer indexBuffer;
 	Buffer transformBuffer;

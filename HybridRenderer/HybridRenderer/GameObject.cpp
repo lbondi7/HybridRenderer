@@ -11,7 +11,7 @@ void GameObject::Init(DeviceContext* deviceContext)
 	min = modelMatrix * glm::vec4(model->min, 1.0f);
 	max = modelMatrix * glm::vec4(model->max, 1.0f);
 
-	auto imageCount = deviceContext->imageCount;
+	auto imageCount = 3;
 	uniformBuffers.resize(imageCount);
 
 	for (size_t i = 0; i < imageCount; i++) {

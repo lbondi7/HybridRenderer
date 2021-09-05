@@ -42,34 +42,34 @@ void HybridEngine::initialise()
     core = std::make_unique<VulkanCore>();
 	core->initialise(window->glfwWindow);
 
-    renderer = std::make_unique<RasterRenderer>(window.get(), core.get());
-    //rayTracing = std::make_unique<RayTracingRenderer>();
+    //renderer = std::make_unique<RasterRenderer>(window.get(), core.get());
+    rayTracing = std::make_unique<RayTracingRenderer>();
 
     resources.Init(core->deviceContext.get());
 
     resources.LoadTexture("texture.jpg");
 
-    //rayTracing->initialise(core->deviceContext.get(), core->surface, window.get(), &resources);
+    scene.Initialise(core->deviceContext.get(), &resources);
 
-    renderer->Initialise(&resources);
+    rayTracing->Initialise(core->deviceContext.get(), core->surface, window.get(), &resources, &scene);
+
+    //renderer->Initialise(&resources);
 
     auto imageCount = core->deviceContext->imageCount;
-
-
-    scene.Initialise(core->deviceContext.get(), &resources);
 
     camera.lookAt = glm::vec3(0, 0, 0);
     camera.transform.position = glm::vec3(0, 0, 10);
     camera.transform.rotation.y = 180.f;
 
-    camera.init(core->deviceContext.get(), renderer->swapChain.extent);
+    //camera.init(core->deviceContext.get(), renderer->swapChain.extent);
+    camera.init(core->deviceContext.get(), rayTracing->swapChain.extent);
 }
 
 void HybridEngine::prepare()
 {
 
-    renderer->Prepare();
-    imageIndex = renderer->imageIndex;
+    //renderer->Prepare();
+    //imageIndex = renderer->imageIndex;
 
 }
 
@@ -170,37 +170,37 @@ void HybridEngine::update()
 
 void HybridEngine::render()
 {
-    if (ImGUI::enabled && widget.enabled) {
-        if (widget.NewMainMenu())
-        {
-            if (widget.NewMenu("File")) {
+    //if (ImGUI::enabled && widget.enabled) {
+    //    if (widget.NewMainMenu())
+    //    {
+    //        if (widget.NewMenu("File")) {
 
 
-                widget.EndMenu();
-            }
+    //            widget.EndMenu();
+    //        }
 
-            if (widget.NewMenu("Objects")) {
-                widget.MenuItem("Camera", &camera.widget.enabled);
-                widget.MenuItem("ShadowMap", &renderer->shadowMap.widget.enabled);
+    //        if (widget.NewMenu("Objects")) {
+    //            widget.MenuItem("Camera", &camera.widget.enabled);
+    //            widget.MenuItem("ShadowMap", &renderer->shadowMap.widget.enabled);
 
-                widget.EndMenu();
-            }
+    //            widget.EndMenu();
+    //        }
 
-            widget.EndMainMenu();
-        }
-    }
+    //        widget.EndMainMenu();
+    //    }
+    //}
 
-    renderer->Render(&camera, &scene);
+    //renderer->Render(&camera, &scene);
 
-    //rayTracing->render();
+    rayTracing->Render(&camera);
 }
 
 void HybridEngine::deinitilise()
 {
-    renderer->cleanup();
+    //renderer->cleanup();
+    rayTracing->cleanup();
 
     scene.Destroy();
-    //rayTracing->cleanup();
 
     resources.Destroy();
 
@@ -258,6 +258,6 @@ void HybridEngine::scrollCallback(GLFWwindow* window, double xOffset, double yOf
 void HybridEngine::cursorCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    app->renderer->imgui.mousePos.x = xOffset;
-    app->renderer->imgui.mousePos.y = yOffset;
+    //app->renderer->imgui.mousePos.x = xOffset;
+    //app->renderer->imgui.mousePos.y = yOffset;
 }

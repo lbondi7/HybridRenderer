@@ -7,6 +7,7 @@
 #include "Window.h"
 #include "Resources.h"
 #include "Camera.h"
+#include "Scene.h"
 #include "AccelerationStructure.h"
 
 struct RayTracingScratchBuffer
@@ -31,20 +32,19 @@ public:
 	RayTracingRenderer() = default;
 	~RayTracingRenderer();
 
-	void initialise(DeviceContext* _deviceContext, VkSurfaceKHR surface, Window* _window, Resources* _resources);
+	void Initialise(DeviceContext* _deviceContext, VkSurfaceKHR surface, Window* _window, Resources* _resources, Scene* scene);
 
 	void cleanup();
 
-
-	void render();
+	void Render(Camera* camera);
 
 	void createStorageImage();
 
-	void createShaderBindingTable();
+	void CreateShaderBindingTable();
 
-	void createDescriptorSets();
+	void CreateDescriptorSets();
 
-	void createRayTracingPipeline();
+	void CreateRayTracingPipeline();
 
 	void createUniformBuffer();
 
@@ -52,7 +52,7 @@ public:
 
 	void buildCommandBuffers();
 
-	void updateUniformBuffers();
+	void updateUniformBuffers(Camera* camera);
 
 	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
 	PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
@@ -90,6 +90,7 @@ public:
 		glm::mat4 viewInverse;
 		glm::mat4 projInverse;
 	} uniformData;
+
 	Buffer ubo;
 
 	VkPipeline pipeline;

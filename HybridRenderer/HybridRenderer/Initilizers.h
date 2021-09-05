@@ -248,6 +248,8 @@ namespace Initialisers {
 
 	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(VkPipelineLayout pipelineLayout, const VkPipelineShaderStageCreateInfo* shaderStages, uint32_t stageCount, const VkRayTracingShaderGroupCreateInfoKHR* shaderGroups, uint32_t groupCount, uint32_t maxRecursionDepth = 1);
 
+	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(uint32_t maxRecursionDepth = 1);
+
 	// Ray Tracing Shader
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingGeneralShaderGroup(uint32_t shaderCount);
