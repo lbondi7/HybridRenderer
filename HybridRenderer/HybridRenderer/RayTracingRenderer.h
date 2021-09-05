@@ -112,8 +112,8 @@ public:
 	size_t currentFrame = 0;
 	uint32_t imageIndex;
 
-	std::vector<VkSemaphore> imageAvailableSemaphores;
-	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkSemaphore> nextImageSemaphores;
+	std::vector<VkSemaphore> presentSemphores;
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> imagesInFlight;
 };

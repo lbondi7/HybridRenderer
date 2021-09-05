@@ -42,18 +42,21 @@ void HybridEngine::initialise()
     core = std::make_unique<VulkanCore>();
 	core->initialise(window->glfwWindow);
 
-    //renderer = std::make_unique<RasterRenderer>(window.get(), core.get());
-    rayTracing = std::make_unique<RayTracingRenderer>();
+    swapChain.Create(core->surface, core->deviceContext.get(), &window->width, &window->height);
+
+    //rayTracing = std::make_unique<RayTracingRenderer>();
 
     resources.Init(core->deviceContext.get());
 
     resources.LoadTexture("texture.jpg");
 
+    raster = std::make_unique<RasterRenderer>(window.get(), core.get(), &swapChain);
+    raster->Initialise(&resources);
+
     scene.Initialise(core->deviceContext.get(), &resources);
 
-    rayTracing->Initialise(core->deviceContext.get(), core->surface, window.get(), &resources, &scene);
+    //rayTracing->Initialise(core->deviceContext.get(), core->surface, window.get(), &resources, &scene);
 
-    //renderer->Initialise(&resources);
 
     auto imageCount = core->deviceContext->imageCount;
 
@@ -61,16 +64,41 @@ void HybridEngine::initialise()
     camera.transform.position = glm::vec3(0, 0, 10);
     camera.transform.rotation.y = 180.f;
 
-    //camera.init(core->deviceContext.get(), renderer->swapChain.extent);
-    camera.init(core->deviceContext.get(), rayTracing->swapChain.extent);
+    camera.init(core->deviceContext.get(), swapChain.extent);
+    //camera.init(core->deviceContext.get(), rayTracing->swapChain.extent);
+
+    nextImageSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    presentSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
+
+    VkSemaphoreCreateInfo semaphoreInfo = Initialisers::semaphoreCreateInfo();
+
+    VkFenceCreateInfo fenceInfo = Initialisers::fenceCreateInfo();
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (vkCreateSemaphore(core->deviceContext->logicalDevice, &semaphoreInfo, nullptr, &nextImageSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(core->deviceContext->logicalDevice, &semaphoreInfo, nullptr, &presentSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(core->deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create synchronization objects for a frame!");
+        }
+    }
 }
 
 void HybridEngine::prepare()
 {
+    VkSemaphore iAS = nextImageSemaphores[currentFrame];
 
-    //renderer->Prepare();
-    //imageIndex = renderer->imageIndex;
-
+    auto result = swapChain.AquireNextImage(iAS, imageIndex);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        swapChain.outdated = true;
+        return;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+    raster->Prepare();
 }
 
 void HybridEngine::update()
@@ -170,35 +198,83 @@ void HybridEngine::update()
 
 void HybridEngine::render()
 {
-    //if (ImGUI::enabled && widget.enabled) {
-    //    if (widget.NewMainMenu())
-    //    {
-    //        if (widget.NewMenu("File")) {
+    if (swapChain.outdated) {
+        RecreateSwapChain();
+        return;
+    }
+
+    if (ImGUI::enabled && widget.enabled) {
+        if (widget.NewMainMenu())
+        {
+            if (widget.NewMenu("File")) {
 
 
-    //            widget.EndMenu();
-    //        }
+                widget.EndMenu();
+            }
 
-    //        if (widget.NewMenu("Objects")) {
-    //            widget.MenuItem("Camera", &camera.widget.enabled);
-    //            widget.MenuItem("ShadowMap", &renderer->shadowMap.widget.enabled);
+            if (widget.NewMenu("Objects")) {
+                widget.MenuItem("Camera", &camera.widget.enabled);
+                widget.MenuItem("ShadowMap", &raster->shadowMap.widget.enabled);
 
-    //            widget.EndMenu();
-    //        }
+                widget.EndMenu();
+            }
 
-    //        widget.EndMainMenu();
-    //    }
-    //}
+            widget.EndMainMenu();
+        }
+    }
 
-    //renderer->Render(&camera, &scene);
+    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
+    vkWaitForFences(core->deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(core->deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
 
-    rayTracing->Render(&camera);
+    //raster->Render(&camera, &scene);
+
+    //rayTracing->Render(&camera);
+
+    std::vector<VkCommandBuffer> submitCommandBuffers;
+    submitCommandBuffers.reserve(3);
+
+    raster->GetCommandBuffer(imageIndex, submitCommandBuffers, &camera, &scene);
+    raster->GetImGuiCommandBuffer(imageIndex, submitCommandBuffers, swapChain.extent);
+
+    VkSemaphore nis = nextImageSemaphores[currentFrame];
+    VkSemaphore ps = presentSemaphores[currentFrame];
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSubmitInfo submitInfo = Initialisers::submitInfo(
+        submitCommandBuffers.data(), static_cast<uint32_t>(submitCommandBuffers.size()), &nis, 1, &ps, 1, waitStages);
+
+
+    if (vkQueueSubmit(core->deviceContext->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    swapChain.Present(presentSemaphores[currentFrame], imageIndex);
+
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void HybridEngine::RecreateSwapChain() {
+
+    vkQueueWaitIdle(core->deviceContext->presentQueue);
+    swapChain.Destroy();
+    swapChain.Init();
+    imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
+    raster->Reinitialise();
 }
 
 void HybridEngine::deinitilise()
 {
-    //renderer->cleanup();
-    rayTracing->cleanup();
+    raster->Deinitialise(true);
+    //rayTracing->cleanup();
+
+    swapChain.Destroy();
+
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroySemaphore(core->deviceContext->logicalDevice, nextImageSemaphores[i], nullptr);
+        vkDestroySemaphore(core->deviceContext->logicalDevice, presentSemaphores[i], nullptr);
+        vkDestroyFence(core->deviceContext->logicalDevice, inFlightFences[i], nullptr);
+    }
 
     scene.Destroy();
 
@@ -226,7 +302,7 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 
             auto enabled = ImGUI::enabled = !ImGUI::enabled;
             app->widget.enabled = ImGUI::enabled;
-            app->renderer->commandBuffersReady = false;
+            app->raster->commandBuffersReady = false;
             vkQueueWaitIdle(app->core->deviceContext->presentQueue);
         }
 
@@ -237,27 +313,27 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 
 void HybridEngine::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
-    //app->renderer->rebuildSwapChain = true;
     app->window->width = width;
     app->window->height = height;
     app->camera.update({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
+    app->RecreateSwapChain();
 }
 
 void HybridEngine::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    app->renderer->imgui.leftMouse = button == GLFW_MOUSE_BUTTON_LEFT && action != GLFW_RELEASE;
-    app->renderer->imgui.rightMouse = button == GLFW_MOUSE_BUTTON_RIGHT && action != GLFW_RELEASE;
+    app->raster->imgui.leftMouse = button == GLFW_MOUSE_BUTTON_LEFT && action != GLFW_RELEASE;
+    app->raster->imgui.rightMouse = button == GLFW_MOUSE_BUTTON_RIGHT && action != GLFW_RELEASE;
 }
 
 void HybridEngine::scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
-    app->renderer->imgui.mouseWheel += static_cast<float>(yOffset) * 0.01f;
+    app->raster->imgui.mouseWheel += static_cast<float>(yOffset) * 0.01f;
 }
 
 void HybridEngine::cursorCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    //app->renderer->imgui.mousePos.x = xOffset;
-    //app->renderer->imgui.mousePos.y = yOffset;
+    app->raster->imgui.mousePos.x = xOffset;
+    app->raster->imgui.mousePos.y = yOffset;
 }

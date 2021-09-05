@@ -32,7 +32,7 @@ void AccelerationStructure::Destroy() {
 	transformBuffer.Destroy();
 }
 
-ScratchBuffer AccelerationStructure::createScratchBuffer(VkDeviceSize size)
+ScratchBuffer AccelerationStructure::CreateScratchBuffer(VkDeviceSize size)
 {
 	ScratchBuffer scratchBuffer{};
 
@@ -65,7 +65,7 @@ ScratchBuffer AccelerationStructure::createScratchBuffer(VkDeviceSize size)
 	return scratchBuffer;
 }
 
-void AccelerationStructure::deleteScratchBuffer(ScratchBuffer& scratchBuffer)
+void AccelerationStructure::DeleteScratchBuffer(ScratchBuffer& scratchBuffer)
 {
 	if (scratchBuffer.memory != VK_NULL_HANDLE) {
 		vkFreeMemory(deviceContext->logicalDevice, scratchBuffer.memory, nullptr);
@@ -209,7 +209,7 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 		accelerationStructureBuildSizesInfo.accelerationStructureSize, 0, type);
 	vkCreateAccelerationStructureKHR(deviceContext->logicalDevice, &accelerationStructureCreateInfo, nullptr, &handle);
 
-	ScratchBuffer scratchBuffer = createScratchBuffer(accelerationStructureBuildSizesInfo.buildScratchSize);
+	ScratchBuffer scratchBuffer = CreateScratchBuffer(accelerationStructureBuildSizesInfo.buildScratchSize);
 
 	VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo =
 		Initialisers::ABuildGeometryInfo(accelerationStructureBuildGeometryInfo, handle, scratchBuffer.deviceAddress);
@@ -243,5 +243,5 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 	VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo = Initialisers::ASDeviceAddressInfo(handle);
 	deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(deviceContext->logicalDevice, &accelerationDeviceAddressInfo);
 
-	deleteScratchBuffer(scratchBuffer);
+	DeleteScratchBuffer(scratchBuffer);
 }

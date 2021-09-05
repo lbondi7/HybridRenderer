@@ -7,7 +7,7 @@
 
 SwapChain::~SwapChain()
 {
-    devices = nullptr;
+    deviceContext = nullptr;
     window = nullptr;
     windowWidth = nullptr;
     windowHeight = nullptr;
@@ -16,7 +16,7 @@ SwapChain::~SwapChain()
 
 void SwapChain::Create(VkSurfaceKHR _surface, DeviceContext* _devices, int* _windowWidth, int* _windowHeight)
 {
-    devices = _devices;
+    deviceContext = _devices;
     windowWidth = _windowWidth;
     windowHeight = _windowHeight;
     surface = _surface;
@@ -39,7 +39,7 @@ void SwapChain::Destroy()
         image.DestroyImageViews();
     }
 
-    vkDestroySwapchainKHR(devices->logicalDevice, vkSwapChain, nullptr);
+    vkDestroySwapchainKHR(deviceContext->logicalDevice, vkSwapChain, nullptr);
 
     for (auto& image : _images)
     {
@@ -48,9 +48,33 @@ void SwapChain::Destroy()
 
 }
 
+VkResult SwapChain::AquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t& imageIndex)
+{
+    auto result = vkAcquireNextImageKHR(deviceContext->logicalDevice, vkSwapChain,
+        UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+   
+    return result;
+}
+
+
+VkResult SwapChain::Present(VkSemaphore presentSemaphore, uint32_t& imageIndex)
+{
+    VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&presentSemaphore, 1, &vkSwapChain, 1, &imageIndex);
+    auto result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        //rebuildSwapChain = false;
+        //recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
+    return result;
+}
+
 void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
 
-    SwapChainSupportDetails swapChainSupport = Utility::querySwapChainSupport(surface, devices->physicalDevice);
+    SwapChainSupportDetails swapChainSupport = Utility::querySwapChainSupport(surface, deviceContext->physicalDevice);
 
     VkSurfaceFormatKHR surfaceFormat = Utility::chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = Utility::chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -64,7 +88,7 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
     VkSwapchainCreateInfoKHR createInfo = Initialisers::swapchainCreateInfoKHR(surface, imageCount, surfaceFormat.format, surfaceFormat.colorSpace,
         _extent, swapChainSupport.capabilities.currentTransform, presentMode);
 
-    QueueFamilyIndices indices = Utility::findQueueFamilies(devices->physicalDevice, surface);
+    QueueFamilyIndices indices = Utility::findQueueFamilies(deviceContext->physicalDevice, surface);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily) {
@@ -77,7 +101,7 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
     }
 
     VkSurfaceCapabilitiesKHR surfaceCapabilities{};
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(devices->physicalDevice, surface, &surfaceCapabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(deviceContext->physicalDevice, surface, &surfaceCapabilities);
 
     // Enable transfer source on swap chain images if supported
     if (surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
@@ -90,39 +114,40 @@ void SwapChain::createSwapChain(GLFWwindow* window, VkSurfaceKHR surface) {
     }
 
 
-    if (vkCreateSwapchainKHR(devices->logicalDevice, &createInfo, nullptr, &vkSwapChain) != VK_SUCCESS) {
+    if (vkCreateSwapchainKHR(deviceContext->logicalDevice, &createInfo, nullptr, &vkSwapChain) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
     }
 
-    vkGetSwapchainImagesKHR(devices->logicalDevice, vkSwapChain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(deviceContext->logicalDevice, vkSwapChain, &imageCount, nullptr);
 
     _images.resize(imageCount);
     images.resize(imageCount);
 
 
-    vkGetSwapchainImagesKHR(devices->logicalDevice, vkSwapChain, &imageCount, _images.data());
+    vkGetSwapchainImagesKHR(deviceContext->logicalDevice, vkSwapChain, &imageCount, _images.data());
     for (int i = 0; i < imageCount; i++) {
         images[i].image = _images[i];
         images[i].format = surfaceFormat.format;
     }
     imageFormat = surfaceFormat.format;
     extent = _extent;
-    devices->imageCount = imageCount;
+    deviceContext->imageCount = imageCount;
+    outdated = false;
 }
 
 
 void SwapChain::createImageViews() {
 
     for (uint32_t i = 0; i < images.size(); i++) {
-        images[i].devices = devices;
+        images[i].devices = deviceContext;
         images[i].CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 
 
 void SwapChain::createDepthResources() {
-    VkFormat depthFormat = Utility::findDepthFormat(devices->physicalDevice);
+    VkFormat depthFormat = Utility::findDepthFormat(deviceContext->physicalDevice);
 
-    depthImage.Create(devices, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImage.Create(deviceContext, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     depthImage.CreateImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }

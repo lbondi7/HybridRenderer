@@ -9,7 +9,6 @@ class DeviceContext
 {
 public:
 
-
 	VkDevice logicalDevice;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
@@ -27,6 +26,7 @@ public:
 	void Destroy();
 
 	VkCommandBuffer generateCommandBuffer();
+
 	void EndCommandBuffer(VkCommandBuffer cmdBuffer);
 
 	void createCommandPool(VkSurfaceKHR surface);

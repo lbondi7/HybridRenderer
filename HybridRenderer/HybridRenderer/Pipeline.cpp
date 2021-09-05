@@ -202,7 +202,4 @@ void Pipeline::createGraphicsPipeline() {
 void Pipeline::Destroy(bool complete) {
     vkDestroyPipeline(devices->logicalDevice, vkPipeline, nullptr);
     vkDestroyPipelineLayout(devices->logicalDevice, pipelineLayout, nullptr);
-
-    if (!complete)
-        return;
 }

@@ -3,24 +3,24 @@
 #include "DebugLogger.h"
 #include "ImGUI_.h"
 
-RasterRenderer::RasterRenderer(Window* window, VulkanCore* core)
+RasterRenderer::RasterRenderer(Window* window, VulkanCore* core, SwapChain* swapChain)
 {
     deviceContext = core->deviceContext.get();
+    this->swapChain = swapChain;
 
-    swapChain.Create(core->surface, deviceContext, &window->width, &window->height);
+    //swapChain.Create(core->surface, deviceContext, &window->width, &window->height);
 
-    imgui.create(window->glfwWindow, core->instance, core->surface, deviceContext, &swapChain);
+    imgui.create(window->glfwWindow, core->instance, core->surface, deviceContext, swapChain);
 }
 
 void RasterRenderer::Initialise(Resources* _resources)
 {
-
     resources = _resources;
 
     //swapChain.Create(window.glfwWindow, surface, deviceContext);
 
     RenderPassInfo info{};
-    info.attachments.push_back({ AttachmentType::COLOUR, swapChain.imageFormat, VK_ATTACHMENT_LOAD_OP_CLEAR,
+    info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_CLEAR,
         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
     info.attachments.push_back({ AttachmentType::DEPTH, Utility::findDepthFormat(deviceContext->physicalDevice), VK_ATTACHMENT_LOAD_OP_CLEAR,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
@@ -45,14 +45,14 @@ void RasterRenderer::Initialise(Resources* _resources)
 
     frameBuffer.Create(deviceContext, renderPass.vkRenderPass);
     penultimateFrameBuffer.Create(deviceContext, penultimateRenderPass.vkRenderPass);
-    for (size_t i = 0; i < swapChain.imageCount; i++)
+    for (size_t i = 0; i < swapChain->imageCount; i++)
     {
-        std::vector<VkImageView> attachments{ swapChain.images[i].imageView, swapChain.depthImage.imageView };
-        frameBuffer.createFramebuffer(attachments, swapChain.extent);
-        penultimateFrameBuffer.createFramebuffer(attachments, swapChain.extent);
+        std::vector<VkImageView> attachments{ swapChain->images[i].imageView, swapChain->depthImage.imageView };
+        frameBuffer.createFramebuffer(attachments, swapChain->extent);
+        penultimateFrameBuffer.createFramebuffer(attachments, swapChain->extent);
     }
 
-    shadowMap.Create(deviceContext, &swapChain);
+    shadowMap.Create(deviceContext, swapChain);
     pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
         resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_FRAGMENT_BIT) };
     pipelineInfo.depthBiasEnable = VK_TRUE;
@@ -64,66 +64,46 @@ void RasterRenderer::Initialise(Resources* _resources)
     shadowMap.Initialise(pipelineInfo);
 
     AllocateCommandBuffers();
-    createSyncObjects();
 
     commandBuffersReady = false;
 }
 
-void RasterRenderer::cleanupSwapChain() {
+void RasterRenderer::Deinitialise(bool total) {
 
     vkDeviceWaitIdle(deviceContext->logicalDevice);
 
     frameBuffer.Destroy();
     penultimateFrameBuffer.Destroy();
 
-    vkFreeCommandBuffers(deviceContext->logicalDevice, deviceContext->commandPool, 
-        static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-
     pipeline.Destroy(false);
     renderPass.Destroy();
     penultimateRenderPass.Destroy();
 
-    swapChain.Destroy();
-
-
-    //imgui.destroy();
     imgui.deinit();
 
-}
+    if (total) {
+        imgui.destroy();
 
-void RasterRenderer::cleanup() {
-    cleanupSwapChain();
+        vkFreeCommandBuffers(deviceContext->logicalDevice, deviceContext->commandPool,
+            static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    //for (size_t i = 0; i < swapChain.imageCount; i++) {
-    //    lightBuffers[i].Destroy();
-    //    cameraBuffers[i].Destroy();
-    //}
-
-    imgui.destroy();
-
-    shadowMap.Destroy(true);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(deviceContext->logicalDevice, renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(deviceContext->logicalDevice, imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(deviceContext->logicalDevice, inFlightFences[i], nullptr);
+        shadowMap.Destroy(true);
     }
 }
 
-void RasterRenderer::recreateSwapChain() {
+void RasterRenderer::Reinitialise() {
 
-    cleanupSwapChain();
+    Deinitialise();
 
-    swapChain.Init();
     renderPass.Init();
     penultimateRenderPass.Init();
 
     frameBuffer.Create(deviceContext, renderPass.vkRenderPass);
     penultimateFrameBuffer.Create(deviceContext, penultimateRenderPass.vkRenderPass);
-    VkExtent2D _extent = { swapChain.extent.width * 2, swapChain.extent.height};
-    for (size_t i = 0; i < swapChain.imageCount; i++)
+    VkExtent2D _extent = { swapChain->extent.width, swapChain->extent.height};
+    for (size_t i = 0; i < swapChain->imageCount; i++)
     {
-        std::vector<VkImageView> attachments{ swapChain.images[i].imageView, swapChain.depthImage.imageView };
+        std::vector<VkImageView> attachments{ swapChain->images[i].imageView, swapChain->depthImage.imageView };
         frameBuffer.createFramebuffer(attachments, _extent);
         penultimateFrameBuffer.createFramebuffer(attachments, _extent);
     }
@@ -132,8 +112,6 @@ void RasterRenderer::recreateSwapChain() {
     pipeline.Init();
     imgui.reinit();
     AllocateCommandBuffers();
-
-    imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
 
     auto& texture = shadowMap.depthTexture;
 
@@ -218,7 +196,7 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
     }
 
     {
-        clearValues[0].color = { 0.025f, 0.025f, 0.025f, 1.0f };
+        clearValues[0].color = { 0.25f, 0.25f, 0.25f, 1.0f };
         clearValues[1].depthStencil = { 1.0f, 0 };
         if(!ImGUI::enabled)
             renderPass.Begin(commandBuffers[i], frameBuffer.frames[i].vkFrameBuffer, frameBuffer.frames[i].extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
@@ -268,39 +246,21 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
     //}
 }
 
-void RasterRenderer::createSyncObjects() {
-
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
-
-    VkSemaphoreCreateInfo semaphoreInfo = Initialisers::semaphoreCreateInfo();
-
-    VkFenceCreateInfo fenceInfo = Initialisers::fenceCreateInfo();
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create synchronization objects for a frame!");
-        }
-    }
-}
-
 void RasterRenderer::Prepare()
 {
-    VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
+    //VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
 
-    VkResult result = vkAcquireNextImageKHR(deviceContext->logicalDevice, swapChain.vkSwapChain, UINT64_MAX, iAS, VK_NULL_HANDLE, &imageIndex);
+    //swapChain.AquireNextImage(iAS, imageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
-    return;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("failed to acquire swap chain image!");
-    }
+    //VkResult result = vkAcquireNextImageKHR(deviceContext->logicalDevice, swapChain.vkSwapChain, UINT64_MAX, iAS, VK_NULL_HANDLE, &imageIndex);
+
+    //if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    //    recreateSwapChain();
+    //return;
+    //}
+    //else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    //    throw std::runtime_error("failed to acquire swap chain image!");
+    //}
 
     if (ImGUI::enabled && !imgui.startedFrame)
     {
@@ -310,6 +270,27 @@ void RasterRenderer::Prepare()
 
 }
 
+void RasterRenderer::GetCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, Camera* camera, Scene* scene)
+{
+    if (shadowMap.Update() || !commandBuffersReady)
+    {
+        buildCommandBuffers(camera, scene);
+    }
+
+    submitCommandBuffers.emplace_back(commandBuffers[imageIndex]);
+}
+
+void RasterRenderer::GetImGuiCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, VkExtent2D extent)
+{
+    if (ImGUI::enabled && imgui.startedFrame) {
+
+        imgui.endFrame();
+        imgui.drawn = true;
+
+        imgui.buildCommandBuffer(imageIndex, extent);
+        submitCommandBuffers.emplace_back(imgui.commandBuffers[imageIndex]);
+    }
+}
 
 void RasterRenderer::Render(Camera* camera, Scene* scene)
 {
@@ -324,7 +305,6 @@ void RasterRenderer::Render(Camera* camera, Scene* scene)
     vkWaitForFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
 
-
     std::vector<VkCommandBuffer> submitCommandBuffers =
     { commandBuffers[imageIndex] };
     
@@ -333,7 +313,7 @@ void RasterRenderer::Render(Camera* camera, Scene* scene)
         imgui.endFrame();
         imgui.drawn = true;
 
-        imgui.buildCommandBuffer(imageIndex, swapChain.extent);
+        imgui.buildCommandBuffer(imageIndex, swapChain->extent);
         submitCommandBuffers.emplace_back(imgui.commandBuffers[imageIndex]);
     }
 
@@ -348,19 +328,21 @@ void RasterRenderer::Render(Camera* camera, Scene* scene)
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
-    VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
-    VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&rFS, 1, swapChains, 1, &imageIndex);
-    auto result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
+    //VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
+    //VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&rFS, 1, swapChains, 1, &imageIndex);
+    //auto result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || rebuildSwapChain) {
-        rebuildSwapChain = false;
-        recreateSwapChain();
-    }
-    else if (result != VK_SUCCESS) {
-        throw std::runtime_error("failed to present swap chain image!");
-    }
+    //auto result = swapChain.Present(rFS, imageIndex);
 
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    //if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || rebuildSwapChain) {
+    //    rebuildSwapChain = false;
+    //    recreateSwapChain();
+    //}
+    //else if (result != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to present swap chain image!");
+    //}
+
+    //currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 }
 

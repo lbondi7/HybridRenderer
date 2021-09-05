@@ -17,10 +17,10 @@ void RayTracingRenderer::Initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	resources = _resources;
 	window = _window;
 
-	swapChain.Create(surface, deviceContext, &window->width, &window->height);
+	//swapChain.Create(surface, deviceContext, &window->width, &window->height);
 
-	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	nextImageSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	presentSemphores.resize(MAX_FRAMES_IN_FLIGHT);
 	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 	imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
 
@@ -29,8 +29,8 @@ void RayTracingRenderer::Initialise(DeviceContext* _deviceContext, VkSurfaceKHR 
 	VkFenceCreateInfo fenceInfo = Initialisers::fenceCreateInfo();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		if (vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+		if (vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &nextImageSemaphores[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &presentSemphores[i]) != VK_SUCCESS ||
 			vkCreateFence(deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create synchronization objects for a frame!");
 		}
@@ -113,8 +113,8 @@ void RayTracingRenderer::cleanup() {
 	swapChain.Destroy();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		vkDestroySemaphore(deviceContext->logicalDevice, renderFinishedSemaphores[i], nullptr);
-		vkDestroySemaphore(deviceContext->logicalDevice, imageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(deviceContext->logicalDevice, presentSemphores[i], nullptr);
+		vkDestroySemaphore(deviceContext->logicalDevice, nextImageSemaphores[i], nullptr);
 		vkDestroyFence(deviceContext->logicalDevice, inFlightFences[i], nullptr);
 	}
 
@@ -134,16 +134,12 @@ void RayTracingRenderer::cleanup() {
 void RayTracingRenderer::Render(Camera* camera)
 {
 	updateUniformBuffers(camera);
-	VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
+	VkSemaphore iAS = nextImageSemaphores[currentFrame];
 
-	auto result = vkAcquireNextImageKHR(deviceContext->logicalDevice, swapChain.vkSwapChain, UINT64_MAX, iAS, VK_NULL_HANDLE, &imageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		
+	VkResult result;
+	if ((result = swapChain.AquireNextImage(iAS, imageIndex)) == VK_ERROR_OUT_OF_DATE_KHR)
+	{
 		return;
-	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		throw std::runtime_error("failed to acquire swap chain image!");
 	}
 
 	imagesInFlight[imageIndex] = inFlightFences[currentFrame];
@@ -151,11 +147,10 @@ void RayTracingRenderer::Render(Camera* camera)
 	vkWaitForFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
 
-
 	std::vector<VkCommandBuffer> submitCommandBuffers =
 	{ drawCmdBuffers[imageIndex] };
 
-	VkSemaphore rFS = renderFinishedSemaphores[currentFrame];
+	VkSemaphore rFS = presentSemphores[currentFrame];
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSubmitInfo submitInfo = Initialisers::submitInfo(
 		submitCommandBuffers.data(), static_cast<uint32_t>(submitCommandBuffers.size()), &iAS, 1, &rFS, 1, waitStages);
@@ -165,17 +160,18 @@ void RayTracingRenderer::Render(Camera* camera)
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
-	VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
-	VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&rFS, 1, swapChains, 1, &imageIndex);
-	result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
+	//VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
+	//VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&rFS, 1, swapChains, 1, &imageIndex);
+	//result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-		//rebuildSwapChain = false;
-		//recreateSwapChain();
-	}
-	else if (result != VK_SUCCESS) {
-		throw std::runtime_error("failed to present swap chain image!");
-	}
+	result = swapChain.Present(rFS, imageIndex);
+	//if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+	//	//rebuildSwapChain = false;
+	//	//recreateSwapChain();
+	//}
+	//else if (result != VK_SUCCESS) {
+	//	throw std::runtime_error("failed to present swap chain image!");
+	//}
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }

@@ -25,17 +25,21 @@ class RasterRenderer {
 public:
 
     RasterRenderer() = default;
-    RasterRenderer(Window* window, VulkanCore* core);
+    RasterRenderer(Window* window, VulkanCore* core, SwapChain* swapChain);
 
     void Initialise(Resources* _resources);
 
     void Prepare();
 
+    void GetCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, Camera* camera, Scene* scene);
+
+    void GetImGuiCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, VkExtent2D extent);
+
     void Render(Camera* camera, Scene* scene);
 
     DeviceContext* deviceContext;
 
-    SwapChain swapChain;
+    SwapChain* swapChain;
     RenderPass renderPass;
     FrameBuffer frameBuffer;
     RenderPass penultimateRenderPass;
@@ -79,18 +83,14 @@ public:
 
     ImGUIWidget widget;
 
-    void cleanup();
+    void Deinitialise(bool total = false);
 
-    void cleanupSwapChain();
-
-    void recreateSwapChain();
+    void Reinitialise();
 
     void AllocateCommandBuffers();
 
     void buildCommandBuffers(Camera* camera, Scene* scene);
 
     void rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* scene);
-
-    void createSyncObjects();
 
 };

@@ -21,9 +21,9 @@ public:
 
 	void Destroy();
 
-	ScratchBuffer createScratchBuffer(VkDeviceSize size);
+	ScratchBuffer CreateScratchBuffer(VkDeviceSize size);
 
-	void deleteScratchBuffer(ScratchBuffer& scratchBuffer);
+	void DeleteScratchBuffer(ScratchBuffer& scratchBuffer);
 
 	void createAccelerationStructureBuffer(VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
 
@@ -32,8 +32,6 @@ public:
 	void createTopLevelAccelerationStructure(std::vector<AccelerationStructure>& blas);
 
 	void CreateBuildRange(const VkAccelerationStructureBuildGeometryInfoKHR& accelerationStructureBuildGeometryInfo, uint32_t primitiveCount);
-
-	//void createBottomLevelAccelerationStructure(Mesh* mesh);
 
 	VkAccelerationStructureKHR handle;
 	uint64_t deviceAddress = 0;
