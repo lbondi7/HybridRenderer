@@ -15,16 +15,16 @@ void Mesh::Init(DeviceContext* _devices)
     Buffer stagingBuffer;
     stagingBuffer.Create(devices, bufferSize, vertices.data());
 
-    vertexBuffer->Create2(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vertexBuffer->CopyFrom2(&stagingBuffer);
+    vertexBuffer->Allocate(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vertexBuffer->AllocatedCopyFrom(&stagingBuffer);
 
     bufferSize = sizeof(indices[0]) * indices.size();
 
     Buffer stagingIndexBuffer;
     stagingIndexBuffer.Create(devices, bufferSize, indices.data());
 
-    indexBuffer->Create2(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    indexBuffer->CopyFrom2(&stagingIndexBuffer);
+    indexBuffer->Allocate(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    indexBuffer->AllocatedCopyFrom(&stagingIndexBuffer);
 
     stagingBuffer.Destroy();
     stagingIndexBuffer.Destroy();

@@ -7,9 +7,9 @@ public:
 
 	~TextureSampler();
 
-	virtual void createSampler();
+	virtual void CreateSampler();
 
-	virtual void createSampler(const VkSamplerCreateInfo& samplerInfo);
+	virtual void CreateSampler(const VkSamplerCreateInfo& samplerInfo);
 
 	void Destroy() override;
 

@@ -19,6 +19,8 @@ public:
 	
 	void Initialise(DeviceContext* _deviceContext);
 
+	void Destroy();
+
 	ScratchBuffer createScratchBuffer(VkDeviceSize size);
 
 	void deleteScratchBuffer(ScratchBuffer& scratchBuffer);
@@ -43,7 +45,6 @@ public:
 	Buffer transformBuffer;
 	uint32_t indexCount;
 	VkAccelerationStructureTypeKHR type;
-	//Buffer buffer;
 
 private:
 

@@ -35,7 +35,7 @@ public:
 
 	VkBool32 formatIsFilterable(VkFormat format, VkImageTiling tiling);
 
-	void getDescriptors(Descriptor& descriptor, const DescriptorSetRequest& request);
+	void GetDescriptors(Descriptor& descriptor, const DescriptorSetRequest& request, bool update = false);
 
 
 	QueueFamilyIndices indices;

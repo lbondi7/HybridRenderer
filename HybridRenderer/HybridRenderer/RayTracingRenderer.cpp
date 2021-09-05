@@ -101,12 +101,7 @@ void RayTracingRenderer::cleanup() {
 	vkDestroyImageView(deviceContext->logicalDevice, storageImage.view, nullptr);
 	vkDestroyImage(deviceContext->logicalDevice, storageImage.image, nullptr);
 	vkFreeMemory(deviceContext->logicalDevice, storageImage.memory, nullptr);
-	vkFreeMemory(deviceContext->logicalDevice, bottomLevelAS.memory, nullptr);
-	vkDestroyBuffer(deviceContext->logicalDevice, bottomLevelAS.buffer, nullptr);
-	vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, bottomLevelAS.handle, nullptr);
-	//vkFreeMemory(deviceContext->logicalDevice, topLevelAS.memory, nullptr);
-	//vkDestroyBuffer(deviceContext->logicalDevice, topLevelAS.buffer, nullptr);
-	//vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, topLevelAS.handle, nullptr);
+
 	swapChain.Destroy();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -336,14 +331,8 @@ void RayTracingRenderer::createRayTracingPipeline()
 	/*
 		Create the ray tracing pipeline
 	*/
-	VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI{};
-	rayTracingPipelineCI.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
-	rayTracingPipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
-	rayTracingPipelineCI.pStages = shaderStages.data();
-	rayTracingPipelineCI.groupCount = static_cast<uint32_t>(shaderGroups.size());
-	rayTracingPipelineCI.pGroups = shaderGroups.data();
-	rayTracingPipelineCI.maxPipelineRayRecursionDepth = 1;
-	rayTracingPipelineCI.layout = pipelineLayout;
+	VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI = Initialisers::RayTracingPipelineCreateInfo(pipelineLayout, 
+		shaderStages.data(), static_cast<uint32_t>(shaderStages.size()), shaderGroups.data(), static_cast<uint32_t>(shaderGroups.size()));
 	vkCreateRayTracingPipelinesKHR(deviceContext->logicalDevice, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCI, nullptr, &pipeline);
 }
 
@@ -406,76 +395,28 @@ void RayTracingRenderer::buildCommandBuffers()
 	{
 		vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo);
 
-		/*
-			Setup the buffer regions pointing to the shaders in our shader binding table
-		*/
-
 		const uint32_t handleSizeAligned = Utility::alignedSize(deviceContext->rayTracingPipelineProperties.shaderGroupHandleSize, deviceContext->rayTracingPipelineProperties.shaderGroupHandleAlignment);
 
-		VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
-		raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTable.GetDeviceAddress();
-		raygenShaderSbtEntry.stride = handleSizeAligned;
-		raygenShaderSbtEntry.size = handleSizeAligned;
-
-		VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
-		missShaderSbtEntry.deviceAddress = missShaderBindingTable.GetDeviceAddress();
-		missShaderSbtEntry.stride = handleSizeAligned;
-		missShaderSbtEntry.size = handleSizeAligned;
-
-		VkStridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-		hitShaderSbtEntry.deviceAddress = hitShaderBindingTable.GetDeviceAddress();
-		hitShaderSbtEntry.stride = handleSizeAligned;
-		hitShaderSbtEntry.size = handleSizeAligned;
-
+		VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry = Initialisers::StridedDeviceAddressRegion(raygenShaderBindingTable.GetDeviceAddress(), handleSizeAligned, handleSizeAligned);
+		VkStridedDeviceAddressRegionKHR missShaderSbtEntry = Initialisers::StridedDeviceAddressRegion(missShaderBindingTable.GetDeviceAddress(), handleSizeAligned, handleSizeAligned);
+		VkStridedDeviceAddressRegionKHR hitShaderSbtEntry = Initialisers::StridedDeviceAddressRegion(hitShaderBindingTable.GetDeviceAddress(), handleSizeAligned, handleSizeAligned);
 		VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
-		/*
-			Dispatch the ray tracing commands
-		*/
 		vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline);
 		vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout, 0, 1, &descriptorSets, 0, 0);
 
-		vkCmdTraceRaysKHR(
-			drawCmdBuffers[i],
-			&raygenShaderSbtEntry,
-			&missShaderSbtEntry,
-			&hitShaderSbtEntry,
-			&callableShaderSbtEntry,
-			window->width,
-			window->height,
+		vkCmdTraceRaysKHR(drawCmdBuffers[i],
+			&raygenShaderSbtEntry, &missShaderSbtEntry,
+			&hitShaderSbtEntry, &callableShaderSbtEntry,
+			window->width, window->height,
 			1);
 
-		/*
-			Copy ray tracing output to swap chain image
-		*/
-
-
-		// Prepare current swap chain image as transfer destination
-		//vks::tools::setImageLayout(
-		//	drawCmdBuffers[i],
-		//	swapChain.images[i],
-		//	VK_IMAGE_LAYOUT_UNDEFINED,
-		//	VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		//	subresourceRange);
-
-		// Prepare ray tracing output image as transfer source
-		//vks::tools::setImageLayout(
-		//	drawCmdBuffers[i],
-		//	storageImage.image,
-		//	VK_IMAGE_LAYOUT_GENERAL,
-		//	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		//	subresourceRange);
-
-		Utility::setImageLayout(drawCmdBuffers[i],
-			swapChain.images[i].image,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		Utility::setImageLayout(drawCmdBuffers[i], swapChain.images[i].image,
+			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			subresourceRange);
 
-		Utility::setImageLayout(drawCmdBuffers[i],
-			storageImage.image,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		Utility::setImageLayout(drawCmdBuffers[i], storageImage.image,
+			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			subresourceRange);
 
 
@@ -483,33 +424,13 @@ void RayTracingRenderer::buildCommandBuffers()
 		vkCmdCopyImage(drawCmdBuffers[i], storageImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapChain.images[i].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 
-		Utility::setImageLayout(drawCmdBuffers[i],
-			swapChain.images[i].image,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		Utility::setImageLayout(drawCmdBuffers[i], swapChain.images[i].image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			subresourceRange);
 
-		Utility::setImageLayout(drawCmdBuffers[i],
-			storageImage.image,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			VK_IMAGE_LAYOUT_GENERAL,
+		Utility::setImageLayout(drawCmdBuffers[i], storageImage.image,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 			subresourceRange);
-
-		//// Transition swap chain image back for presentation
-		//vks::tools::setImageLayout(
-		//	drawCmdBuffers[i],
-		//	swapChain.images[i],
-		//	VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		//	VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		//	subresourceRange);
-
-		//// Transition ray tracing output image back to general layout
-		//vks::tools::setImageLayout(
-		//	drawCmdBuffers[i],
-		//	storageImage.image,
-		//	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		//	VK_IMAGE_LAYOUT_GENERAL,
-		//	subresourceRange);
 
 		vkEndCommandBuffer(drawCmdBuffers[i]);
 	}

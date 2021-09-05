@@ -22,7 +22,7 @@ public:
 	void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask,
 		VkPipelineStageFlags dstStageMask, const VkImageSubresourceRange& subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-	virtual void createImageView(VkImageAspectFlags aspectFlags);
+	virtual void CreateImageView(VkImageAspectFlags aspectFlags);
 
 	void CopyFromBuffer(VkBuffer buffer);
 

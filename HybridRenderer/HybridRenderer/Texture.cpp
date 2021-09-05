@@ -131,7 +131,7 @@ void Texture::transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLa
     descriptorInfo.imageLayout = newLayout;
 }
 
-void Texture::createImageView(VkImageAspectFlags aspectFlags) {
+void Texture::CreateImageView(VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo viewInfo = Initialisers::imageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format, aspectFlags);
 
     if (vkCreateImageView(devices->logicalDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {

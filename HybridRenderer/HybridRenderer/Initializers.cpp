@@ -780,7 +780,21 @@ namespace Initialisers {
 	}
 
 
-	// Ray Tracing
+	// Ray Tracing Pipeline
+
+	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(VkPipelineLayout pipelineLayout, const VkPipelineShaderStageCreateInfo* shaderStages, uint32_t stageCount, const VkRayTracingShaderGroupCreateInfoKHR* shaderGroups, uint32_t groupCount, uint32_t maxRecursionDepth) {
+		VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI{};
+		rayTracingPipelineCI.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+		rayTracingPipelineCI.layout = pipelineLayout;
+		rayTracingPipelineCI.stageCount = stageCount;
+		rayTracingPipelineCI.pStages = shaderStages;
+		rayTracingPipelineCI.groupCount = groupCount;
+		rayTracingPipelineCI.pGroups = shaderGroups;
+		rayTracingPipelineCI.maxPipelineRayRecursionDepth = maxRecursionDepth;
+		return rayTracingPipelineCI;
+	}
+
+	// Ray Tracing Shader Group
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingGeneralShaderGroup(uint32_t shaderCount) {
 		VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
@@ -959,12 +973,21 @@ namespace Initialisers {
 		return instance;
 	}
 
-	VkAccelerationStructureDeviceAddressInfoKHR ADeviceAddressInfo(const VkAccelerationStructureKHR& accelerationStructure)
+	VkAccelerationStructureDeviceAddressInfoKHR ASDeviceAddressInfo(const VkAccelerationStructureKHR& accelerationStructure)
 	{
 		VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo{};
 		accelerationDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
 		accelerationDeviceAddressInfo.accelerationStructure = accelerationStructure;
 		return accelerationDeviceAddressInfo;
+	}
+
+	// Device Address
+	VkStridedDeviceAddressRegionKHR StridedDeviceAddressRegion(VkDeviceAddress deviceAddress, VkDeviceSize size, VkDeviceSize stride) {
+		VkStridedDeviceAddressRegionKHR region{};
+		region.deviceAddress = deviceAddress;
+		region.size = size;
+		region.stride = stride;
+		return region;
 	}
 
 }

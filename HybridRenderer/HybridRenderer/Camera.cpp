@@ -29,7 +29,7 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 	buffers.resize(imageCount);
 	for (size_t i = 0; i < imageCount; i++) {
 		VkDeviceSize bufferSize = sizeof(CameraUBO);
-		buffers[i].Create2(deviceContext, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		buffers[i].Allocate(deviceContext, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
 
 	using BindingType = std::pair<uint32_t, VkDescriptorType>;
@@ -42,7 +42,7 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 		request.data.push_back(&buffers[i].descriptorInfo);
 	}
 
-	deviceContext->getDescriptors(descriptor, request);
+	deviceContext->GetDescriptors(descriptor, request);
 	//descriptor.initialise(deviceContext, request);
 
 	update(_extent.width, _extent.height);

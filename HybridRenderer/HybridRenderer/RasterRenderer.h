@@ -82,7 +82,6 @@ public:
 
     ImGUIWidget widget;
 
-
     void cleanup();
 
     void cleanupSwapChain();

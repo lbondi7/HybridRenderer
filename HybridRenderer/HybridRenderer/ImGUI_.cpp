@@ -9,6 +9,7 @@
 #include <array>
 
 bool ImGUI::enabled = false;
+bool ImGUI::firstFrame = true;
 
 ImGUI::~ImGUI()
 {
@@ -231,7 +232,7 @@ void ImGUI::update(VkExtent2D extent)
 	//newFrame();
 }
 
-void ImGUI::buildCommandBuffers(uint32_t i, const VkExtent2D& extent) {
+void ImGUI::buildCommandBuffer(uint32_t i, const VkExtent2D& extent) {
 
 	clearValues.color = { 0.025f, 0.025f, 0.025f, 1.0f };
 	VkCommandBufferBeginInfo info = {};
@@ -239,7 +240,6 @@ void ImGUI::buildCommandBuffers(uint32_t i, const VkExtent2D& extent) {
 	info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	vkBeginCommandBuffer(commandBuffers[i], &info);
 	{
-
 		renderPass.Begin(commandBuffers[i], frameBuffer.frames[i].vkFrameBuffer, extent, &clearValues, 1);
 	}
 
@@ -248,7 +248,6 @@ void ImGUI::buildCommandBuffers(uint32_t i, const VkExtent2D& extent) {
 		drawn = false;
 	}
 	renderPass.End(commandBuffers[i]);
-	//vkCmdEndRenderPass(imgui.commandBuffers[i]);
 	vkEndCommandBuffer(commandBuffers[i]);
 }
 

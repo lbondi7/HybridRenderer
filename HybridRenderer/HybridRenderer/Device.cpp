@@ -240,7 +240,11 @@ VkBool32 DeviceContext::formatIsFilterable(VkFormat format, VkImageTiling tiling
     return false;
 }
 
-void DeviceContext::getDescriptors(Descriptor& descriptor, const DescriptorSetRequest& request)
+void DeviceContext::GetDescriptors(Descriptor& descriptor, const DescriptorSetRequest& request, bool update)
 {
+    if (update) {
+        dsm.update(descriptor, request);
+        return;
+    }
     dsm.getDescriptor(descriptor, request);
 }

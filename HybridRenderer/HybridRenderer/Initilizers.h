@@ -244,12 +244,15 @@ namespace Initialisers {
 
 	VkVertexInputAttributeDescription vertexInputAttributeDescription(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset);
 
-	// Ray Tracing
+	// Ray Tracing Pipeline
+
+	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(VkPipelineLayout pipelineLayout, const VkPipelineShaderStageCreateInfo* shaderStages, uint32_t stageCount, const VkRayTracingShaderGroupCreateInfoKHR* shaderGroups, uint32_t groupCount, uint32_t maxRecursionDepth = 1);
+
+	// Ray Tracing Shader
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingGeneralShaderGroup(uint32_t shaderCount);
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingClosestHitShaderGroup(uint32_t shaderCount);
-
 
 	// Acceleration Structure
 
@@ -280,5 +283,9 @@ namespace Initialisers {
 
 	VkAccelerationStructureInstanceKHR ASInstance(VkTransformMatrixKHR transformMatrix, VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset = 0, uint32_t mask = 0xFF);
 
-	VkAccelerationStructureDeviceAddressInfoKHR ADeviceAddressInfo(const VkAccelerationStructureKHR& accelerationStructure);
+	VkAccelerationStructureDeviceAddressInfoKHR ASDeviceAddressInfo(const VkAccelerationStructureKHR& accelerationStructure);
+
+	// Device Address
+
+	VkStridedDeviceAddressRegionKHR StridedDeviceAddressRegion(VkDeviceAddress deviceAddress, VkDeviceSize size, VkDeviceSize stride);
 }

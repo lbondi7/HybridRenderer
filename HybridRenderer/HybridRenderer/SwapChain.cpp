@@ -115,7 +115,7 @@ void SwapChain::createImageViews() {
 
     for (uint32_t i = 0; i < images.size(); i++) {
         images[i].devices = devices;
-        images[i].createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+        images[i].CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 
@@ -124,5 +124,5 @@ void SwapChain::createDepthResources() {
     VkFormat depthFormat = Utility::findDepthFormat(devices->physicalDevice);
 
     depthImage.Create(devices, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    depthImage.createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
+    depthImage.CreateImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }

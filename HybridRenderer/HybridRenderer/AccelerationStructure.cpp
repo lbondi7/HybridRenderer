@@ -20,6 +20,10 @@ void AccelerationStructure::Initialise(DeviceContext* _deviceContext)
 	vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(deviceContext->logicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));
 }
 
+void AccelerationStructure::Destroy() {
+	
+}
+
 ScratchBuffer AccelerationStructure::createScratchBuffer(VkDeviceSize size)
 {
 	ScratchBuffer scratchBuffer{};
@@ -65,25 +69,25 @@ void AccelerationStructure::deleteScratchBuffer(ScratchBuffer& scratchBuffer)
 
 void AccelerationStructure::createAccelerationStructureBuffer(VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo)
 {
-	//asBuffer.Create2(deviceContext, buildSizeInfo.accelerationStructureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-	//	VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	VkBufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size = buildSizeInfo.accelerationStructureSize;
-	bufferCreateInfo.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-	vkCreateBuffer(deviceContext->logicalDevice, &bufferCreateInfo, nullptr, &buffer);
-	VkMemoryRequirements memoryRequirements{};
-	vkGetBufferMemoryRequirements(deviceContext->logicalDevice, buffer, &memoryRequirements);
-	VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
-	memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
-	memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-	VkMemoryAllocateInfo memoryAllocateInfo{};
-	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
-	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	memoryAllocateInfo.memoryTypeIndex = Utility::findMemoryType(memoryRequirements.memoryTypeBits, deviceContext->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	vkAllocateMemory(deviceContext->logicalDevice, &memoryAllocateInfo, nullptr, &memory);
-	vkBindBufferMemory(deviceContext->logicalDevice, buffer, memory, 0);
+	asBuffer.Create(deviceContext, buildSizeInfo.accelerationStructureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	//VkBufferCreateInfo bufferCreateInfo{};
+	//bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	//bufferCreateInfo.size = buildSizeInfo.accelerationStructureSize;
+	//bufferCreateInfo.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+	//vkCreateBuffer(deviceContext->logicalDevice, &bufferCreateInfo, nullptr, &buffer);
+	//VkMemoryRequirements memoryRequirements{};
+	//vkGetBufferMemoryRequirements(deviceContext->logicalDevice, buffer, &memoryRequirements);
+	//VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
+	//memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+	//memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+	//VkMemoryAllocateInfo memoryAllocateInfo{};
+	//memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	//memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
+	//memoryAllocateInfo.allocationSize = memoryRequirements.size;
+	//memoryAllocateInfo.memoryTypeIndex = Utility::findMemoryType(memoryRequirements.memoryTypeBits, deviceContext->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	//vkAllocateMemory(deviceContext->logicalDevice, &memoryAllocateInfo, nullptr, &memory);
+	//vkBindBufferMemory(deviceContext->logicalDevice, buffer, memory, 0);
 }
 
 
@@ -193,7 +197,7 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 
 	createAccelerationStructureBuffer(accelerationStructureBuildSizesInfo);
 
-	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo = Initialisers::ASCreateInfo(buffer,
+	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo = Initialisers::ASCreateInfo(asBuffer.vkBuffer,
 		accelerationStructureBuildSizesInfo.accelerationStructureSize, 0, type);
 	vkCreateAccelerationStructureKHR(deviceContext->logicalDevice, &accelerationStructureCreateInfo, nullptr, &handle);
 
@@ -228,7 +232,7 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 		deviceContext->EndCommandBuffer(commandBuffer);
 	}
 
-	VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo = Initialisers::ADeviceAddressInfo(handle);
+	VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo = Initialisers::ASDeviceAddressInfo(handle);
 	deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(deviceContext->logicalDevice, &accelerationDeviceAddressInfo);
 
 	deleteScratchBuffer(scratchBuffer);

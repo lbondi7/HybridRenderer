@@ -12,9 +12,9 @@ public:
 
 	void createVkImage() override;
 
-	void createImageView(VkImageAspectFlags aspectMask) override;
+	void CreateImageView(VkImageAspectFlags aspectMask) override;
 
-	void createSampler() override;
+	void CreateSampler() override;
 
 };
 

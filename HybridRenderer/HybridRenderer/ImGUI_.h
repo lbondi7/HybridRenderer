@@ -15,6 +15,7 @@ class ImGUI
 public:
 
 	static bool enabled;
+	static bool firstFrame;
 
 
 	ImGUI() = default;
@@ -45,7 +46,7 @@ public:
 	bool drawn = false;
 
 	void update(VkExtent2D extent);
-	void buildCommandBuffers(uint32_t i, const VkExtent2D& extent);
+	void buildCommandBuffer(uint32_t i, const VkExtent2D& extent);
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions();
 

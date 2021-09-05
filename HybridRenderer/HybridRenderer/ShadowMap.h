@@ -15,16 +15,15 @@ public:
 	ShadowMap() = default;
 	~ShadowMap();
 
-	void update(bool& resize);
 	void Create(DeviceContext* _devices, SwapChain* _swapChain);
 
-	void Init(const PipelineInfo& pipelineInfo);
+	void Initialise(const PipelineInfo& pipelineInfo);
 
-	void reinitialise(bool complete = true);
+	void Reinitialise(bool complete = true);
 
 	void Destroy(bool complete = true);
 
-	void update();
+	bool Update();
 
 	uint32_t width;
 	uint32_t height;
@@ -36,14 +35,16 @@ public:
 	TextureSampler depthTexture;
 	//CubemapTexture depthCubemap;
 	RenderPass renderPass;
-	DeviceContext* devices = nullptr;
-	SwapChain* swapChain = nullptr;
-
-	std::vector<VkDescriptorSet> descriptorSets;
 
 	Descriptor descriptor;
 
 	ImGUIWidget widget;
+private:
+
+	void Initialise(bool reinit);
+
+	DeviceContext* devices = nullptr;
+	SwapChain* swapChain = nullptr;
 
 };
 

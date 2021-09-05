@@ -8,7 +8,7 @@ TextureSampler::~TextureSampler()
         vkDestroySampler(devices->logicalDevice, sampler, nullptr);
 }
 
-void TextureSampler::createSampler() {
+void TextureSampler::CreateSampler() {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(devices->physicalDevice, &properties);
 
@@ -23,7 +23,7 @@ void TextureSampler::createSampler() {
     descriptorInfo.sampler = sampler;
 }
 
-void TextureSampler::createSampler(const VkSamplerCreateInfo& samplerInfo) {
+void TextureSampler::CreateSampler(const VkSamplerCreateInfo& samplerInfo) {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(devices->physicalDevice, &properties);
 

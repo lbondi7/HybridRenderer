@@ -69,7 +69,7 @@ void RasterRenderer::initialise(Resources* _resources)
     pipelineInfo.conservativeRasterisation = true;
     pipelineInfo.colourAttachmentCount = 0;
 
-    shadowMap.Init(pipelineInfo);
+    shadowMap.Initialise(pipelineInfo);
 
     AllocateCommandBuffers();
     createSyncObjects();
@@ -135,7 +135,7 @@ void RasterRenderer::recreateSwapChain() {
         penultimateFrameBuffer.createFramebuffer(attachments, _extent);
     }
 
-    shadowMap.reinitialise(true);
+    shadowMap.Reinitialise(true);
     pipeline.Init();
     imgui.reinit();
     AllocateCommandBuffers();
@@ -270,9 +270,9 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
         throw std::runtime_error("failed to record command buffer!");
     }
 
-    if (ImGUI::enabled) {
-        imgui.buildCommandBuffers(i, swapChain.extent);
-    }
+    //if (ImGUI::enabled) {
+    //    imgui.buildCommandBuffer(i, swapChain.extent);
+    //}
 }
 
 void RasterRenderer::createSyncObjects() {
@@ -329,14 +329,11 @@ void RasterRenderer::prepare()
 void RasterRenderer::render(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs)
 {
 
-    shadowMap.update();
-
-    if (!ImGUI::enabled && !imgui.startedFrame &&  !commandBuffersReady)
+    if (shadowMap.Update() || !commandBuffersReady)
     {
         buildCommandBuffers(camera, gameObjects, lightDescs);
     }
     
-
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     vkWaitForFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -345,14 +342,13 @@ void RasterRenderer::render(Camera* camera, std::vector<GameObject>& gameObjects
 
     std::vector<VkCommandBuffer> submitCommandBuffers =
     { commandBuffers[imageIndex] };
-
-    if (ImGUI::enabled || imgui.startedFrame) {
+    
+    if (ImGUI::enabled && imgui.startedFrame) {
 
         imgui.endFrame();
         imgui.drawn = true;
 
-        rebuildCommandBuffer(imageIndex, camera, gameObjects, lightDescs);
-
+        imgui.buildCommandBuffer(imageIndex, swapChain.extent);
         submitCommandBuffers.emplace_back(imgui.commandBuffers[imageIndex]);
     }
 

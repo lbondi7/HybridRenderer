@@ -188,6 +188,7 @@
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="RasterRenderer.cpp" />
     <ClCompile Include="RayTracingRenderer.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="Texture.cpp" />
@@ -241,6 +242,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="RasterRenderer.h" />
     <ClInclude Include="RayTracingRenderer.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="Texture.h" />

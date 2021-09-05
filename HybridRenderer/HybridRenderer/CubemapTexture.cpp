@@ -42,7 +42,7 @@ void CubemapTexture::createVkImage()
 
 }
 
-void CubemapTexture::createImageView(VkImageAspectFlags aspectMask)
+void CubemapTexture::CreateImageView(VkImageAspectFlags aspectMask)
 {
     VkImageViewCreateInfo view = 
         Initialisers::imageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_CUBE, format, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -51,7 +51,7 @@ void CubemapTexture::createImageView(VkImageAspectFlags aspectMask)
     vkCreateImageView(devices->logicalDevice, &view, nullptr, &imageView);
 }
 
-void CubemapTexture::createSampler()
+void CubemapTexture::CreateSampler()
 {
     VkSamplerCreateInfo samplerInfo = 
         Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, 1.0f, VK_SAMPLER_MIPMAP_MODE_LINEAR,

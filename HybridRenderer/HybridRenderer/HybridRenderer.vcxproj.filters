@@ -213,6 +213,9 @@
     <ClCompile Include="AccelerationStructure.cpp">
       <Filter>Source Files\Vulkan\RayTracing</Filter>
     </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vertex.h">
@@ -370,6 +373,9 @@
     </ClInclude>
     <ClInclude Include="AccelerationStructure.h">
       <Filter>Header Files\Vulkan\RayTracing</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -347,8 +347,8 @@ void Resources::LoadTexture(const std::string& name)
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-    texture->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-    texture->createSampler();
+    texture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+    texture->CreateSampler();
     texture->descriptorInfo = Initialisers::descriptorImageInfo(texture->imageView, texture->sampler);
     stagingBuffer.Destroy();
 }
