@@ -4,7 +4,7 @@
 #include "RasterRenderer.h"
 #include "RayTracingRenderer.h"
 #include "Camera.h"
-#include "GameObject.h"
+#include "Scene.h"
 #include "Timer.h"
 #include "ImGUIWidgets.h"
 
@@ -20,11 +20,6 @@ public:
 	void run();
 
 private:
-
-	struct LightUBO {
-		alignas(16) glm::mat4 depthBiasMVP;
-		alignas(16) glm::vec3 lightPos;
-	}lightUBO;
 
 	void initialise();
 	void prepare();
@@ -49,26 +44,28 @@ private:
 
 	Camera camera;
 
-	std::vector<GameObject> gameObjects;
+	//std::vector<GameObject> gameObjects;
 
-	uint32_t gameObjectCount = 10;
+	//uint32_t gameObjectCount = 10;
 
 	Resources resources;
 
 	//DescriptorSetManager* descriptorSetManager;
 
-	std::vector<VkDescriptorSet> lightDescSets;
-	std::vector<Buffer> lightBuffers;
+	//std::vector<VkDescriptorSet> lightDescSets;
+	//std::vector<Buffer> lightBuffers;
 
-	Descriptor lightDescriptor;
+	//Descriptor lightDescriptor;
 
 	uint32_t imageIndex;
 
-	glm::vec3 lightInvDir = glm::vec3(0.5f, 2, 2);
-	glm::vec3 lightPos = glm::vec3(-19.0f, 20.0f, -30.0f);
-	glm::vec3 lightRot = glm::vec3(0, 0, 0);
+	//glm::vec3 lightInvDir = glm::vec3(0.5f, 2, 2);
+	//glm::vec3 lightPos = glm::vec3(-19.0f, 20.0f, -30.0f);
+	//glm::vec3 lightRot = glm::vec3(0, 0, 0);
 
-	float lightFOV = 45.0f;
+	//float lightFOV = 45.0f;
+
+	Scene scene;
 
 	Timer timer;
 

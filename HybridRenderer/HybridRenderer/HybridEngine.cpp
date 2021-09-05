@@ -27,9 +27,9 @@ void HybridEngine::run()
 
 void HybridEngine::initialise()
 {
-    std::cout << "How many trees?: " << std::endl;
-    std::cin >> gameObjectCount;
-    gameObjectCount += 2;
+    //std::cout << "How many trees?: " << std::endl;
+    //std::cin >> gameObjectCount;
+    //gameObjectCount += 2;
 
     window = std::make_unique<Window>();
     window->init(this);
@@ -51,94 +51,24 @@ void HybridEngine::initialise()
 
     //rayTracing->initialise(core->deviceContext.get(), core->surface, window.get(), &resources);
 
-    renderer->initialise(&resources);
-
-
-    float value = 0;
-    float dist = 20.0f;
-    if (gameObjectCount < 3)
-        gameObjectCount = 3;
-
-    for (size_t i = 0; i < gameObjectCount - 2; i++)
-    {
-        if (i * i > gameObjectCount - 2)
-        {
-            value = i - 1;
-            break;
-        }
-    }
-
-    float max = ((value * dist) / 2.0f);
-
-    float x = gameObjectCount > 3 ? -max : 0;
-    float z = gameObjectCount > 5 ? -max : 0;
-
-    gameObjects.reserve(static_cast<uint32_t>(gameObjectCount));
-
-    for (size_t i = 0; i < gameObjectCount; i++)
-    {
-        auto& go = gameObjects.emplace_back(GameObject());
-        if (i < gameObjectCount - 2) {
-            go.transform.position = glm::vec3(x, -1.0f, z);
-            go.transform.scale = glm::vec3(5, 5, 5);
-            go.model = resources.GetModel("tree2");
-        }
-        if (i == gameObjectCount - 2)
-        {
-            go.transform.position = glm::vec3(0.0f, -1.0f, 0.0f);
-            go.transform.scale = glm::vec3(max > 5 ? max : 5, 1, max > 5 ? max : 5);
-            go.model = resources.GetModel("plane");
-        }
-        else if (i == gameObjectCount - 1)
-        {
-            go.shadowCaster = false;
-            go.shadowReceiver = false;
-            go.transform.scale = glm::vec3(0.5f, 0.5f, 0.5f);
-            go.model = resources.GetModel("sphere");
-        }
-        go.texture = resources.GetTexture("texture.jpg");
-        go.Init(core->deviceContext.get());
-
-        if (x >= max)
-        {
-            z += dist;
-            x = -max;
-        }
-        else {
-            x += dist;
-        }
-    }
+    renderer->Initialise(&resources);
 
     auto imageCount = core->deviceContext->imageCount;
+
+
+    scene.Initialise(core->deviceContext.get(), &resources);
 
     camera.lookAt = glm::vec3(0, 0, 0);
     camera.transform.position = glm::vec3(0, 0, 10);
     camera.transform.rotation.y = 180.f;
 
     camera.init(core->deviceContext.get(), renderer->swapChain.extent);
-
-    lightBuffers.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++) {
-        VkDeviceSize bufferSize = sizeof(LightUBO);
-        lightBuffers[i].Allocate(core->deviceContext.get(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    }
-
-    using BindingType = std::pair<uint32_t, VkDescriptorType>;
-    DescriptorSetRequest request;
-    request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-    request.data.reserve(imageCount);
-    for (size_t i = 0; i < imageCount; i++) {
-
-        request.data.push_back(&lightBuffers[i].descriptorInfo);
-    }
-    core->deviceContext->GetDescriptors(lightDescriptor, request);
 }
 
 void HybridEngine::prepare()
 {
 
-    renderer->prepare();
+    renderer->Prepare();
     imageIndex = renderer->imageIndex;
 
 }
@@ -194,70 +124,40 @@ void HybridEngine::update()
         camera.transform.rotation.x += 50.0f * timer.dt;
     }
     
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_8) == GLFW_PRESS)
-    {
-            lightPos += camera.transform.forward * 5.0f * timer.dt;
-    }
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_5) == GLFW_PRESS)
-    {
-            lightPos -= camera.transform.forward * 5.0f * timer.dt;
-    }
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_4) == GLFW_PRESS)
-    {
-            lightPos += camera.transform.right * 5.0f * timer.dt;
-    }
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_6) == GLFW_PRESS)
-    {
-            lightPos -= camera.transform.right * 5.0f * timer.dt;
-    }
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_9) == GLFW_PRESS)
-    {
-            lightPos.y += 5.0f * timer.dt;
-    }
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_7) == GLFW_PRESS)
-    {
-            lightPos.y -= 5.0f * timer.dt;
-    }
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_1) == GLFW_PRESS)
-    {
-        lightRot.y -= 5.0f * timer.dt;
-    }
-    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_3) == GLFW_PRESS)
-    {
-        lightRot.y -= 5.0f * timer.dt;
-    }
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_8) == GLFW_PRESS)
+    //{
+    //        lightPos += camera.transform.forward * 5.0f * timer.dt;
+    //}
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_5) == GLFW_PRESS)
+    //{
+    //        lightPos -= camera.transform.forward * 5.0f * timer.dt;
+    //}
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_4) == GLFW_PRESS)
+    //{
+    //        lightPos += camera.transform.right * 5.0f * timer.dt;
+    //}
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_6) == GLFW_PRESS)
+    //{
+    //        lightPos -= camera.transform.right * 5.0f * timer.dt;
+    //}
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_9) == GLFW_PRESS)
+    //{
+    //        lightPos.y += 5.0f * timer.dt;
+    //}
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_7) == GLFW_PRESS)
+    //{
+    //        lightPos.y -= 5.0f * timer.dt;
+    //}
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_1) == GLFW_PRESS)
+    //{
+    //    lightRot.y -= 5.0f * timer.dt;
+    //}
+    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_3) == GLFW_PRESS)
+    //{
+    //    lightRot.y -= 5.0f * timer.dt;
+    //}
 
     camera.update({static_cast<uint32_t>(window->width), static_cast<uint32_t>(window->height)});
-
-    float zNear = 1.0f;
-    float zFar = 100.0f;
-
-    glm::vec3 lightLookAt = glm::vec3(0, 0, 0);
-        // Matrix from light's point of view
-    glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
-    glm::mat4 depthViewMatrix = glm::mat4(1.0f);
-    depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-    depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
-    depthProjectionMatrix[1][1] *= -1;
-
-    //if (!ortho)
-    //{
-    //    depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-    //    depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
-    //}
-    ////depthProjectionMatrix[1][1] *= -1;
-    //else
-    //{
-    //    depthProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
-    //    depthViewMatrix = glm::lookAt(lightInvDir, -lightInvDir, glm::vec3(0, 1, 0));
-    //}
-    glm::mat4 depthModelMatrix = glm::yawPitchRoll(lightRot.y, lightRot.x, lightRot.z);
-
-    //uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
-
-    lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
-    lightUBO.lightPos = lightPos;
-    lightBuffers[imageIndex].AllocatedMap(&lightUBO);
 
     CameraUBO cameraUBO{};
     cameraUBO.camPos = camera.transform.position;
@@ -265,17 +165,7 @@ void HybridEngine::update()
     cameraUBO.projection = camera.projection;
     camera.buffers[imageIndex].AllocatedMap(&cameraUBO);
 
-    gameObjects[gameObjectCount - 1].transform.position = lightPos;
-
-    for (auto& go : gameObjects)
-    {
-        go.Update();
-
-        ModelUBO ubos;
-        ubos.model = go.modelMatrix;
-        go.uniformBuffers[imageIndex].AllocatedMap(&ubos);
-    }
-
+    scene.Update(imageIndex, timer.dt);
 }
 
 void HybridEngine::render()
@@ -300,7 +190,7 @@ void HybridEngine::render()
         }
     }
 
-    renderer->render(&camera, gameObjects, lightDescriptor);
+    renderer->Render(&camera, &scene);
 
     //rayTracing->render();
 }
@@ -309,11 +199,8 @@ void HybridEngine::deinitilise()
 {
     renderer->cleanup();
 
+    scene.Destroy();
     //rayTracing->cleanup();
-
-    for (auto& go : gameObjects) {
-        go.Destroy();
-    }
 
     resources.Destroy();
 

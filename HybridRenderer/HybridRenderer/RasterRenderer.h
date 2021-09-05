@@ -11,7 +11,7 @@
 #include "Buffer.h"
 #include "Texture.h"
 #include "Camera.h"
-#include "GameObject.h"
+#include "Scene.h"
 #include "Resources.h"
 #include "ShadowMap.h"
 #include "Window.h"
@@ -27,14 +27,11 @@ public:
     RasterRenderer() = default;
     RasterRenderer(Window* window, VulkanCore* core);
 
+    void Initialise(Resources* _resources);
 
-    void run();
+    void Prepare();
 
-    void initialise(Resources* _resources);
-
-    void prepare();
-
-    void render(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs);
+    void Render(Camera* camera, Scene* scene);
 
     DeviceContext* deviceContext;
 
@@ -90,9 +87,9 @@ public:
 
     void AllocateCommandBuffers();
 
-    void buildCommandBuffers(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs);
+    void buildCommandBuffers(Camera* camera, Scene* scene);
 
-    void rebuildCommandBuffer(uint32_t i, Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs);
+    void rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* scene);
 
     void createSyncObjects();
 

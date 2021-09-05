@@ -12,15 +12,7 @@ RasterRenderer::RasterRenderer(Window* window, VulkanCore* core)
     imgui.create(window->glfwWindow, core->instance, core->surface, deviceContext, &swapChain);
 }
 
-void RasterRenderer::run() {
-
-    //Log("How many Objects? ");
-    //std::cin >> gameObjectCount;
-    //mainLoop();
-    //cleanup();
-}
-
-void RasterRenderer::initialise(Resources* _resources)
+void RasterRenderer::Initialise(Resources* _resources)
 {
 
     resources = _resources;
@@ -158,17 +150,17 @@ void RasterRenderer::AllocateCommandBuffers() {
 
 }
 
-void RasterRenderer::buildCommandBuffers(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs) 
+void RasterRenderer::buildCommandBuffers(Camera* camera, Scene* scene)
 {
     vkQueueWaitIdle(deviceContext->presentQueue);
     for (int32_t i = 0; i < commandBuffers.size(); ++i)
     {
-        rebuildCommandBuffer(i, camera, gameObjects, lightDescs);
+        rebuildCommandBuffer(i, camera, scene);
     }
     commandBuffersReady = true;
 }
 
-void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs) {
+void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* scene) {
 
     VkCommandBufferBeginInfo beginInfo = Initialisers::commandBufferBeginInfo();
 
@@ -198,8 +190,8 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
 
         std::vector<VkDescriptorSet> descriptorSets;
         descriptorSets.resize(3);
-        descriptorSets[0] = lightDescs.sets[i];
-        for (auto& go : gameObjects) {
+        descriptorSets[0] = scene->lightDescriptor.sets[i];
+        for (auto& go : scene->gameObjects) {
             if (!go.shadowCaster)
                 continue;
 
@@ -236,9 +228,9 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, std::vecto
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
 
-        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, lightDescs.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE };
+        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE };
 
-        for (auto& go : gameObjects) {
+        for (auto& go : scene->gameObjects) {
 
             //if (!camera->frustum.IsBoxVisible(go.min, go.max))
             //    continue;
@@ -303,7 +295,7 @@ void RasterRenderer::createSyncObjects() {
 //    camera.init(swapChain.extent);
 //}
 
-void RasterRenderer::prepare()
+void RasterRenderer::Prepare()
 {
     VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
 
@@ -326,12 +318,12 @@ void RasterRenderer::prepare()
 }
 
 
-void RasterRenderer::render(Camera* camera, std::vector<GameObject>& gameObjects, Descriptor& lightDescs)
+void RasterRenderer::Render(Camera* camera, Scene* scene)
 {
 
     if (shadowMap.Update() || !commandBuffersReady)
     {
-        buildCommandBuffers(camera, gameObjects, lightDescs);
+        buildCommandBuffers(camera, scene);
     }
     
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
