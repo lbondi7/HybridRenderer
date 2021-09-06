@@ -27,7 +27,7 @@ public:
     RasterRenderer() = default;
     RasterRenderer(Window* window, VulkanCore* core, SwapChain* swapChain);
 
-    void Initialise(Resources* _resources);
+    void Initialise(Window* window, VulkanCore* core, SwapChain* swapChain, Resources* _resources);
 
     void Prepare();
 
@@ -49,6 +49,10 @@ public:
     Resources* resources;
 
     ShadowMap shadowMap;
+    TextureSampler storageImage;
+    uint32_t storageImageSize = 5;
+
+    Descriptor storageImageDescriptor;
 
     std::vector<VkCommandBuffer> commandBuffers;
 

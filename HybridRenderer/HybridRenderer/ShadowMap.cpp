@@ -48,11 +48,11 @@ void ShadowMap::Initialise(bool reinit)
 
 	//frame buffers
 
-	depthTexture.Create(devices, width, height, devices->getDepthFormat(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	depthTexture.Create(devices, width, height, devices->getDepthFormat(), 
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 	depthTexture.CreateImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
-	VkFilter shadowmap_filter = devices->formatIsFilterable(devices->getDepthFormat(), VK_IMAGE_TILING_OPTIMAL) ?
-		VK_FILTER_LINEAR :
-		VK_FILTER_NEAREST;
+	VkFilter shadowmap_filter = devices->formatIsFilterable(devices->getDepthFormat(), VK_IMAGE_TILING_OPTIMAL) 
+		? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
 	depthTexture.CreateSampler(Initialisers::samplerCreateInfo(shadowmap_filter, 1.0f,
 		VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_INT_OPAQUE_WHITE));
 

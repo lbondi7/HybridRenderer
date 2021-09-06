@@ -133,6 +133,7 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.fillModeNonSolid = VK_TRUE;
     deviceFeatures.robustBufferAccess = VK_TRUE;
+    deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -148,6 +149,10 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     enabledAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
     enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
     enabledAccelerationStructureFeatures.pNext = &enabledRayTracingPipelineFeatures;
+
+    //enabledRayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    //enabledRayQueryFeatures.rayQuery = VK_TRUE;
+    //enabledRayQueryFeatures.pNext = &enabledAccelerationStructureFeatures;
 
     //void* deviceCreatepNextChain = &enabledAccelerationStructureFeatures;
 

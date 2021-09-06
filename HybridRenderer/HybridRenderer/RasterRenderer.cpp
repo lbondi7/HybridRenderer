@@ -5,17 +5,18 @@
 
 RasterRenderer::RasterRenderer(Window* window, VulkanCore* core, SwapChain* swapChain)
 {
+
+}
+
+void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swapChain, Resources* _resources)
+{
     deviceContext = core->deviceContext.get();
     this->swapChain = swapChain;
+    resources = _resources;
 
     //swapChain.Create(core->surface, deviceContext, &window->width, &window->height);
 
     imgui.create(window->glfwWindow, core->instance, core->surface, deviceContext, swapChain);
-}
-
-void RasterRenderer::Initialise(Resources* _resources)
-{
-    resources = _resources;
 
     //swapChain.Create(window.glfwWindow, surface, deviceContext);
 
@@ -63,6 +64,37 @@ void RasterRenderer::Initialise(Resources* _resources)
 
     shadowMap.Initialise(pipelineInfo);
 
+    storageImage.Create(deviceContext, window->width, window->height, swapChain->imageFormat,
+        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_SAMPLE_COUNT_1_BIT
+    );
+    storageImage.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+    storageImage.descriptorInfo.imageView = storageImage.imageView;
+    storageImage.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+
+    VkCommandBuffer cmdBuffer = deviceContext->generateCommandBuffer();
+    Utility::setImageLayout(cmdBuffer, storageImage.image,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_GENERAL,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+    deviceContext->EndCommandBuffer(cmdBuffer);
+
+    DescriptorSetRequest request{};
+    request.ids = { { 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE } };
+    request.data.reserve(deviceContext->imageCount * request.ids.size());
+
+    for (size_t i = 0; i < deviceContext->imageCount; i++) {
+
+        request.data.emplace_back(&storageImage.descriptorInfo);
+    }
+
+    deviceContext->GetDescriptors(storageImageDescriptor, request);
+
+    storageImage.CreateSampler();
+
+    widget.SetupImage(0, storageImage);
+
     AllocateCommandBuffers();
 
     commandBuffersReady = false;
@@ -80,6 +112,8 @@ void RasterRenderer::Deinitialise(bool total) {
     penultimateRenderPass.Destroy();
 
     imgui.deinit();
+
+    storageImage.Destroy();
 
     if (total) {
         imgui.destroy();
@@ -111,9 +145,41 @@ void RasterRenderer::Reinitialise() {
     shadowMap.Reinitialise(true);
     pipeline.Init();
     imgui.reinit();
-    AllocateCommandBuffers();
 
-    auto& texture = shadowMap.depthTexture;
+    storageImage.Create(deviceContext, swapChain->extent.width, swapChain->extent.height, swapChain->imageFormat,
+        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_SAMPLE_COUNT_1_BIT
+    );
+    storageImage.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+
+    storageImage.descriptorInfo.imageView = storageImage.imageView;
+    storageImage.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+
+    VkCommandBuffer cmdBuffer = deviceContext->generateCommandBuffer();
+    Utility::setImageLayout(cmdBuffer, storageImage.image,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_GENERAL,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+    deviceContext->EndCommandBuffer(cmdBuffer);
+
+    DescriptorSetRequest request{};
+    request.ids = { { 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE } };
+    request.data.reserve(deviceContext->imageCount * request.ids.size());
+
+    for (size_t i = 0; i < deviceContext->imageCount; i++) {
+
+        request.data.emplace_back(&storageImage.descriptorInfo);
+    }
+
+    deviceContext->GetDescriptors(storageImageDescriptor, request, true);
+
+    storageImage.CreateSampler();
+
+    widget.SetupImage(0, storageImage);
+
+
+
+    AllocateCommandBuffers();
 
     commandBuffersReady = false;
 
@@ -207,7 +273,7 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
 
-        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE };
+        std::array<VkDescriptorSet, 6> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE, storageImageDescriptor.sets[i] };
 
         for (auto& go : scene->gameObjects) {
 
@@ -265,9 +331,18 @@ void RasterRenderer::Prepare()
     if (ImGUI::enabled && !imgui.startedFrame)
     {
         imgui.startFrame();
+
+        if (widget.enabled) {
+
+            if (widget.NewWindow("Raster Render")) {
+
+                widget.Slider("Size", &storageImageSize, 2, 8);
+
+                widget.Image(0, { swapChain->extent.width / storageImageSize, swapChain->extent.height / storageImageSize });
+            }
+            widget.EndWindow();
+        }
     }
-
-
 }
 
 void RasterRenderer::GetCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, Camera* camera, Scene* scene)
@@ -282,7 +357,7 @@ void RasterRenderer::GetCommandBuffer(uint32_t imageIndex, std::vector<VkCommand
 
 void RasterRenderer::GetImGuiCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, VkExtent2D extent)
 {
-    if (ImGUI::enabled && imgui.startedFrame) {
+    if (imgui.startedFrame) {
 
         imgui.endFrame();
         imgui.drawn = true;

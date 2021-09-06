@@ -4,7 +4,7 @@
 
 TextureSampler::~TextureSampler()
 {
-    if (!destroyed)
+    if (initialised && !destroyed)
         vkDestroySampler(devices->logicalDevice, sampler, nullptr);
 }
 

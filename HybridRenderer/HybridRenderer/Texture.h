@@ -52,6 +52,7 @@ public:
 	bool hasImageView = false;
 
 protected:
+	bool initialised = false;
 	bool destroyed = false;
 };
 

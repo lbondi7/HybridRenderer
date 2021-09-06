@@ -18,7 +18,7 @@ public:
 
 	bool CheckBox(const char * label, bool* checked);
 
-	bool Slider(const char * label, int* value, int min, int max);
+	bool Slider(const char * label, uint32_t* value, uint32_t min, uint32_t max);
 
 	bool Slider(const char* label, float* value, float min, float max);
 

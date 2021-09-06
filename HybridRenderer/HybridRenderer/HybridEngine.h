@@ -41,9 +41,9 @@ private:
 
 	SwapChain swapChain;
 
-	std::unique_ptr<RayTracingRenderer> rayTracing;
+	RayTracingRenderer rayTracing;
 
-	std::unique_ptr<RasterRenderer> raster;
+	RasterRenderer raster;
 
 	Camera camera;
 

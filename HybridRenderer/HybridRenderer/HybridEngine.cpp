@@ -44,18 +44,16 @@ void HybridEngine::initialise()
 
     swapChain.Create(core->surface, core->deviceContext.get(), &window->width, &window->height);
 
-   rayTracing = std::make_unique<RayTracingRenderer>();
-
     resources.Init(core->deviceContext.get());
 
     resources.LoadTexture("texture.jpg");
 
-    raster = std::make_unique<RasterRenderer>(window.get(), core.get(), &swapChain);
-    raster->Initialise(&resources);
+
+    raster.Initialise(window.get(), core.get(), &swapChain, &resources);
 
     scene.Initialise(core->deviceContext.get(), &resources);
 
-    rayTracing->Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources, &scene);
+    rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources, &scene);
 
 
     auto imageCount = core->deviceContext->imageCount;
@@ -75,10 +73,12 @@ void HybridEngine::initialise()
 
     VkFenceCreateInfo fenceInfo = Initialisers::fenceCreateInfo();
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+    {
         if (vkCreateSemaphore(core->deviceContext->logicalDevice, &semaphoreInfo, nullptr, &nextImageSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(core->deviceContext->logicalDevice, &semaphoreInfo, nullptr, &presentSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(core->deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+            vkCreateFence(core->deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) 
+        {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
@@ -97,7 +97,7 @@ void HybridEngine::prepare()
     {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
-    raster->Prepare();
+    raster.Prepare();
 }
 
 void HybridEngine::update()
@@ -217,8 +217,10 @@ void HybridEngine::render()
             }
 
             if (widget.NewMenu("Objects")) {
+
+                widget.MenuItem("Raster Renderer", &raster.widget.enabled);
                 widget.MenuItem("Camera", &camera.widget.enabled);
-                widget.MenuItem("ShadowMap", &raster->shadowMap.widget.enabled);
+                widget.MenuItem("ShadowMap", &raster.shadowMap.widget.enabled);
 
                 widget.EndMenu();
             }
@@ -235,15 +237,16 @@ void HybridEngine::render()
     submitCommandBuffers.reserve(3);
 
     if(rasterEnabled)
-        raster->GetCommandBuffer(imageIndex, submitCommandBuffers, &camera, &scene);
+        raster.GetCommandBuffer(imageIndex, submitCommandBuffers, &camera, &scene);
 
     if (raytraceEnabled) 
     {
-        rayTracing->updateUniformBuffers(&camera);
-        rayTracing->GetCommandBuffers(imageIndex, submitCommandBuffers);
+        rayTracing.updateUniformBuffers(&camera);
+        rayTracing.GetCommandBuffers(imageIndex, submitCommandBuffers);
     }
 
-    raster->GetImGuiCommandBuffer(imageIndex, submitCommandBuffers, swapChain.extent);
+    if(ImGUI::enabled)
+        raster.GetImGuiCommandBuffer(imageIndex, submitCommandBuffers, swapChain.extent);
 
     VkSemaphore nis = nextImageSemaphores[currentFrame];
     VkSemaphore ps = presentSemaphores[currentFrame];
@@ -267,14 +270,14 @@ void HybridEngine::RecreateSwapChain() {
     swapChain.Destroy();
     swapChain.Init();
     imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
-    raster->Reinitialise();
-    rayTracing->Reinitialise();
+    raster.Reinitialise();
+    rayTracing.Reinitialise();
 }
 
 void HybridEngine::deinitilise()
 {
-    raster->Deinitialise(true);
-    rayTracing->cleanup();
+    raster.Deinitialise(true);
+    rayTracing.cleanup();
 
     swapChain.Destroy();
 
@@ -311,8 +314,8 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 
             auto enabled = ImGUI::enabled = !ImGUI::enabled;
             app->widget.enabled = ImGUI::enabled;
-            app->raster->commandBuffersReady = false;
-            app->rayTracing->commandBuffersReady = false;
+            app->raster.commandBuffersReady = false;
+            app->rayTracing.commandBuffersReady = false;
             vkQueueWaitIdle(app->core->deviceContext->presentQueue);
         }
 
@@ -332,18 +335,18 @@ void HybridEngine::framebufferResizeCallback(GLFWwindow* window, int width, int 
 void HybridEngine::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    app->raster->imgui.leftMouse = button == GLFW_MOUSE_BUTTON_LEFT && action != GLFW_RELEASE;
-    app->raster->imgui.rightMouse = button == GLFW_MOUSE_BUTTON_RIGHT && action != GLFW_RELEASE;
+    app->raster.imgui.leftMouse = button == GLFW_MOUSE_BUTTON_LEFT && action != GLFW_RELEASE;
+    app->raster.imgui.rightMouse = button == GLFW_MOUSE_BUTTON_RIGHT && action != GLFW_RELEASE;
 }
 
 void HybridEngine::scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
-    app->raster->imgui.mouseWheel += static_cast<float>(yOffset) * 0.01f;
+    app->raster.imgui.mouseWheel += static_cast<float>(yOffset) * 0.01f;
 }
 
 void HybridEngine::cursorCallback(GLFWwindow* window, double xOffset, double yOffset) {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
 
-    app->raster->imgui.mousePos.x = xOffset;
-    app->raster->imgui.mousePos.y = yOffset;
+    app->raster.imgui.mousePos.x = xOffset;
+    app->raster.imgui.mousePos.y = yOffset;
 }

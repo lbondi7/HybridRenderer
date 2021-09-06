@@ -53,6 +53,7 @@ public:
 	VkPhysicalDeviceBufferDeviceAddressFeatures enabledBufferDeviceAddresFeatures{};
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabledRayTracingPipelineFeatures{};
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures{};
+	VkPhysicalDeviceRayQueryFeaturesKHR enabledRayQueryFeatures{};
 
 private:
 	void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);

@@ -40,9 +40,9 @@ bool ImGUIWidget::CheckBox(const char * label, bool* checked)
 	return ImGui::Checkbox(label, checked);
 }
 
-bool ImGUIWidget::Slider(const char * label, int* value, int min, int max)
+bool ImGUIWidget::Slider(const char * label, uint32_t* value, uint32_t min, uint32_t max)
 {
-	return ImGui::SliderInt(label,  value, min, max);
+	return ImGui::SliderInt(label, reinterpret_cast<int*>(value), min, max);
 }
 
 bool ImGUIWidget::Slider(const char* label, float* value, float min, float max)

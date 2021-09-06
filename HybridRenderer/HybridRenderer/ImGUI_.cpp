@@ -65,7 +65,9 @@ void ImGUI::create(GLFWwindow * window, VkInstance instance, VkSurfaceKHR surfac
 	auto err = vkCreateDescriptorPool(devices->logicalDevice, &pool_info, nullptr, &descriptorPool);
 
 	RenderPassInfo info{};
-	info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, 
+		VK_ATTACHMENT_LOAD_OP_LOAD, 
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 

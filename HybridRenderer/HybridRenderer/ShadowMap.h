@@ -27,7 +27,7 @@ public:
 
 	uint32_t width;
 	uint32_t height;
-	int resolution = 2048;
+	uint32_t resolution = 2048;
 
 	FrameBuffer frameBuffer;
 	Pipeline pipeline;

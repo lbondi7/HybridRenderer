@@ -1,7 +1,8 @@
-#version 450
+#version 460
 
 layout (set = 3, binding = 0) uniform sampler2D shadowMap;
 layout (set = 4, binding = 0) uniform sampler2D sampledTexture;
+layout (set = 5, binding = 0, RGBA8) uniform image2D storageImage;
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;
@@ -88,6 +89,15 @@ void main() {
 
 	float shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
 
+	vec4 outColour;
+	float shadowAlpha = 0.0f;
+if(shadow < 0.5){
+	shadowAlpha = 1.0f;
+}
+else{
+	shadowAlpha = 0.0f;
+}
+
 	vec3 normal = normalize(inNormal);
 	vec3 viewVec = fragVert - inCamPos;
 	vec3 viewDir = normalize(fragVert - inCamPos);
@@ -99,6 +109,7 @@ void main() {
 	vec3 lightDir = normalize(fragVert - lightPos);
 	vec3 invLightDir = normalize(lightPos - fragVert);
 	totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.5, 0.5);
-
-	outFragColor = col * vec4(totalLight, 1.0) * shadow;
+	outColour = col * vec4(totalLight, 1.0) * shadow;
+	imageStore(storageImage, ivec2(gl_FragCoord), vec4(vec3(outColour), shadowAlpha));
+	outFragColor = outColour;
 }
