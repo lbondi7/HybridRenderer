@@ -17,6 +17,9 @@ void Shader::Init(DeviceContext* _devices, const std::string& shaderName, VkShad
     devices = _devices;
     stage = _stage;
     entryPoint = _entryPoint;
+
+    //auto model = r
+
     createModule(readFile("shaders/" + shaderName + getShaderTypeExtention(stage) + ".spv"));
 
     getDescriptors("shaders/" + shaderName + getShaderTypeExtention(stage) + ".json");
@@ -25,6 +28,7 @@ void Shader::Init(DeviceContext* _devices, const std::string& shaderName, VkShad
 }
 
 void Shader::createModule(const std::vector<char>& code) {
+
     VkShaderModuleCreateInfo createInfo = Initialisers::shaderModuleCreateInfo(reinterpret_cast<const uint32_t*>(code.data()), code.size());
 
     if (vkCreateShaderModule(devices->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {

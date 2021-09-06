@@ -102,9 +102,12 @@ void AccelerationStructure::createAccelerationStructureBuffer(VkAccelerationStru
 /*
 	Create the bottom level acceleration structure contains the scene's actual geometry (vertices, triangles)
 */
-void AccelerationStructure::createBottomLevelAccelerationStructure(Mesh* mesh)
+void AccelerationStructure::createBottomLevelAccelerationStructure(Transform& transform, Mesh* mesh)
 {
 	type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+
+	glm::mat4 matrix = glm::mat4(1.0f);
+	matrix = transform.getMatrix();
 
 	// Setup identity transform matrix
 	VkTransformMatrixKHR transformMatrix = {
@@ -112,6 +115,14 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(Mesh* mesh)
 		0.0f, 1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f
 	};
+
+	for (size_t i = 0; i < 3; i++)
+	{
+		for (size_t j = 0; j < 4; j++)
+		{
+			transformMatrix.matrix[i][j] = matrix[i][j];
+		}
+	}
 
 	// Create buffers
 	// For the sake of simplicity we won't stage the vertex data to the GPU memory

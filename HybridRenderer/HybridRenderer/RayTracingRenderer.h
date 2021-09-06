@@ -40,8 +40,6 @@ public:
 
 	void GetCommandBuffers(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers);
 
-	void Render(Camera* camera);
-
 	void createStorageImage();
 
 	void CreateShaderBindingTable();
@@ -99,16 +97,7 @@ public:
 	Resources* resources;
 	std::vector<VkCommandBuffer> drawCmdBuffers;
 
-	//Camera camera;
+	bool commandBuffersReady = false;
 
-	bool resized = false;
-
-	//size_t currentFrame = 0;
-	//uint32_t imageIndex;
-
-	//std::vector<VkSemaphore> nextImageSemaphores;
-	//std::vector<VkSemaphore> presentSemphores;
-	//std::vector<VkFence> inFlightFences;
-	//std::vector<VkFence> imagesInFlight;
 };
 

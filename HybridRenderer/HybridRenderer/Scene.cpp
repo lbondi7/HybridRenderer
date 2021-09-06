@@ -66,31 +66,33 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 
     gameObjects.reserve(static_cast<uint32_t>(gameObjectCount));
 
-    for (size_t i = 0; i < gameObjectCount; i++)
-    {
-        auto& go = gameObjects.emplace_back(GameObject());
-        go.model = resources->GetModel("tree2");
-        go.Init(deviceContext);
+    auto& tree = gameObjects.emplace_back(GameObject());
+    tree.model = resources->GetModel("tree2");
+    tree.Init(deviceContext);
+
+    auto& plane = gameObjects.emplace_back(GameObject());
+    plane.model = resources->GetModel("plane");
+    plane.Init(deviceContext);
+    plane.transform.scale = glm::vec3(5.0f);
+
+    auto imageCount = 3;
+    lightBuffers.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++) {
+        VkDeviceSize bufferSize = sizeof(LightUBO);
+        lightBuffers[i].Allocate(deviceContext, bufferSize, 
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
-    //auto imageCount = 3;
-    //lightBuffers.resize(imageCount);
-    //for (size_t i = 0; i < imageCount; i++) {
-    //    VkDeviceSize bufferSize = sizeof(LightUBO);
-    //    lightBuffers[i].Allocate(deviceContext, bufferSize, 
-    //        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-    //        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    //}
+    using BindingType = std::pair<uint32_t, VkDescriptorType>;
+    DescriptorSetRequest request;
+    request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
+    request.data.reserve(imageCount);
+    for (size_t i = 0; i < imageCount; i++) {
 
-    //using BindingType = std::pair<uint32_t, VkDescriptorType>;
-    //DescriptorSetRequest request;
-    //request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-    //request.data.reserve(imageCount);
-    //for (size_t i = 0; i < imageCount; i++) {
-
-    //    request.data.push_back(&lightBuffers[i].descriptorInfo);
-    //}
-    //deviceContext->GetDescriptors(lightDescriptor, request);
+        request.data.push_back(&lightBuffers[i].descriptorInfo);
+    }
+    deviceContext->GetDescriptors(lightDescriptor, request);
 }
 
 void Scene::Update(uint32_t imageIndex, float dt)
@@ -121,9 +123,9 @@ void Scene::Update(uint32_t imageIndex, float dt)
 
     //uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
 
-    //lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
-    //lightUBO.lightPos = lightPos;
-    //lightBuffers[imageIndex].AllocatedMap(&lightUBO);
+    lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+    lightUBO.lightPos = lightPos;
+    lightBuffers[imageIndex].AllocatedMap(&lightUBO);
 
     //gameObjects[gameObjectCount - 1].transform.position = lightPos;
 

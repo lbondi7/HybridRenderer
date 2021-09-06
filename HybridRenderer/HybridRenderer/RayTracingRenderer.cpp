@@ -2,6 +2,7 @@
 
 #include "Initilizers.h"
 #include "Utility.h"
+#include "ImGUI_.h"
 
 
 RayTracingRenderer::RayTracingRenderer(VulkanCore* core, Window* _window)
@@ -22,38 +23,6 @@ void RayTracingRenderer::Initialise(DeviceContext* _deviceContext,
 	resources = _resources;
 	window = _window;
 	this->swapChain = swapChain;
-
-	//swapChain.Create(surface, deviceContext, &window->width, &window->height);
-
-	//nextImageSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	//presentSemphores.resize(MAX_FRAMES_IN_FLIGHT);
-	//inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-	//imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
-
-	//VkSemaphoreCreateInfo semaphoreInfo = Initialisers::semaphoreCreateInfo();
-
-	//VkFenceCreateInfo fenceInfo = Initialisers::fenceCreateInfo();
-
-	//for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-	//	if (vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &nextImageSemaphores[i]) != VK_SUCCESS ||
-	//		vkCreateSemaphore(deviceContext->logicalDevice, &semaphoreInfo, nullptr, &presentSemphores[i]) != VK_SUCCESS ||
-	//		vkCreateFence(deviceContext->logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-	//		throw std::runtime_error("failed to create synchronization objects for a frame!");
-	//	}
-	//}
-
-	//rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
-	//VkPhysicalDeviceProperties2 deviceProperties2{};
-	//deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	//deviceProperties2.pNext = &rayTracingPipelineProperties;
-	//vkGetPhysicalDeviceProperties2(deviceContext->physicalDevice, &deviceProperties2);
-
-	//// Get acceleration structure properties, which will be used later on in the sample
-	//accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-	//VkPhysicalDeviceFeatures2 deviceFeatures2{};
-	//deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	//deviceFeatures2.pNext = &accelerationStructureFeatures;
-	//vkGetPhysicalDeviceFeatures2(deviceContext->physicalDevice, &deviceFeatures2);
 
 	drawCmdBuffers.resize(3);
 
@@ -82,7 +51,7 @@ void RayTracingRenderer::Initialise(DeviceContext* _deviceContext,
 		{
 			AccelerationStructure as;
 			as.Initialise(deviceContext);
-			as.createBottomLevelAccelerationStructure(mesh.get());
+			as.createBottomLevelAccelerationStructure(go.transform, mesh.get());
 			blas.emplace_back(as);
 		}
 	}
@@ -133,6 +102,9 @@ void RayTracingRenderer::cleanup() {
 }
 void RayTracingRenderer::GetCommandBuffers(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers)
 {
+	if (!commandBuffersReady)
+		buildCommandBuffers();
+
 	submitCommandBuffers.emplace_back(drawCmdBuffers[imageIndex]);
 }
 
@@ -365,7 +337,7 @@ void RayTracingRenderer::buildCommandBuffers()
 			swapChain->images[i].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 		Utility::setImageLayout(drawCmdBuffers[i], swapChain->images[i].image,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, ImGUI::enabled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			subresourceRange);
 
 		Utility::setImageLayout(drawCmdBuffers[i], storageImage.image,
@@ -374,6 +346,8 @@ void RayTracingRenderer::buildCommandBuffers()
 
 		vkEndCommandBuffer(drawCmdBuffers[i]);
 	}
+
+	commandBuffersReady = true;
 }
 
 void RayTracingRenderer::updateUniformBuffers(Camera* camera)

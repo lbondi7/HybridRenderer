@@ -4,7 +4,6 @@
 
 struct Transform {
 
-
 	glm::vec3 position = glm::vec3(0);
 	glm::vec3 rotation = glm::vec3(0);
 	glm::vec3 scale = glm::vec3(1);
@@ -37,5 +36,13 @@ struct Transform {
 		right = inverse[0];
 		up = inverse[1];
 		forward = inverse[2];
+	}
+
+	const glm::mat4 getMatrix() {
+		glm::mat4 matrix = glm::mat4(1.0f);
+		matrix = glm::translate(glm::mat4(1.0f), position);
+		matrix *= glm::yawPitchRoll(glm::radians(rotation.y), glm::radians(rotation.x), glm::radians(rotation.z));
+		matrix = glm::scale(matrix, scale);
+		return matrix;
 	}
 };

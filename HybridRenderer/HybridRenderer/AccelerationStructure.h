@@ -2,6 +2,7 @@
 
 #include "Device.h"
 #include "Mesh.h"
+#include "Transform.h"
 
 struct ScratchBuffer
 {
@@ -27,7 +28,7 @@ public:
 
 	void createAccelerationStructureBuffer(VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
 
-	void createBottomLevelAccelerationStructure(Mesh* mesh);
+	void createBottomLevelAccelerationStructure(Transform& trasnform, Mesh* mesh);
 
 	void createTopLevelAccelerationStructure(std::vector<AccelerationStructure>& blas);
 

@@ -55,5 +55,6 @@ public:
 private:
 
 	DeviceContext* devices = nullptr;
+
 };
 

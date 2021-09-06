@@ -5,7 +5,7 @@ namespace Initialisers {
 
 	// Apps
 
-	VkApplicationInfo applicationInfo(const char* name, const char* engineName, uint32_t appVersion = VK_MAKE_VERSION(1, 0, 0), uint32_t engineVersion = VK_MAKE_VERSION(1, 0, 0), uint32_t apiVersion = VK_API_VERSION_1_0);
+	VkApplicationInfo applicationInfo(const char* name, const char* engineName, uint32_t appVersion = VK_MAKE_VERSION(1, 0, 0), uint32_t engineVersion = VK_MAKE_VERSION(1, 0, 0), uint32_t apiVersion = VK_MAKE_API_VERSION(0, 1, 2, 0));
 
 	// Instances
 
@@ -248,6 +248,8 @@ namespace Initialisers {
 
 	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(VkPipelineLayout pipelineLayout, const VkPipelineShaderStageCreateInfo* shaderStages, uint32_t stageCount, const VkRayTracingShaderGroupCreateInfoKHR* shaderGroups, uint32_t groupCount, uint32_t maxRecursionDepth = 1);
 
+	VkRayTracingPipelineCreateInfoNV RayTracingPipelineCreateInfoNV(VkPipelineLayout pipelineLayout, const VkPipelineShaderStageCreateInfo* shaderStages, uint32_t stageCount, const VkRayTracingShaderGroupCreateInfoNV* shaderGroups, uint32_t groupCount, uint32_t maxRecursionDepth = 1);
+
 	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(uint32_t maxRecursionDepth = 1);
 
 	// Ray Tracing Shader
@@ -255,6 +257,10 @@ namespace Initialisers {
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingGeneralShaderGroup(uint32_t shaderCount);
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingClosestHitShaderGroup(uint32_t shaderCount);
+
+	VkRayTracingShaderGroupCreateInfoNV rayTracingGeneralShaderGroupNV(uint32_t shaderCount);
+
+	VkRayTracingShaderGroupCreateInfoNV rayTracingClosestHitShaderGroupNV(uint32_t shaderCount);
 
 	// Acceleration Structure
 

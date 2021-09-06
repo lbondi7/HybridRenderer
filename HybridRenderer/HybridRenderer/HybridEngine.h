@@ -82,6 +82,8 @@ private:
 	bool selected = false;
 	bool cameraEnabled = false;
 	bool shadowMapEnabled = false;
+	bool rasterEnabled = true;
+	bool raytraceEnabled = false;
 
 };
 

@@ -794,6 +794,18 @@ namespace Initialisers {
 		return rayTracingPipelineCI;
 	}
 
+	VkRayTracingPipelineCreateInfoNV RayTracingPipelineCreateInfoNV(VkPipelineLayout pipelineLayout, const VkPipelineShaderStageCreateInfo* shaderStages, uint32_t stageCount, const VkRayTracingShaderGroupCreateInfoNV* shaderGroups, uint32_t groupCount, uint32_t maxRecursionDepth) {
+		VkRayTracingPipelineCreateInfoNV rayTracingPipelineCI{};
+		rayTracingPipelineCI.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+		rayTracingPipelineCI.layout = pipelineLayout;
+		rayTracingPipelineCI.stageCount = stageCount;
+		rayTracingPipelineCI.pStages = shaderStages;
+		rayTracingPipelineCI.groupCount = groupCount;
+		rayTracingPipelineCI.pGroups = shaderGroups;
+		rayTracingPipelineCI.maxRecursionDepth = maxRecursionDepth;
+		return rayTracingPipelineCI;
+	}
+
 	VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo(uint32_t maxRecursionDepth) {
 		VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI{};
 		rayTracingPipelineCI.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
@@ -816,6 +828,28 @@ namespace Initialisers {
 
 	VkRayTracingShaderGroupCreateInfoKHR rayTracingClosestHitShaderGroup(uint32_t shaderCount) {
 		VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
+		shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+		shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+		shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.closestHitShader = shaderCount;
+		shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
+		return shaderGroup;
+	}
+
+	VkRayTracingShaderGroupCreateInfoNV rayTracingGeneralShaderGroupNV(uint32_t shaderCount) {
+		VkRayTracingShaderGroupCreateInfoNV shaderGroup{};
+		shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+		shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+		shaderGroup.generalShader = shaderCount;
+		shaderGroup.closestHitShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
+		shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
+		return shaderGroup;
+	}
+
+	VkRayTracingShaderGroupCreateInfoNV rayTracingClosestHitShaderGroupNV(uint32_t shaderCount) {
+		VkRayTracingShaderGroupCreateInfoNV shaderGroup{};
 		shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 		shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
 		shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
