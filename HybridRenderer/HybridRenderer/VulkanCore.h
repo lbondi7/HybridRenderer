@@ -14,7 +14,7 @@ public:
 
 
     void initialise(GLFWwindow* glfwWindow);
-    void deinitialise();
+    void Deinitialise();
 
     void createInstance();
 

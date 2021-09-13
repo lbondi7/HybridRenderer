@@ -22,7 +22,7 @@ void HybridEngine::run()
 
 	vkDeviceWaitIdle(core->deviceContext->logicalDevice);
 
-    deinitilise();
+    Deinitilise();
 }
 
 void HybridEngine::initialise()
@@ -51,9 +51,10 @@ void HybridEngine::initialise()
 
     raster.Initialise(window.get(), core.get(), &swapChain, &resources);
 
+    rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources);
+
     scene.Initialise(core->deviceContext.get(), &resources);
 
-    rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources, &scene);
 
 
     auto imageCount = core->deviceContext->imageCount;
@@ -211,8 +212,12 @@ void HybridEngine::render()
                 widget.EndMenu();
             }
             if (widget.NewMenu("Renderers")) {
-                widget.MenuItem("Raster", &rasterEnabled);
-                widget.MenuItem("Ray Tracing", &raytraceEnabled);
+                if (widget.MenuItem("Raster", &rasterEnabled)) {
+                    raster.commandBuffersReady = false;
+                }
+                if (widget.MenuItem("Ray Tracing", &raytraceEnabled)) {
+                    rayTracing.commandBuffersReady = false;
+                }
                 widget.EndMenu();
             }
 
@@ -242,7 +247,7 @@ void HybridEngine::render()
     if (raytraceEnabled) 
     {
         rayTracing.updateUniformBuffers(&camera);
-        rayTracing.GetCommandBuffers(imageIndex, submitCommandBuffers);
+        rayTracing.GetCommandBuffers(imageIndex, submitCommandBuffers, &scene);
     }
 
     if(ImGUI::enabled)
@@ -258,8 +263,11 @@ void HybridEngine::render()
     if (vkQueueSubmit(core->deviceContext->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
+    auto res = swapChain.Present(presentSemaphores[currentFrame], imageIndex);
+    if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR) {
+        RecreateSwapChain();
+    }
 
-    swapChain.Present(presentSemaphores[currentFrame], imageIndex);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -274,10 +282,10 @@ void HybridEngine::RecreateSwapChain() {
     rayTracing.Reinitialise();
 }
 
-void HybridEngine::deinitilise()
+void HybridEngine::Deinitilise()
 {
     raster.Deinitialise(true);
-    rayTracing.cleanup();
+    rayTracing.Deinitialise();
 
     swapChain.Destroy();
 
@@ -292,7 +300,7 @@ void HybridEngine::deinitilise()
 
     resources.Destroy();
 
-    core->deinitialise();
+    core->Deinitialise();
 }
 
 void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)

@@ -18,21 +18,9 @@ public:
 
 	bool isAvailable(const DescriptorSetRequest& request);
 
-	bool isAvailable2(const DescriptorSetRequest& request);
-
 	VkDescriptorSet allocateSet(VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
 
-
-	void allocateSets(std::vector<VkDescriptorSet>& _sets, VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
-
-	void allocateAndUpdateSets(std::vector<VkDescriptorSet>* _sets, VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
-
-	void allocateAndUpdateSet(VkDescriptorSet* _set, VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
-
 	void freeDescriptorSet(VkDescriptorSet* _set);
-
-	void allocateAndUpdateSets(std::vector<DescriptorSet*>* _sets, VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
-
 
 	void allocate(Descriptor& descriptor, VkDescriptorSetLayout layout, const DescriptorSetRequest& request);
 

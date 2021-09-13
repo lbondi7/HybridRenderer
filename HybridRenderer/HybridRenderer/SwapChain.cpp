@@ -62,11 +62,7 @@ VkResult SwapChain::Present(VkSemaphore presentSemaphore, uint32_t& imageIndex)
     VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&presentSemaphore, 1, &vkSwapChain, 1, &imageIndex);
     auto result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        //rebuildSwapChain = false;
-        //recreateSwapChain();
-    }
-    else if (result != VK_SUCCESS) {
+    if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
     return result;

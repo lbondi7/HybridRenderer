@@ -31,7 +31,7 @@ void Mesh::Init(DeviceContext* _devices)
 
 
     DescriptorSetRequest request{};
-    request.ids.emplace_back(std::pair<uint32_t, VkDescriptorType>(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER));
+    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
     for (size_t i = 0; i < devices->imageCount; i++) {
 
         request.data.push_back(&texture->descriptorInfo);

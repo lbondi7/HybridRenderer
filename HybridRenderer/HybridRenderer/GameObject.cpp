@@ -20,10 +20,8 @@ void GameObject::Init(DeviceContext* deviceContext)
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
 
-	using BindingType = std::pair<uint32_t, VkDescriptorType>;
-
 	DescriptorSetRequest request;
-	request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
+	request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
 
 	request.data.reserve(imageCount);
 	for (size_t i = 0; i < imageCount; i++) {
@@ -31,7 +29,7 @@ void GameObject::Init(DeviceContext* deviceContext)
 		request.data.push_back(&uniformBuffers[i].descriptorInfo);
 	}
 
-	deviceContext->GetDescriptors(descriptor, request);
+	deviceContext->GetDescriptors(descriptor, &request);
 }
 
 void GameObject::Update()

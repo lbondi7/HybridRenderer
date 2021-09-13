@@ -187,6 +187,7 @@
     <ClCompile Include="ImGUI_.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="RasterRenderer.cpp" />
+    <ClCompile Include="RayTracingPipeline.cpp" />
     <ClCompile Include="RayTracingRenderer.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -241,6 +242,7 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="RasterRenderer.h" />
+    <ClInclude Include="RayTracingPipeline.h" />
     <ClInclude Include="RayTracingRenderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Shader.h" />

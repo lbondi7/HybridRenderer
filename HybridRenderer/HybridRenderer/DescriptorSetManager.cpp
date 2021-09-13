@@ -58,45 +58,11 @@ DescriptorSetLayout* DescriptorSetManager::addLayoutAndReturn(uint32_t set, cons
 	return layouts[layouts.size() - 1].get();
 }
 
-void DescriptorSetManager::getDescriptorSets(std::vector<VkDescriptorSet>& sets, const DescriptorSetRequest& request)
+void DescriptorSetManager::getDescriptor(Descriptor& descriptor, const DescriptorSetRequest& request)
 {
-
 	for (auto& pool : pools)
 	{
 		if (pool.isAvailable(request))
-		{
-			for (auto& layout : layouts)
-			{
-				if (layout->matches(request))
-				{
-					pool.allocateSets(sets, layout->layout, request);
-					return;
-				}
-			}
-		}
-	}
-
-	auto& pool = pools.emplace_back();
-	pool.init(logicalDevice, request);
-	if (pool.isAvailable(request))
-	{
-		for (auto& layout : layouts)
-		{
-			if (layout->matches(request))
-			{
-				pool.allocateSets(sets, layout->layout, request);
-				return;
-			}
-		}
-	}
-}
-
-void DescriptorSetManager::getDescriptor(Descriptor& descriptor, const DescriptorSetRequest& request)
-{
-
-	for (auto& pool : pools)
-	{
-		if (pool.isAvailable2(request))
 		{
 			for (auto& layout : layouts)
 			{
@@ -112,7 +78,7 @@ void DescriptorSetManager::getDescriptor(Descriptor& descriptor, const Descripto
 
 	auto& pool = pools.emplace_back();
 	pool.init(logicalDevice, request);
-	if (pool.isAvailable2(request))
+	if (pool.isAvailable(request))
 	{
 		for (auto& layout : layouts)
 		{
@@ -122,100 +88,6 @@ void DescriptorSetManager::getDescriptor(Descriptor& descriptor, const Descripto
 				update(descriptor, request);
 				return;
 			}
-		}
-	}
-}
-
-void DescriptorSetManager::createDescriptorSets(std::vector<VkDescriptorSet>* sets, const DescriptorSetRequest& request)
-{
-	for (auto& pool : pools)
-	{
-		if (pool.isAvailable(request))
-		{
-			for (auto& layout : layouts)
-			{
-				if (layout->matches(request))
-				{
-					pool.allocateAndUpdateSets(sets, layout->layout, request);
-					return;
-				}
-			}
-		}
-	}
-
-	auto& pool = pools.emplace_back();
-	pool.init(logicalDevice, request);
-	if (pool.isAvailable(request))
-	{
-		for (auto& layout : layouts)
-		{
-			if (layout->matches(request))
-			{
-				pool.allocateAndUpdateSets(sets, layout->layout, request);
-				return;
-			}
-		}
-	}
-
-}
-
-VkDescriptorSet DescriptorSetManager::getDescriptorSet(const DescriptorSetRequest& request)
-{
-
-	for (auto pool : pools)
-	{
-		if (pool.isAvailable(request))
-		{
-			for (auto& layout : layouts)
-			{
-				if (layout->matches(request))
-				{
-					return pool.allocateSet(layout->layout, request);
-				}
-			}
-		}
-	}
-
-	auto& pool = pools.emplace_back();
-	pool.init(logicalDevice, request);
-	if (pool.isAvailable(request))
-	{
-		for (auto& layout : layouts)
-		{
-			if (layout->matches(request))
-			{
-				return pool.allocateSet(layout->layout, request);
-			}
-		}
-	}
-}
-
-void DescriptorSetManager::getTempDescriptorSet(VkDescriptorSet* descriptorSet, const DescriptorSetRequest& request, bool temp)
-{
-
-	for (auto pool : pools)
-	{
-		if (pool.isAvailable(request) && pool.temporary)
-		{
-			for (auto& layout : layouts)
-			{
-				if (layout->matches(request))
-				{
-					pool.allocateAndUpdateSet(descriptorSet, layout->layout, request);
-					return;
-				}
-			}
-		}
-	}
-
-	auto& pool = pools.emplace_back();
-	pool.init(logicalDevice, request, temp);
-	for (auto& layout : layouts)
-	{
-		if (layout->matches(request))
-		{
-			pool.allocateAndUpdateSet(descriptorSet, layout->layout, request);
-			return;
 		}
 	}
 }
@@ -231,36 +103,6 @@ void DescriptorSetManager::freeDescriptorSet(VkDescriptorSet* descriptorSet)
 	}
 }
 
-void DescriptorSetManager::getDescriptorSets(std::vector<DescriptorSet*>* descriptorSets, const DescriptorSetRequest& request)
-{
-	for (auto pool : pools)
-	{
-		if (pool.isAvailable2(request))
-		{
-			for (auto& layout : layouts)
-			{
-				if (layout->matches(request))
-				{
-					pool.allocateAndUpdateSets(descriptorSets, layout->layout, request);
-					return;
-				}
-			}
-		}
-	}
-
-	auto& pool = pools.emplace_back();
-	pool.init(logicalDevice, request);
-	for (auto& layout : layouts)
-	{
-		if (layout->matches(request))
-		{
-			pool.allocateAndUpdateSets(descriptorSets, layout->layout, request);
-			return;
-		}
-	}
-
-}
-
 void DescriptorSetManager::update(Descriptor& descriptor, const DescriptorSetRequest& request)
 {
 
@@ -273,17 +115,23 @@ void DescriptorSetManager::update(Descriptor& descriptor, const DescriptorSetReq
 		for (size_t j = 0; j < writeCount; ++j) {
 			bool isImage = false;
 
+			auto [binding, descriptorType, shaderStage] = request.ids[j];
 			auto& descriptorInfo = request.ids[j];
 			isImage =
-				descriptorInfo.second == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-				descriptorInfo.second == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
-				descriptorInfo.second == VK_DESCRIPTOR_TYPE_SAMPLER ||
-				descriptorInfo.second == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+				descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+				descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER ||
+				descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+			bool isAccelerationStructure = descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR ||
+				descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV;
 
 			if (isImage)
-				descriptorWrites.push_back(Initialisers::writeDescriptorSet(descriptor.sets[i], descriptorInfo.first, descriptorInfo.second, (const VkDescriptorImageInfo*)request.data[i * writeCount + j]));
+				descriptorWrites.push_back(Initialisers::writeDescriptorSet(descriptor.sets[i], binding, descriptorType, (const VkDescriptorImageInfo*)request.data[i * writeCount + j]));
+			else if(isAccelerationStructure)
+				descriptorWrites.push_back(Initialisers::writeDescriptorSet(descriptor.sets[i], binding, descriptorType, (const VkWriteDescriptorSetAccelerationStructureKHR*)request.data[i * writeCount + j]));
 			else
-				descriptorWrites.push_back(Initialisers::writeDescriptorSet(descriptor.sets[i], descriptorInfo.first, descriptorInfo.second, (const VkDescriptorBufferInfo*)request.data[i * writeCount + j]));
+				descriptorWrites.push_back(Initialisers::writeDescriptorSet(descriptor.sets[i], binding, descriptorType, (const VkDescriptorBufferInfo*)request.data[i * writeCount + j]));
 		}
 
 		vkUpdateDescriptorSets(logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);

@@ -26,7 +26,7 @@ private:
 	void update();
 	void render();
 	void RecreateSwapChain();
-	void deinitilise();
+	void Deinitilise();
 
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

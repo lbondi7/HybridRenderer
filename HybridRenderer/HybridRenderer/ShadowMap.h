@@ -41,7 +41,7 @@ public:
 	ImGUIWidget widget;
 private:
 
-	void Initialise(bool reinit);
+	void Initialise();
 
 	DeviceContext* devices = nullptr;
 	SwapChain* swapChain = nullptr;

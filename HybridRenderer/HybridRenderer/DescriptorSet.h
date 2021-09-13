@@ -11,7 +11,7 @@ public:
 
 	void initialise();
 
-	void update(VkDevice logicalDevice, const DescriptorSetRequest& _request);
+	//void update(VkDevice logicalDevice, const DescriptorSetRequest& _request);
 
 
 	VkDescriptorSet descriptorSet;

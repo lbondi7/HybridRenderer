@@ -188,7 +188,10 @@ bool ImGUIWidget::NewMenu(const char* label)
 void ImGUIWidget::EndMenu()
 {
 	if (newMenu)
+	{
 		ImGui::EndMenu();
+		newMenu = false;
+	}
 }
 
 bool ImGUIWidget::MenuItem(const char* label, bool* selected, bool enabled)

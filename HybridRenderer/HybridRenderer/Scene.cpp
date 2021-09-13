@@ -66,16 +66,55 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 
     gameObjects.reserve(static_cast<uint32_t>(gameObjectCount));
 
-    auto& tree = gameObjects.emplace_back(GameObject());
-    tree.model = resources->GetModel("tree2");
-    tree.Init(deviceContext);
+    for (size_t i = 0; i < gameObjectCount; i++)
+    {
+        gameObjects.emplace_back(GameObject());
+        if (i == 0)
+        {
+            gameObjects[i].model = resources->GetModel("tree2");
+            gameObjects[i].Init(deviceContext);
+        }
+        else {
+            gameObjects[i].model = resources->GetModel("plane");
+            gameObjects[i].Init(deviceContext);
+            gameObjects[i].transform.scale = glm::vec3(5.0f);
+        }
+    }
 
-    auto& plane = gameObjects.emplace_back(GameObject());
-    plane.model = resources->GetModel("plane");
-    plane.Init(deviceContext);
-    plane.transform.scale = glm::vec3(5.0f);
+    for (auto& go : gameObjects)
+    {
+        for (auto& mesh : go.model->meshes)
+        {
+            AccelerationStructure blas;
+            blas.Initialise(deviceContext);
+            blas.createBottomLevelAccelerationStructure(go.transform, mesh.get());
+            bottomLevelASs.push_back(blas);
+        }
+    }
 
+    topLevelAS.Initialise(deviceContext);
+    topLevelAS.createTopLevelAccelerationStructure(bottomLevelASs);
+
+
+
+    DescriptorSetRequest request;
     auto imageCount = 3;
+    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_FRAGMENT_BIT));
+    request.data.reserve(imageCount);
+    auto accelerationStructureInfo = Initialisers::descriptorSetAccelerationStructureInfo(&topLevelAS.handle);
+    for (size_t i = 0; i < imageCount; i++) {
+
+        request.data.push_back(&accelerationStructureInfo);
+    }
+    deviceContext->GetDescriptors(asDescriptor, &request);
+
+    request.ids[0] = DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+
+    deviceContext->GetDescriptors(rtASDescriptor, &request);
+
+    request.data.clear();
+    request.ids.clear();
+
     lightBuffers.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++) {
         VkDeviceSize bufferSize = sizeof(LightUBO);
@@ -84,15 +123,14 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
-    using BindingType = std::pair<uint32_t, VkDescriptorType>;
-    DescriptorSetRequest request;
-    request.ids.emplace_back(BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
+    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
     request.data.reserve(imageCount);
     for (size_t i = 0; i < imageCount; i++) {
 
         request.data.push_back(&lightBuffers[i].descriptorInfo);
     }
-    deviceContext->GetDescriptors(lightDescriptor, request);
+    deviceContext->GetDescriptors(lightDescriptor, &request);
+
 }
 
 void Scene::Update(uint32_t imageIndex, float dt)
@@ -142,6 +180,13 @@ void Scene::Update(uint32_t imageIndex, float dt)
 
 void Scene::Destroy()
 {
+
+    for (auto& blas : bottomLevelASs)
+    {
+        blas.Destroy();
+    }
+
+    topLevelAS.Destroy();
 
     for(auto& lightBuffer : lightBuffers)
     {

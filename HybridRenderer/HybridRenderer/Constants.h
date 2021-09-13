@@ -82,6 +82,7 @@ const std::vector<const char*> deviceExtensions = {
     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
     VK_KHR_SPIRV_1_4_EXTENSION_NAME,
     VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
+    VK_KHR_RAY_QUERY_EXTENSION_NAME
 };
 
 struct QueueFamilyIndices {
@@ -144,7 +145,7 @@ enum VertexAttributes {
 
 struct DescriptorSetRequest {
 
-    using BindingType = std::pair<uint32_t, VkDescriptorType>;
+    using BindingType = std::tuple<uint32_t, VkDescriptorType, VkShaderStageFlagBits>;
     std::vector<BindingType> ids;
     std::vector<void*> data;
 };

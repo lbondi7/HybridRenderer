@@ -98,8 +98,9 @@ namespace Initialisers {
 	VkImageCreateInfo imageCreateInfo(VkImageType imageType,
 		uint32_t width, uint32_t height, uint32_t depth,
 		VkFormat format, VkImageUsageFlags usage,
-		VkImageTiling tiling, VkSampleCountFlagBits samples, uint32_t mipLevels = 1,
+		VkImageTiling tiling, VkSampleCountFlagBits samples,
 		VkImageLayout initialialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		uint32_t mipLevels = 1,
 		uint32_t arrayLayers = 1,
 		VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
 

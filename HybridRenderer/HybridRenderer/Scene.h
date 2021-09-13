@@ -2,6 +2,7 @@
 
 #include "GameObject.h"
 #include "Resources.h"
+#include "AccelerationStructure.h"
 
 
 class Scene
@@ -16,12 +17,14 @@ public:
 
 	std::vector<GameObject> gameObjects;
 
-	uint32_t gameObjectCount = 1;
+	uint32_t gameObjectCount = 2;
 
 	std::vector<VkDescriptorSet> lightDescSets;
 	std::vector<Buffer> lightBuffers;
 
 	Descriptor lightDescriptor;
+	Descriptor asDescriptor;
+	Descriptor rtASDescriptor;
 
 	uint32_t imageIndex;
 
@@ -30,6 +33,9 @@ public:
 	glm::vec3 lightRot = glm::vec3(0, 0, 0);
 
 	float lightFOV = 45.0f;
+
+	std::vector<AccelerationStructure> bottomLevelASs;
+	AccelerationStructure topLevelAS;
 
 private:
 	struct LightUBO {

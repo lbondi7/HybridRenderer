@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "AccelerationStructure.h"
+#include "RayTracingPipeline.h"
 
 struct RayTracingScratchBuffer
 {
@@ -34,11 +35,11 @@ public:
 	RayTracingRenderer(VulkanCore* core, Window* _window);
 	~RayTracingRenderer();
 
-	void Initialise(DeviceContext* _deviceContext, Window* _window, SwapChain* swapChain, Resources* _resources, Scene* scene);
+	void Initialise(DeviceContext* _deviceContext, Window* _window, SwapChain* swapChain, Resources* _resources);
 
-	void cleanup();
+	void Deinitialise();
 
-	void GetCommandBuffers(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers);
+	void GetCommandBuffers(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, Scene* scene);
 
 	void createStorageImage();
 
@@ -52,26 +53,13 @@ public:
 
 	void Reinitialise();
 
-	void buildCommandBuffers();
+	void buildCommandBuffers(Scene* scene);
 
 	void updateUniformBuffers(Camera* camera);
 
-	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
-	PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
-	PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR;
-	PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
-	PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
-	PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;
-	PFN_vkBuildAccelerationStructuresKHR vkBuildAccelerationStructuresKHR;
 	PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR;
 	PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR;
-	PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
 
-	std::vector<AccelerationStructure> blas;
-	AccelerationStructure tlas;
-
-	uint32_t indexCount;
-	std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
 	Buffer raygenShaderBindingTable;
 	Buffer missShaderBindingTable;
 	Buffer hitShaderBindingTable;
@@ -85,11 +73,8 @@ public:
 
 	Buffer ubo;
 
-	VkPipeline pipeline;
-	VkPipelineLayout pipelineLayout;
-	std::vector<VkDescriptorSet> descriptorSets;
-	VkDescriptorSetLayout descriptorSetLayout;
-	VkDescriptorPool descriptorPool;
+	RayTracingPipeline rtPipeline;
+	Descriptor rtDescriptor;
 
 	DeviceContext* deviceContext;
 	SwapChain* swapChain;

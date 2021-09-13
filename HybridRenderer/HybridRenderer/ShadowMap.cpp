@@ -42,7 +42,7 @@ bool ShadowMap::Update() {
 	return updated;
 }
 
-void ShadowMap::Initialise(bool reinit)
+void ShadowMap::Initialise()
 {
 	height = width = static_cast<uint32_t>(resolution);
 
@@ -68,7 +68,7 @@ void ShadowMap::Initialise(bool reinit)
 	}
 
 	DescriptorSetRequest request;
-	request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER } };
+	request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT } };
 
 	request.data.reserve(devices->imageCount * request.ids.size());
 
@@ -77,7 +77,7 @@ void ShadowMap::Initialise(bool reinit)
 		request.data.emplace_back(&depthTexture.descriptorInfo);
 	}
 
-	devices->GetDescriptors(descriptor, request, reinit);
+	devices->GetDescriptors(descriptor, &request);
 
 	widget.SetupImage(0, depthTexture);
 }
@@ -101,7 +101,7 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 
 	pipeline.Create(devices, &renderPass, pipelineInfo);
 
-	Initialise(false);
+	Initialise();
 
 }
 
@@ -113,7 +113,7 @@ void ShadowMap::Reinitialise(bool complete)
 
 	pipeline.Init();
 
-	Initialise(true);
+	Initialise();
 }
 
 void ShadowMap::Destroy(bool complete)

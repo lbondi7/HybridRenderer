@@ -35,7 +35,7 @@ public:
 
 
     //DescriptorSetLayout* descriptorSetLayouts;
-    std::vector< DescriptorSetLayout*> descriptorSetLayouts;
+    std::vector<DescriptorSetLayout*> descriptorSetLayouts;
     uint32_t layoutCount = 0;
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;

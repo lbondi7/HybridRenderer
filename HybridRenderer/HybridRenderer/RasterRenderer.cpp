@@ -64,37 +64,6 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
 
     shadowMap.Initialise(pipelineInfo);
 
-    storageImage.Create(deviceContext, window->width, window->height, swapChain->imageFormat,
-        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_SAMPLE_COUNT_1_BIT
-    );
-    storageImage.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-    storageImage.descriptorInfo.imageView = storageImage.imageView;
-    storageImage.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-
-    VkCommandBuffer cmdBuffer = deviceContext->generateCommandBuffer();
-    Utility::setImageLayout(cmdBuffer, storageImage.image,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_GENERAL,
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-    deviceContext->EndCommandBuffer(cmdBuffer);
-
-    DescriptorSetRequest request{};
-    request.ids = { { 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE } };
-    request.data.reserve(deviceContext->imageCount * request.ids.size());
-
-    for (size_t i = 0; i < deviceContext->imageCount; i++) {
-
-        request.data.emplace_back(&storageImage.descriptorInfo);
-    }
-
-    deviceContext->GetDescriptors(storageImageDescriptor, request);
-
-    storageImage.CreateSampler();
-
-    widget.SetupImage(0, storageImage);
-
     AllocateCommandBuffers();
 
     commandBuffersReady = false;
@@ -113,7 +82,6 @@ void RasterRenderer::Deinitialise(bool total) {
 
     imgui.deinit();
 
-    storageImage.Destroy();
 
     if (total) {
         imgui.destroy();
@@ -145,41 +113,6 @@ void RasterRenderer::Reinitialise() {
     shadowMap.Reinitialise(true);
     pipeline.Init();
     imgui.reinit();
-
-    storageImage.Create(deviceContext, swapChain->extent.width, swapChain->extent.height, swapChain->imageFormat,
-        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_SAMPLE_COUNT_1_BIT
-    );
-    storageImage.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-    storageImage.descriptorInfo.imageView = storageImage.imageView;
-    storageImage.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-
-    VkCommandBuffer cmdBuffer = deviceContext->generateCommandBuffer();
-    Utility::setImageLayout(cmdBuffer, storageImage.image,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_GENERAL,
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-    deviceContext->EndCommandBuffer(cmdBuffer);
-
-    DescriptorSetRequest request{};
-    request.ids = { { 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE } };
-    request.data.reserve(deviceContext->imageCount * request.ids.size());
-
-    for (size_t i = 0; i < deviceContext->imageCount; i++) {
-
-        request.data.emplace_back(&storageImage.descriptorInfo);
-    }
-
-    deviceContext->GetDescriptors(storageImageDescriptor, request, true);
-
-    storageImage.CreateSampler();
-
-    widget.SetupImage(0, storageImage);
-
-
-
-    AllocateCommandBuffers();
 
     commandBuffersReady = false;
 
@@ -273,7 +206,7 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
 
-        std::array<VkDescriptorSet, 6> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE, storageImageDescriptor.sets[i] };
+        std::array<VkDescriptorSet, 6> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE, scene->asDescriptor.sets[i] };
 
         for (auto& go : scene->gameObjects) {
 
@@ -292,9 +225,6 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
                 vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
             }
 
-            //go.mesh->Bind(commandBuffers[i]);
-
-            //vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
         }
 
         if (!ImGUI::enabled)
@@ -306,28 +236,10 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
     if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
-
-    //if (ImGUI::enabled) {
-    //    imgui.buildCommandBuffer(i, swapChain.extent);
-    //}
 }
 
 void RasterRenderer::Prepare()
 {
-    //VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
-
-    //swapChain.AquireNextImage(iAS, imageIndex);
-
-    //VkResult result = vkAcquireNextImageKHR(deviceContext->logicalDevice, swapChain.vkSwapChain, UINT64_MAX, iAS, VK_NULL_HANDLE, &imageIndex);
-
-    //if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    //    recreateSwapChain();
-    //return;
-    //}
-    //else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    //    throw std::runtime_error("failed to acquire swap chain image!");
-    //}
-
     if (ImGUI::enabled && !imgui.startedFrame)
     {
         imgui.startFrame();
@@ -365,60 +277,6 @@ void RasterRenderer::GetImGuiCommandBuffer(uint32_t imageIndex, std::vector<VkCo
         imgui.buildCommandBuffer(imageIndex, extent);
         submitCommandBuffers.emplace_back(imgui.commandBuffers[imageIndex]);
     }
-}
-
-void RasterRenderer::Render(Camera* camera, Scene* scene)
-{
-
-    if (shadowMap.Update() || !commandBuffersReady)
-    {
-        buildCommandBuffers(camera, scene);
-    }
-    
-    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-    vkWaitForFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-    vkResetFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
-
-    std::vector<VkCommandBuffer> submitCommandBuffers =
-    { commandBuffers[imageIndex] };
-    
-    if (ImGUI::enabled && imgui.startedFrame) {
-
-        imgui.endFrame();
-        imgui.drawn = true;
-
-        imgui.buildCommandBuffer(imageIndex, swapChain->extent);
-        submitCommandBuffers.emplace_back(imgui.commandBuffers[imageIndex]);
-    }
-
-    VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
-    VkSemaphore rFS = renderFinishedSemaphores[currentFrame];
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSubmitInfo submitInfo = Initialisers::submitInfo(
-        submitCommandBuffers.data(), static_cast<uint32_t>(submitCommandBuffers.size()), &iAS, 1, &rFS, 1, waitStages);
-
-
-    if (vkQueueSubmit(deviceContext->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
-
-    //VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
-    //VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&rFS, 1, swapChains, 1, &imageIndex);
-    //auto result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
-
-    //auto result = swapChain.Present(rFS, imageIndex);
-
-    //if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || rebuildSwapChain) {
-    //    rebuildSwapChain = false;
-    //    recreateSwapChain();
-    //}
-    //else if (result != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to present swap chain image!");
-    //}
-
-    //currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
 }
 
 //void RasterRenderer::drawFrame() {

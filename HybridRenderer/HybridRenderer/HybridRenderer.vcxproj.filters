@@ -216,6 +216,9 @@
     <ClCompile Include="Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RayTracingPipeline.cpp">
+      <Filter>Source Files\Vulkan\Pipeline</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vertex.h">
@@ -376,6 +379,9 @@
     </ClInclude>
     <ClInclude Include="Scene.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RayTracingPipeline.h">
+      <Filter>Header Files\Vulkan\Pipeline</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

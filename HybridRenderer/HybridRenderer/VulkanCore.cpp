@@ -27,7 +27,7 @@ void VulkanCore::initialise(GLFWwindow* glfwWindow)
     deviceContext->SetupDevices(instance, surface);
 }
 
-void VulkanCore::deinitialise()
+void VulkanCore::Deinitialise()
 {
 
     vkDestroyCommandPool(deviceContext->logicalDevice, deviceContext->commandPool, nullptr);

@@ -46,8 +46,10 @@ bool DescriptorSetLayout::matches(const DescriptorSetRequest& request)
 
     for (size_t i = 0; i < request.ids.size(); i++)
     {
-        if (bindings[i].binding != request.ids[i].first ||
-            bindings[i].descriptorType != request.ids[i].second)
+        auto [binding, descriptorType, shaderStage] = request.ids[i];
+        if (bindings[i].binding != binding ||
+            bindings[i].descriptorType != descriptorType ||
+            bindings[i].stageFlags != shaderStage)
             return false;
     }
 

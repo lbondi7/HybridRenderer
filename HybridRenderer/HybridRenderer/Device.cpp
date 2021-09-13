@@ -150,9 +150,9 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
     enabledAccelerationStructureFeatures.pNext = &enabledRayTracingPipelineFeatures;
 
-    //enabledRayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
-    //enabledRayQueryFeatures.rayQuery = VK_TRUE;
-    //enabledRayQueryFeatures.pNext = &enabledAccelerationStructureFeatures;
+    enabledRayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    enabledRayQueryFeatures.rayQuery = VK_TRUE;
+    enabledRayQueryFeatures.pNext = &enabledAccelerationStructureFeatures;
 
     //void* deviceCreatepNextChain = &enabledAccelerationStructureFeatures;
 
@@ -165,7 +165,7 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     // Get acceleration structure properties, which will be used later on in the sample
     VkPhysicalDeviceFeatures2 deviceFeatures2{};
     deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    deviceFeatures2.pNext = &enabledAccelerationStructureFeatures;
+    deviceFeatures2.pNext = &enabledRayQueryFeatures;
     vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
 
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -245,11 +245,9 @@ VkBool32 DeviceContext::formatIsFilterable(VkFormat format, VkImageTiling tiling
     return false;
 }
 
-void DeviceContext::GetDescriptors(Descriptor& descriptor, const DescriptorSetRequest& request, bool update)
+void DeviceContext::GetDescriptors(Descriptor& descriptor, const DescriptorSetRequest* request)
 {
-    if (update) {
-        dsm.update(descriptor, request);
-        return;
-    }
-    dsm.getDescriptor(descriptor, request);
+    if(request)
+        descriptor.requestData = *request;
+    dsm.getDescriptor(descriptor, descriptor.requestData);
 }

@@ -20,6 +20,7 @@
 #include "VulkanCore.h"
 #include "Descriptor.h"
 #include "ImGUIWidgets.h"
+#include "AccelerationStructure.h"
 
 class RasterRenderer {
 public:
@@ -35,7 +36,15 @@ public:
 
     void GetImGuiCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, VkExtent2D extent);
 
-    void Render(Camera* camera, Scene* scene);
+    void Deinitialise(bool total = false);
+
+    void Reinitialise();
+
+    void AllocateCommandBuffers();
+
+    void buildCommandBuffers(Camera* camera, Scene* scene);
+
+    void rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* scene);
 
     DeviceContext* deviceContext;
 
@@ -86,15 +95,5 @@ public:
     bool countUp = true;
 
     ImGUIWidget widget;
-
-    void Deinitialise(bool total = false);
-
-    void Reinitialise();
-
-    void AllocateCommandBuffers();
-
-    void buildCommandBuffers(Camera* camera, Scene* scene);
-
-    void rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* scene);
 
 };
