@@ -17,7 +17,7 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     //swapChain.Create(core->surface, deviceContext, &window->width, &window->height);
 
     imgui.create(window->glfwWindow, core->instance, core->surface, deviceContext, swapChain);
-
+    
     //swapChain.Create(window.glfwWindow, surface, deviceContext);
 
     RenderPassInfo info{};
@@ -52,6 +52,8 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
         frameBuffer.createFramebuffer(attachments, swapChain->extent);
         penultimateFrameBuffer.createFramebuffer(attachments, swapChain->extent);
     }
+
+    resources->GetModel("tree2");
 
     shadowMap.Create(deviceContext, swapChain);
     pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
@@ -259,7 +261,7 @@ void RasterRenderer::Prepare()
 
 void RasterRenderer::GetCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, Camera* camera, Scene* scene)
 {
-    if (shadowMap.Update() || !commandBuffersReady)
+    if (shadowMap.Update(imageIndex) || !commandBuffersReady)
     {
         buildCommandBuffers(camera, scene);
     }

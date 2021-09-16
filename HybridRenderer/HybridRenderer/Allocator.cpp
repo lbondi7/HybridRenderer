@@ -24,6 +24,7 @@ void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsa
     VkDeviceSize minAlignment = VK_WHOLE_SIZE;
     if (usage == VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
     {
+        properties.limits.minMemoryMapAlignment;
         minAlignment = properties.limits.minUniformBufferOffsetAlignment;
         int amount = static_cast<int>(std::ceil(static_cast<float>(size) / static_cast<float>(minAlignment)));
         minAlignment = minAlignment * static_cast<VkDeviceSize>(amount);

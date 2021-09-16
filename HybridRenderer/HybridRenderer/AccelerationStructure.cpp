@@ -79,23 +79,6 @@ void AccelerationStructure::createAccelerationStructureBuffer(VkAccelerationStru
 {
 	asBuffer.Create(deviceContext, buildSizeInfo.accelerationStructureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	//VkBufferCreateInfo bufferCreateInfo{};
-	//bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	//bufferCreateInfo.size = buildSizeInfo.accelerationStructureSize;
-	//bufferCreateInfo.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-	//vkCreateBuffer(deviceContext->logicalDevice, &bufferCreateInfo, nullptr, &buffer);
-	//VkMemoryRequirements memoryRequirements{};
-	//vkGetBufferMemoryRequirements(deviceContext->logicalDevice, buffer, &memoryRequirements);
-	//VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
-	//memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
-	//memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-	//VkMemoryAllocateInfo memoryAllocateInfo{};
-	//memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	//memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
-	//memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	//memoryAllocateInfo.memoryTypeIndex = Utility::findMemoryType(memoryRequirements.memoryTypeBits, deviceContext->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	//vkAllocateMemory(deviceContext->logicalDevice, &memoryAllocateInfo, nullptr, &memory);
-	//vkBindBufferMemory(deviceContext->logicalDevice, buffer, memory, 0);
 }
 
 
@@ -178,7 +161,7 @@ void AccelerationStructure::createTopLevelAccelerationStructure(std::vector<Acce
 	uint32_t i = 0;
 	for (auto& instance : instances)
 	{
-		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR, blas[i].deviceAddress, i);
+		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR, blas[i].deviceAddress, i);
 		i++;
 	}
 

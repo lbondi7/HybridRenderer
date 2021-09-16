@@ -6,6 +6,11 @@ layout (set = 3, binding = 0) uniform sampler2D shadowMap;
 layout (set = 4, binding = 0) uniform sampler2D sampledTexture;
 layout (set = 5, binding = 0) uniform accelerationStructureEXT topLevelAS;
 
+layout (set = 3, binding = 1) uniform ShadowUBO
+{
+	uint shadowMap;
+} shadowUBO;
+
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;
 layout (location = 2) in vec3 inCamPos;
@@ -13,6 +18,7 @@ layout (location = 3) in vec3 inLightPos;
 layout (location = 4) in vec4 inShadowCoord;
 layout (location = 5) in vec2 inUV;
 layout (location = 6) in vec3 fragVert;
+layout (location = 7) in float inCull;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -90,6 +96,7 @@ void main() {
 		discard;
 
 	float shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
+
 	vec4 outColour;
 	float shadowAlpha = 0.0f;
 	vec3 normal = normalize(inNormal);
@@ -105,26 +112,43 @@ void main() {
 	totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.5, 0.5);
 	outColour = col * vec4(totalLight, 1.0);
 
-	if(shadow < 0.5){
-			rayQueryEXT rayQuery;
-	rayQueryInitializeEXT(rayQuery, 
-	topLevelAS, 
-	gl_RayFlagsTerminateOnFirstHitEXT, 
-	0xFF, 
-	fragVert, 
-	0.01, 
-	invLightDir, 
-	1000.0);
+	if(shadowUBO.shadowMap == 0){
+		outColour *= shadow;	
+	}
+	else{
+		if(shadow < 0.5 && (distance(inCamPos, fragVert) < inCull)){
 
-	// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
-	while (rayQueryProceedEXT(rayQuery)) { 
+			rayQueryEXT rayQuery;
+
+			// initialise the ray to query but doesn't start the traversal
+			rayQueryInitializeEXT(rayQuery, 
+			topLevelAS, 
+			gl_RayFlagsCullNoOpaqueEXT, 
+			0xFF, 
+			fragVert, 
+			0.01, 
+			invLightDir, 
+			1000.0);
+
+			// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
+			while (rayQueryProceedEXT(rayQuery)) { 
+				    // if (rayQueryGetIntersectionTypeEXT(rayQuery, false) ==
+					// 	gl_RayQueryCandidateIntersectionTriangleEXT)
+					// {
+					// 	rayQueryGetIntersectionTypeEXT
+					// 	if (opaqueHit) rayQueryConfirmIntersectionEXT(rayQuery);
+					// }
+					//OpRayQueryInitializeKHR();
+			}
+			// If the intersection has hit a triangle, the fragment is shadowed
+			if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) {
+				outColour *= shadow;
+			}
+		}
+		else{
+			outColour *= shadow;
+		}
 	}
-	// If the intersection has hit a triangle, the fragment is shadowed
-	if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) {
-		outColour *= shadow;
-	}
-	}
-	
 
 	outFragColor = outColour;
 }

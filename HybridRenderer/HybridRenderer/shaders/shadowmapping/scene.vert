@@ -10,6 +10,7 @@ layout (set = 0, binding = 0) uniform CameraUBO
 	mat4 projection;
 	mat4 view;
 	vec3 pos;
+	float rayCullDistance;
 } cam;
 
 layout (set = 1, binding = 0) uniform ModelUBO
@@ -31,6 +32,8 @@ layout (location = 3) out vec3 outLightPos;
 layout (location = 4) out vec4 outShadowCoord;
 layout (location = 5) out vec2 outUV;
 layout (location = 6) out vec3 outPos;
+layout (location = 7) out float outCull;
+
 
 out gl_PerVertex 
 {
@@ -49,31 +52,14 @@ void main()
 	outColor = inColor;
 	outNormal = inNormal;
 	outUV = inUV;
-
 	gl_Position = cam.projection * cam.view * model.matrix * vec4(inPos.xyz, 1.0);
 
 	outPos = vec3(model.matrix * vec4(inPos, 1.0));
 	outNormal = inNormal;
 	outLightPos = light.pos;
-	//outLightVec = normalize(ubo.lightPos - inPos);
 	outCamPos = cam.pos;
-	//outViewVec = -pos.xyz;
+	outCull = cam.rayCullDistance;
 
 	outShadowCoord = (biasMat * light.space * model.matrix ) * vec4(inPos, 1.0);
-
-//	outColor = inColor;
-//	outNormal = inNormal;
-//	outUV = inUV;
-//
-//	gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPos.xyz, 1.0);
-//
-//	outPos = vec3(ubo.model * vec4(inPos, 1.0));
-//	outNormal = inNormal;
-//	outLightVec = ubo.lightPos;
-//	//outLightVec = normalize(ubo.lightPos - inPos);
-//	outViewVec = ubo.camPos;
-//	//outViewVec = -pos.xyz;
-//
-//	outShadowCoord = (biasMat * ubo.lightSpace * ubo.model ) * vec4(inPos, 1.0);
 }
 

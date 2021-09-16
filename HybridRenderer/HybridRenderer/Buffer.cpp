@@ -29,7 +29,7 @@ void Buffer::Create(DeviceContext* _devices, VkDeviceSize _size, void* _data)
     size = _size;
     usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
+    offset = 0;
     vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(deviceContext->logicalDevice, "vkGetBufferDeviceAddressKHR"));
 
     createBuffer(size, usage, properties);
@@ -103,7 +103,7 @@ void Buffer::AllocatedCopyFrom(Buffer* other) {
 
     VkCommandBuffer commandBuffer = deviceContext->generateCommandBuffer();
 
-    VkBufferCopy copyRegion = Initialisers::bufferCopy(other->size, other->bufferInfo.offset, bufferInfo.offset);
+    VkBufferCopy copyRegion = Initialisers::bufferCopy(other->size, other->offset, bufferInfo.offset);
     vkCmdCopyBuffer(commandBuffer, other->vkBuffer, bufferInfo.buffer, 1, &copyRegion);
 
     deviceContext->EndCommandBuffer(commandBuffer);
@@ -162,10 +162,10 @@ void Buffer::Flush(VkDeviceSize size, VkDeviceSize offset)
 
 uint64_t Buffer::GetDeviceAddress()
 {
-    VkBufferDeviceAddressInfoKHR buffer_device_address_info{};
-    buffer_device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-    buffer_device_address_info.buffer = vkBuffer;
-    return vkGetBufferDeviceAddressKHR(deviceContext->logicalDevice, &buffer_device_address_info);
+    VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
+    bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    bufferDeviceAddressInfo.buffer = vkBuffer;
+    return vkGetBufferDeviceAddressKHR(deviceContext->logicalDevice, &bufferDeviceAddressInfo);
 }
 
 //

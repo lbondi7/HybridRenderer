@@ -7,6 +7,11 @@
 #include "CubemapTexture.h"
 #include "Descriptor.h"
 #include "ImGUIWidgets.h"
+#include "Buffer.h"
+
+struct ShadowUBO {
+	alignas(16) uint16_t shadowMap;
+};
 
 class ShadowMap
 {
@@ -23,7 +28,7 @@ public:
 
 	void Destroy(bool complete = true);
 
-	bool Update();
+	bool Update(uint32_t imageIndex);
 
 	uint32_t width;
 	uint32_t height;
@@ -39,6 +44,10 @@ public:
 	Descriptor descriptor;
 
 	ImGUIWidget widget;
+
+	ShadowUBO shadowUBO;
+
+	std::vector<Buffer> buffers;
 private:
 
 	void Initialise();

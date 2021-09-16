@@ -44,6 +44,7 @@ public:
 	VkDeviceSize size;
 	VkBufferUsageFlags usage; 
 	VkMemoryPropertyFlags properties;
+	VkDeviceSize offset;
 	void* data = nullptr;
 	bool mapped = false;
 

@@ -99,27 +99,6 @@ void RayTracingPipeline::CreatePipeline() {
         }
     }
 
-    //// Ray generation group
-    //{
-    //    shaderStages.push_back(resources->GetShader("raytracing/raygen", VK_SHADER_STAGE_RAYGEN_BIT_KHR)->createInfo());
-    //    VkRayTracingShaderGroupCreateInfoKHR shaderGroup = Initialisers::rayTracingGeneralShaderGroup(static_cast<uint32_t>(shaderStages.size()) - 1);
-    //    shaderGroups.push_back(shaderGroup);
-    //}
-
-    //// Miss group
-    //{
-    //    shaderStages.push_back(resources->GetShader("raytracing/miss", VK_SHADER_STAGE_MISS_BIT_KHR)->createInfo());
-    //    VkRayTracingShaderGroupCreateInfoKHR shaderGroup = Initialisers::rayTracingGeneralShaderGroup(static_cast<uint32_t>(shaderStages.size()) - 1);
-    //    shaderGroups.push_back(shaderGroup);
-    //}
-
-    //// Closest hit group
-    //{
-    //    shaderStages.push_back(resources->GetShader("raytracing/closesthit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)->createInfo());
-    //    VkRayTracingShaderGroupCreateInfoKHR shaderGroup = Initialisers::rayTracingClosestHitShaderGroup(static_cast<uint32_t>(shaderStages.size()) - 1);
-    //    shaderGroups.push_back(shaderGroup);
-    //}
-
     /*
         Create the ray tracing pipeline
     */

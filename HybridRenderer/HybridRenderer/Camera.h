@@ -15,6 +15,7 @@ struct CameraUBO {
 	alignas(16) glm::mat4 projection;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::vec3 camPos;
+	float rayCullDistance;
 };
 
 class Camera
@@ -53,6 +54,8 @@ public:
 
 	void update(const VkExtent2D& _extent);
 
+	void update();
+
 	bool valuesUpdated(const VkExtent2D& _extent);
 
 	void vkSetViewport(VkCommandBuffer cmdBuffer);
@@ -70,6 +73,8 @@ public:
 	Frustum frustum;
 
 	ImGUIWidget widget;
+
+	CameraUBO cameraUBO;
 
 private:
 	bool valuesUpdated(float windowWidth, float windowHeight);

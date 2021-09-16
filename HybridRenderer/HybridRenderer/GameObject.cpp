@@ -17,7 +17,8 @@ void GameObject::Init(DeviceContext* deviceContext)
 	for (size_t i = 0; i < imageCount; i++) {
 		VkDeviceSize bufferSize = sizeof(ModelUBO);
 		uniformBuffers[i].Allocate(deviceContext, bufferSize, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
 
 	DescriptorSetRequest request;

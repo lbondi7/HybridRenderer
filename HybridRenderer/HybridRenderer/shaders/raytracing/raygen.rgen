@@ -20,14 +20,14 @@ void main()
 	
 	vec4 origin = cam.viewInverse * vec4(0,0,0,1);
 	vec4 target = cam.projInverse * vec4(d.x, d.y, 1, 1) ;
-	vec4 direction = cam.viewInverse*vec4(normalize(target.xyz), 0);
+	vec4 direction = cam.viewInverse*vec4(normalize(target.xyz), 0) ;
 
 	float tmin = 0.001;
 	float tmax = 10000.0;
 
     hitValue = vec3(0.0);
 
-    traceRayEXT(topLevelAS, gl_RayFlagsCullBackFacingTrianglesEXT , 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
 
 	imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.0));
 }

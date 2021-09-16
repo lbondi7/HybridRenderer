@@ -45,6 +45,11 @@ bool ImGUIWidget::Slider(const char * label, uint32_t* value, uint32_t min, uint
 	return ImGui::SliderInt(label, reinterpret_cast<int*>(value), min, max);
 }
 
+bool ImGUIWidget::Slider(const char* label, uint16_t* value, uint16_t min, uint16_t max)
+{
+	return ImGui::SliderInt(label, reinterpret_cast<int*>(value), min, max);
+}
+
 bool ImGUIWidget::Slider(const char* label, float* value, float min, float max)
 {
 	return ImGui::SliderFloat(label, value, min, max);

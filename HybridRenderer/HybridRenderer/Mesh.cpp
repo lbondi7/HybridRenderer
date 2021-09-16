@@ -36,7 +36,7 @@ void Mesh::Init(DeviceContext* _devices)
 
         request.data.push_back(&texture->descriptorInfo);
     }
-    devices->dsm.getDescriptor(descriptor, request);
+    devices->GetDescriptors(descriptor, &request);
 }
 
 void Mesh::Destroy() {

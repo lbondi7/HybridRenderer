@@ -48,14 +48,11 @@ void HybridEngine::initialise()
 
     resources.LoadTexture("texture.jpg");
 
-
     raster.Initialise(window.get(), core.get(), &swapChain, &resources);
 
     rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources);
 
     scene.Initialise(core->deviceContext.get(), &resources);
-
-
 
     auto imageCount = core->deviceContext->imageCount;
 
@@ -185,13 +182,12 @@ void HybridEngine::update()
     //    lightRot.y -= 5.0f * timer.dt;
     //}
 
-    camera.update({static_cast<uint32_t>(window->width), static_cast<uint32_t>(window->height)});
+    camera.update();
 
-    CameraUBO cameraUBO{};
-    cameraUBO.camPos = camera.transform.position;
-    cameraUBO.view = camera.view;
-    cameraUBO.projection = camera.projection;
-    camera.buffers[imageIndex].AllocatedMap(&cameraUBO);
+    camera.cameraUBO.camPos = camera.transform.position;
+    camera.cameraUBO.view = camera.view;
+    camera.cameraUBO.projection = camera.projection;
+    camera.buffers[imageIndex].AllocatedMap(&camera.cameraUBO);
 
     scene.Update(imageIndex, timer.dt);
 }
@@ -226,7 +222,7 @@ void HybridEngine::render()
                 widget.MenuItem("Raster Renderer", &raster.widget.enabled);
                 widget.MenuItem("Camera", &camera.widget.enabled);
                 widget.MenuItem("ShadowMap", &raster.shadowMap.widget.enabled);
-
+                
                 widget.EndMenu();
             }
 

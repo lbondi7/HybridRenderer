@@ -5,6 +5,11 @@
 #include "AccelerationStructure.h"
 
 
+struct LightUBO {
+	alignas(16) glm::mat4 depthBiasMVP;
+	alignas(16) glm::vec3 lightPos;
+};
+
 class Scene
 {
 public:
@@ -17,7 +22,7 @@ public:
 
 	std::vector<GameObject> gameObjects;
 
-	uint32_t gameObjectCount = 2;
+	uint32_t gameObjectCount = 37;
 
 	std::vector<VkDescriptorSet> lightDescSets;
 	std::vector<Buffer> lightBuffers;
@@ -37,11 +42,10 @@ public:
 	std::vector<AccelerationStructure> bottomLevelASs;
 	AccelerationStructure topLevelAS;
 
+	LightUBO lightUBO;
+
 private:
-	struct LightUBO {
-		alignas(16) glm::mat4 depthBiasMVP;
-		alignas(16) glm::vec3 lightPos;
-	}lightUBO;
+
 	DeviceContext* deviceContext;
 };
 

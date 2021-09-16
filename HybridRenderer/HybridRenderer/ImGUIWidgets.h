@@ -20,6 +20,8 @@ public:
 
 	bool Slider(const char * label, uint32_t* value, uint32_t min, uint32_t max);
 
+	bool Slider(const char* label, uint16_t* value, uint16_t min, uint16_t max);
+
 	bool Slider(const char* label, float* value, float min, float max);
 
 	bool Slider2(const char* label, float* values, float min, float max);

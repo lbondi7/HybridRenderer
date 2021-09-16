@@ -18,12 +18,14 @@ void ShadowMap::Create(DeviceContext* _devices, SwapChain* _swapChain)
 	swapChain = _swapChain;
 }
 
-bool ShadowMap::Update() {
+bool ShadowMap::Update(uint32_t imageIndex) {
+
 
 	bool updated = false;
 	if (ImGUI::enabled && widget.enabled) {
 		if (widget.NewWindow("Shadow Map")) {
 
+			widget.Slider("RayQuery", &shadowUBO.shadowMap, 0, 1);
 			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
 				vkQueueWaitIdle(devices->presentQueue);
 				Reinitialise();
@@ -39,6 +41,9 @@ bool ShadowMap::Update() {
 		}
 		widget.EndWindow();
 	}
+
+	buffers[imageIndex].AllocatedMap(&shadowUBO);
+
 	return updated;
 }
 
@@ -67,14 +72,20 @@ void ShadowMap::Initialise()
 		frameBuffer.createFramebuffer(attachments, extent);
 	}
 
+
 	DescriptorSetRequest request;
-	request.ids = { { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT } };
+	request.ids.emplace_back(
+		DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
+			VK_SHADER_STAGE_FRAGMENT_BIT ));
+	request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+		VK_SHADER_STAGE_FRAGMENT_BIT));
 
 	request.data.reserve(devices->imageCount * request.ids.size());
 
 	for (size_t i = 0; i < devices->imageCount; i++) {
 
 		request.data.emplace_back(&depthTexture.descriptorInfo);
+		request.data.push_back(&buffers[i].descriptorInfo);
 	}
 
 	devices->GetDescriptors(descriptor, &request);
@@ -100,6 +111,15 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 	renderPass.Create(devices, info);
 
 	pipeline.Create(devices, &renderPass, pipelineInfo);
+
+	buffers.resize(devices->imageCount);
+	for (auto& buffer : buffers)
+	{
+		VkDeviceSize bufferSize = sizeof(ShadowUBO);
+		buffer.Allocate(devices, bufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	}
 
 	Initialise();
 

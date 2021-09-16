@@ -47,6 +47,9 @@ private:
 
 	Camera camera;
 
+	glm::mat4 textMatrix;
+	std::vector<Buffer> buffers;
+
 	//std::vector<GameObject> gameObjects;
 
 	//uint32_t gameObjectCount = 10;

@@ -77,7 +77,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
         else {
             gameObjects[i].model = resources->GetModel("plane");
             gameObjects[i].Init(deviceContext);
-            gameObjects[i].transform.scale = glm::vec3(5.0f);
+            gameObjects[i].transform.scale = glm::vec3(15.0f);
         }
     }
 

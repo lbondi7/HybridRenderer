@@ -43,6 +43,7 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 
 	deviceContext->GetDescriptors(descriptor, &request);
 	//descriptor.initialise(deviceContext, request);
+	cameraUBO.rayCullDistance = 10.0f;
 
 	update(_extent.width, _extent.height);
 }
@@ -86,6 +87,21 @@ void Camera::update(const VkExtent2D& _extent)
 
 		updateValues(extent);
 	}
+}
+
+void Camera::update()
+{
+	if (!valuesUpdated(extent))
+	{
+		transform.getMatrix(model);
+
+		view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
+
+		projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
+		projection[1][1] *= -1;
+
+		updateValues(extent);
+	}
 
 	if (ImGUI::enabled && widget.enabled) {
 		if (widget.NewWindow("Camera"))
@@ -93,9 +109,11 @@ void Camera::update(const VkExtent2D& _extent)
 
 			widget.Slider("FOV", &FOV, 1.0f, 179.0f);
 
-			widget.Slider4("Viewport", viewport, 0.0f, 1.0f);
+			widget.Slider("Ray Query Cull Distance", &cameraUBO.rayCullDistance, 1.0f, 100.0f);
 
-			widget.Slider4("Scissor Rect", scissor, 0.0f, 1.0f);
+			//widget.Slider4("Viewport", viewport, 0.0f, 1.0f);
+
+			//widget.Slider4("Scissor Rect", scissor, 0.0f, 1.0f);
 
 		}
 		widget.EndWindow();
