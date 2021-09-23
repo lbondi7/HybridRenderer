@@ -8,87 +8,50 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 {
     this->deviceContext = deviceContext;
 
-    //float value = 0;
-    //float dist = 20.0f;
-    //if (gameObjectCount < 3)
-    //    gameObjectCount = 3;
-
-    //for (size_t i = 0; i < gameObjectCount - 2; i++)
-    //{
-    //    if (i * i > gameObjectCount - 2)
-    //    {
-    //        value = i - 1;
-    //        break;
-    //    }
-    //}
-
-    //float max = ((value * dist) / 2.0f);
-
-    //float x = gameObjectCount > 3 ? -max : 0;
-    //float z = gameObjectCount > 5 ? -max : 0;
-
-    //gameObjects.reserve(static_cast<uint32_t>(gameObjectCount));
-
-    //for (size_t i = 0; i < gameObjectCount; i++)
-    //{
-    //    auto& go = gameObjects.emplace_back(GameObject());
-    //    if (i < gameObjectCount - 2) {
-    //        go.transform.position = glm::vec3(x, -1.0f, z);
-    //        go.transform.scale = glm::vec3(5, 5, 5);
-    //        go.model = resources->GetModel("tree2");
-    //    }
-    //    if (i == gameObjectCount - 2)
-    //    {
-    //        go.transform.position = glm::vec3(0.0f, -1.0f, 0.0f);
-    //        go.transform.scale = glm::vec3(max > 5 ? max : 5, 1, max > 5 ? max : 5);
-    //        go.model = resources->GetModel("plane");
-    //    }
-    //    else if (i == gameObjectCount - 1)
-    //    {
-    //        go.shadowCaster = false;
-    //        go.shadowReceiver = false;
-    //        go.transform.scale = glm::vec3(0.5f, 0.5f, 0.5f);
-    //        go.model = resources->GetModel("sphere");
-    //    }
-    //    go.texture = resources->GetTexture("texture.jpg");
-    //    go.Init(deviceContext);
-
-    //    if (x >= max)
-    //    {
-    //        z += dist;
-    //        x = -max;
-    //    }
-    //    else {
-    //        x += dist;
-    //    }
-    //}
-
-    gameObjectCount = 3;
-    gameObjects.reserve(300);
+    gameObjectCount = 400;
+    gameObjects.reserve(gameObjectCount * 10);
     gameObjects.resize(static_cast<uint32_t>(gameObjectCount));
+
+    float value = 0;
+    float dist = 10.0f;
+
+    for (size_t i = 0; i < gameObjectCount - 1; i++)
+    {
+        if (i * i > gameObjectCount - 1)
+        {
+            value = i - 1;
+            break;
+        }
+    }
+
+    float max = ((value * dist) / 2.0f);
+
+    float x = gameObjectCount > 3 ? -max : 0;
+    float z = gameObjectCount > 5 ? -max : 0;
 
     for (size_t i = 0; i < gameObjectCount; i++)
     {
         if (i == 0)
         {
-            CreateGameObject(&gameObjects[i], resources->GetModel("tree2"));
-            gameObjects[i].Init(deviceContext);
-            //gameObjects[i].transform.position += glm::vec3(3.0f, 0.0f, 0.0f);
-            gameObjects[i].name = "parent";
+            CreateGameObject(&gameObjects[i], resources->GetModel("plane"));
+            gameObjects[i].transform.scale = glm::vec3(100.0f);
+            gameObjects[i].SetTexture(resources->GetTexture("white.jpg"));
+            gameObjects[i].name = "Floor " + i;
+            continue;
         }
         else {
-            CreateGameObject(&gameObjects[i], resources->GetModel("plane"));
-            if (i == 1)
-            {
-                gameObjects[i].transform.scale = glm::vec3(50.0f);
-                gameObjects[i].SetTexture(resources->GetTexture("white.jpg"));
-            }
-            else if (i == 2) {
-                gameObjects[i].transform.rotation.x = -90.0f;
-                gameObjects[i].transform.position.z = -2.0f;
-                gameObjects[i].transform.position.y = 1.0f;
-                gameObjects[i].SetTexture(resources->GetTexture("amogus.png"));
-            }
+            CreateGameObject(&gameObjects[i], resources->GetModel("tree2"));
+            gameObjects[i].Init(deviceContext);
+            gameObjects[i].name = "Tree Parent " + i;
+            gameObjects[i].transform.position = glm::vec3(x, 0, z);
+        }
+        if (x >= max)
+        {
+            z += dist;
+            x = -max;
+        }
+        else {
+            x += dist;
         }
     }
 

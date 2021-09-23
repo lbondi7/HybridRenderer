@@ -64,6 +64,9 @@ public:
 
 	void setScissor(glm::vec2 size, glm::vec2 offset);
 
+	void SetCullDistance(float cullDistance);
+
+
 	std::vector<Buffer> buffers;
 
 	Descriptor descriptor;

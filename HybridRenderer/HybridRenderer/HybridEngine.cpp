@@ -150,17 +150,12 @@ void HybridEngine::update()
         camera.transform.rotation.x += 50.0f * timer.DeltaTime_f();
     }
 
-    auto diff = timer.Difference_f();
-    Log(diff);
-    if (diff < 5.0f)
-        camera.gpuData.rayCullDistance -= timer.DeltaTime_f() * 5.0f;
-    else if(diff < 15.0f)
-        camera.gpuData.rayCullDistance += timer.DeltaTime_f() * 5.0f;
+    if (timer.MSPF_f() > timer.Threshold_f(60))
+        camera.SetCullDistance(camera.gpuData.rayCullDistance - (timer.DeltaTime_f() * std::max(1.0f, camera.gpuData.rayCullDistance) / 2.0f));
+    else if(timer.MSPF_f() < timer.Threshold_f(63))
+        camera.SetCullDistance(camera.gpuData.rayCullDistance + (timer.DeltaTime_f() * std::max(1.0f, camera.gpuData.rayCullDistance) / 2.0f));
 
     camera.update();
-
-    //camera.gpuData.view = camera.view;
-    //camera.gpuData.projection = camera.projection;
     camera.buffers[imageIndex].AllocatedMap(&camera.gpuData);
 
     scene.Update(imageIndex, timer.DeltaTime_f());
@@ -251,7 +246,7 @@ void HybridEngine::RecreateSwapChain() {
     swapChain.Init();
     imagesInFlight.resize(swapChain.imageCount, VK_NULL_HANDLE);
     raster.Reinitialise();
-    rayTracing.Reinitialise();
+    //rayTracing.Reinitialise();
 }
 
 void HybridEngine::Deinitilise()
@@ -281,10 +276,6 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 
     if (action == GLFW_PRESS)
     {
-        if (key == GLFW_KEY_SPACE)
-        {
-
-        }
 
         if (key == GLFW_KEY_F2)
         {
@@ -300,14 +291,12 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
             auto enabled = app->rasterEnabled = !app->rasterEnabled;
             app->raster.commandBuffersReady = false;
             app->rayTracing.commandBuffersReady = false;
-            //vkQueueWaitIdle(app->core->deviceContext->presentQueue);
         }
         if (key == GLFW_KEY_F4)
         {
             auto enabled = app->raytraceEnabled = !app->raytraceEnabled;
             app->raster.commandBuffersReady = false;
             app->rayTracing.commandBuffersReady = false;
-            //vkQueueWaitIdle(app->core->deviceContext->presentQueue);
         }
 
         if (key == GLFW_KEY_ESCAPE)

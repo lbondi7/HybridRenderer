@@ -3,6 +3,8 @@
 
 #include "ImGUI_.h"
 
+#include <algorithm>
+
 Camera::~Camera()
 {
 
@@ -43,8 +45,9 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 
 	deviceContext->GetDescriptors(descriptor, &request);
 	//descriptor.initialise(deviceContext, request);
-	gpuData.rayCullDistance = 50.0f;
+	gpuData.rayCullDistance = 5.0f;
 
+	transform.position.y = 4.0f;
 	update(_extent.width, _extent.height);
 }
 
@@ -151,6 +154,11 @@ void Camera::setScissor(glm::vec2 size, glm::vec2 offset)
 	vkScissor.offset.y = static_cast<int32_t>(scissor.y);
 	vkScissor.extent.width = extent.width * scissor.z;
 	vkScissor.extent.height = extent.height * scissor.w;
+}
+
+void Camera::SetCullDistance(float cullDistance)
+{
+	gpuData.rayCullDistance = std::clamp(cullDistance, 0.0f, 100.0f);
 }
 
 bool Camera::valuesUpdated(float windowWidth, float windowHeight) {

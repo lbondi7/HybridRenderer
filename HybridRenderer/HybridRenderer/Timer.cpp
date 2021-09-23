@@ -2,7 +2,7 @@
 
 Timer::Timer()
 {
-    prevTime = std::chrono::high_resolution_clock::now();
+    prevTime = prevSecond = std::chrono::high_resolution_clock::now();
     SetFrameRate(2000);
     average = false;
     mspfCount = 10;
@@ -17,6 +17,13 @@ void Timer::Update()
     auto time = std::chrono::high_resolution_clock::now();
     deltaTime = std::chrono::duration<double, std::chrono::milliseconds::period>(time - prevTime).count();
     prevTime = std::chrono::high_resolution_clock::now();
+
+    frameCount++;
+    if (std::chrono::duration<double, std::chrono::seconds::period>(prevTime - prevSecond).count() >= 1.0) {
+        fps = frameCount;
+        prevSecond = std::chrono::high_resolution_clock::now();
+        frameCount = 0;
+    }
 
     elapsed = std::chrono::duration<double, std::chrono::milliseconds::period>(time - startTime).count() / 1000.0;
 
@@ -50,17 +57,37 @@ double Timer::DeltaTime_d() {
 
 double Timer::Difference_d()
 {
-    return mspfThreshold - mspf;
+    return (mspfThreshold - mspf) * 1000.0;
 }
 
 float Timer::Difference_f()
 {
-    return static_cast<float>(mspfThreshold - mspf);
+    return static_cast<float>(mspfThreshold * 1000.0 - mspf * 1000.0);
 }
 
 int Timer::Difference_i()
 {
-    return static_cast<int>((mspfThreshold - mspf));
+    return static_cast<int>((mspfThreshold - mspf) * 1000.0);
+}
+
+double Timer::MSPF_d()
+{
+    return mspf;
+}
+
+float Timer::MSPF_f()
+{
+    return static_cast<float>(mspf);
+}
+
+double Timer::Threshold_d()
+{
+    return mspfThreshold;
+}
+
+float Timer::Threshold_f()
+{
+    return  static_cast<float>(mspfThreshold);
 }
 
 void Timer::SetThreshold(double threshold)
@@ -76,4 +103,19 @@ void Timer::SetFrameRate(int frameRate)
 void Timer::SetBuffer(double buffer)
 {
     mspfBuffer = buffer;
+}
+
+int Timer::FPS()
+{
+    return fps;
+}
+
+float Timer::Threshold_f(int framerate)
+{
+    return 1000.0f / static_cast<float>(framerate);
+}
+
+double Timer::Threshold_d(int framerate)
+{
+    return 1000.0 / static_cast<double>(framerate);
 }
