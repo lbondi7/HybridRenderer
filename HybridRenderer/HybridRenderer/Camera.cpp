@@ -28,7 +28,7 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 
 	buffers.resize(imageCount);
 	for (size_t i = 0; i < imageCount; i++) {
-		VkDeviceSize bufferSize = sizeof(CameraUBO);
+		VkDeviceSize bufferSize = sizeof(CameraGPU);
 		buffers[i].Allocate(deviceContext, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
 
@@ -43,7 +43,7 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 
 	deviceContext->GetDescriptors(descriptor, &request);
 	//descriptor.initialise(deviceContext, request);
-	cameraUBO.rayCullDistance = 10.0f;
+	gpuData.rayCullDistance = 50.0f;
 
 	update(_extent.width, _extent.height);
 }
@@ -54,13 +54,13 @@ void Camera::update(float windowWidth, float windowHeight)
 	{
 		transform.getMatrix(model);
 
-		view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
+		gpuData.view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
 
-		projection = glm::perspective(glm::radians(FOV), windowWidth / windowHeight, nearPlane, farPlane);
+		gpuData.projection = glm::perspective(glm::radians(FOV), windowWidth / windowHeight, nearPlane, farPlane);
 		//projection[1][1] *= -1;
 		//updateValues(windowWidth, windowHeight);
 
-		frustum.update(projection * view);
+		frustum.update(gpuData.projection * gpuData.view);
 
 	}
 }
@@ -80,10 +80,10 @@ void Camera::update(const VkExtent2D& _extent)
 		vkScissor.extent.height = _extent.height * scissor.w;
 		transform.getMatrix(model);
 
-		view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
+		gpuData.view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
 
-		projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
-		projection[1][1] *= -1;
+		gpuData.projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
+		gpuData.projection[1][1] *= -1;
 
 		updateValues(extent);
 	}
@@ -95,10 +95,10 @@ void Camera::update()
 	{
 		transform.getMatrix(model);
 
-		view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
-
-		projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
-		projection[1][1] *= -1;
+		gpuData.position = transform.position;
+		gpuData.view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
+		gpuData.projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
+		gpuData.projection[1][1] *= -1;
 
 		updateValues(extent);
 	}
@@ -109,7 +109,7 @@ void Camera::update()
 
 			widget.Slider("FOV", &FOV, 1.0f, 179.0f);
 
-			widget.Slider("Ray Query Cull Distance", &cameraUBO.rayCullDistance, 1.0f, 100.0f);
+			widget.Slider("Ray Query Cull Distance", &gpuData.rayCullDistance, 1.0f, 100.0f);
 
 			//widget.Slider4("Viewport", viewport, 0.0f, 1.0f);
 

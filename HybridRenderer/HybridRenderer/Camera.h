@@ -11,10 +11,10 @@
 #include "ImGUIWidgets.h"
 
 
-struct CameraUBO {
+struct CameraGPU {
 	alignas(16) glm::mat4 projection;
 	alignas(16) glm::mat4 view;
-	alignas(16) glm::vec3 camPos;
+	alignas(16) glm::vec3 position;
 	float rayCullDistance;
 };
 
@@ -24,8 +24,8 @@ public:
 	Camera() = default;
 	~Camera();
 
-	glm::mat4 view;
-	glm::mat4 projection;
+	//glm::mat4 view;
+	//glm::mat4 projection;
 	glm::mat4 model;
 
 
@@ -74,7 +74,7 @@ public:
 
 	ImGUIWidget widget;
 
-	CameraUBO cameraUBO;
+	CameraGPU gpuData;
 
 private:
 	bool valuesUpdated(float windowWidth, float windowHeight);

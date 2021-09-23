@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Device.h"
-#include "Mesh.h"
-#include "Transform.h"
+#include "GameObject.h"
 
 struct ScratchBuffer
 {
@@ -28,7 +27,7 @@ public:
 
 	void createAccelerationStructureBuffer(VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
 
-	void createBottomLevelAccelerationStructure(Transform& trasnform, Mesh* mesh);
+	void createBottomLevelAccelerationStructure(GameObject& go);
 
 	void createTopLevelAccelerationStructure(std::vector<AccelerationStructure>& blas);
 

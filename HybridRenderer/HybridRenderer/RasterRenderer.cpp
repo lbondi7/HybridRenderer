@@ -21,10 +21,17 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     //swapChain.Create(window.glfwWindow, surface, deviceContext);
 
     RenderPassInfo info{};
+    //info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    //    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
+    //info.attachments.push_back({ AttachmentType::DEPTH, Utility::findDepthFormat(deviceContext->physicalDevice), VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    //    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
+
+
     info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_CLEAR,
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
+    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
     info.attachments.push_back({ AttachmentType::DEPTH, Utility::findDepthFormat(deviceContext->physicalDevice), VK_ATTACHMENT_LOAD_OP_CLEAR,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
+
 
     info.dependencies.emplace_back(Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
@@ -41,6 +48,7 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
     pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    //pipelineInfo.cullMode = VK_CULL_MODE_NONE;
 
     pipeline.Create(deviceContext, &renderPass, pipelineInfo);
 
@@ -55,7 +63,7 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
 
     resources->GetModel("tree2");
 
-    shadowMap.Create(deviceContext, swapChain);
+    shadowMap.Create(deviceContext);
     pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
         resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_FRAGMENT_BIT) };
     pipelineInfo.depthBiasEnable = VK_TRUE;
@@ -63,6 +71,7 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION , VertexAttributes::UV_COORD});
     pipelineInfo.conservativeRasterisation = true;
     pipelineInfo.colourAttachmentCount = 0;
+    //pipelineInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 
     shadowMap.Initialise(pipelineInfo);
 
@@ -166,31 +175,20 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.vkPipeline);
 
-        Mesh* prevMesh = nullptr;
-
         std::vector<VkDescriptorSet> descriptorSets;
-        descriptorSets.resize(3);
+        descriptorSets.resize(2);
         descriptorSets[0] = scene->lightDescriptor.sets[i];
         for (auto& go : scene->gameObjects) {
-            if (!go.shadowCaster)
+            if (!go.shadowCaster || !go.mesh)
                 continue;
 
             descriptorSets[1] = go.descriptor.sets[i];
 
-            for (auto& mesh : go.model->meshes)
-            {
-                descriptorSets[2] =  mesh->descriptor.sets[i];
+            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
 
-                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+            go.mesh->Bind(commandBuffers[i]);
 
-                if (prevMesh != mesh.get())
-                {
-                    mesh->Bind(commandBuffers[i]);
-                    prevMesh = mesh.get();
-                }
-
-                vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
-            }
+            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);  
         }
 
         shadowMap.renderPass.End(commandBuffers[i]);
@@ -208,25 +206,20 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
 
-        std::array<VkDescriptorSet, 6> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], VK_NULL_HANDLE, scene->asDescriptor.sets[i] };
+        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], scene->asDescriptor.sets[i] };
+        //std::array<VkDescriptorSet, 4> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i] };
 
         for (auto& go : scene->gameObjects) {
-
-            //if (!camera->frustum.IsBoxVisible(go.min, go.max))
-            //    continue;
+            if (!go.mesh)
+                continue;
 
             descriptorSets[1] = go.descriptor.sets[i];
-            for (auto& mesh : go.model->meshes)
-            {
-                descriptorSets[4] = mesh->descriptor.sets[i];
 
-                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
 
-                mesh->Bind(commandBuffers[i]);
+            go.mesh->Bind(commandBuffers[i]);
 
-                vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
-            }
-
+            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(go.mesh->indices.size()), 1, 0, 0, 0);
         }
 
         if (!ImGUI::enabled)

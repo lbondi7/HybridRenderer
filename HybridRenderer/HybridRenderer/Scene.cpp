@@ -63,39 +63,49 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     //    }
     //}
 
-
-    gameObjects.reserve(static_cast<uint32_t>(gameObjectCount));
+    gameObjectCount = 3;
+    gameObjects.reserve(300);
+    gameObjects.resize(static_cast<uint32_t>(gameObjectCount));
 
     for (size_t i = 0; i < gameObjectCount; i++)
     {
-        gameObjects.emplace_back(GameObject());
         if (i == 0)
         {
-            gameObjects[i].model = resources->GetModel("tree2");
+            CreateGameObject(&gameObjects[i], resources->GetModel("tree2"));
             gameObjects[i].Init(deviceContext);
+            //gameObjects[i].transform.position += glm::vec3(3.0f, 0.0f, 0.0f);
+            gameObjects[i].name = "parent";
         }
         else {
-            gameObjects[i].model = resources->GetModel("plane");
-            gameObjects[i].Init(deviceContext);
-            gameObjects[i].transform.scale = glm::vec3(15.0f);
+            CreateGameObject(&gameObjects[i], resources->GetModel("plane"));
+            if (i == 1)
+            {
+                gameObjects[i].transform.scale = glm::vec3(50.0f);
+                gameObjects[i].SetTexture(resources->GetTexture("white.jpg"));
+            }
+            else if (i == 2) {
+                gameObjects[i].transform.rotation.x = -90.0f;
+                gameObjects[i].transform.position.z = -2.0f;
+                gameObjects[i].transform.position.y = 1.0f;
+                gameObjects[i].SetTexture(resources->GetTexture("amogus.png"));
+            }
         }
     }
 
+    gameObjectCount = gameObjects.size();
+
     for (auto& go : gameObjects)
     {
-        for (auto& mesh : go.model->meshes)
-        {
+        if (go.mesh) {
             AccelerationStructure blas;
             blas.Initialise(deviceContext);
-            blas.createBottomLevelAccelerationStructure(go.transform, mesh.get());
+            blas.createBottomLevelAccelerationStructure(go);
             bottomLevelASs.push_back(blas);
         }
     }
 
     topLevelAS.Initialise(deviceContext);
     topLevelAS.createTopLevelAccelerationStructure(bottomLevelASs);
-
-
 
     DescriptorSetRequest request;
     auto imageCount = 3;
@@ -108,7 +118,8 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     }
     deviceContext->GetDescriptors(asDescriptor, &request);
 
-    request.ids[0] = DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    request.ids.clear();
+    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
     deviceContext->GetDescriptors(rtASDescriptor, &request);
 
@@ -136,7 +147,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 void Scene::Update(uint32_t imageIndex, float dt)
 {
     float zNear = 1.0f;
-    float zFar = 100.0f;
+    float zFar = 1000.0f;
 
     glm::vec3 lightLookAt = glm::vec3(0, 0, 0);
     // Matrix from light's point of view
@@ -169,10 +180,13 @@ void Scene::Update(uint32_t imageIndex, float dt)
 
     for (auto& go : gameObjects)
     {
+        if (!go.mesh)
+            continue;
+
         go.Update();
 
         ModelUBO ubos;
-        ubos.model = go.modelMatrix;
+        ubos.model = go.GetMatrix();
         go.uniformBuffers[imageIndex].AllocatedMap(&ubos);
     }
 
@@ -195,5 +209,26 @@ void Scene::Destroy()
 
     for (auto& go : gameObjects) {
         go.Destroy();
+    }
+}
+
+void Scene::CreateGameObject(GameObject* object, Model* model)
+{
+    if (model->meshes.size() > 1) {
+        for (auto& mesh : model->meshes)
+        {
+            GameObject go;
+            go.name = mesh->name;
+            go.parent = object;
+            go.mesh = mesh.get();
+            go.Init(deviceContext);
+            gameObjects.emplace_back(go);
+            object->children.emplace_back(&go);
+        }
+    }
+    else {
+        object->name = model->meshes[0]->name;
+        object->mesh = model->meshes[0].get();
+        object->Init(deviceContext);
     }
 }

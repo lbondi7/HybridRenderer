@@ -18,6 +18,8 @@ public:
 
 	void Init(DeviceContext* _devices);
 
+	//void SetTexture(TextureSampler* texture);
+
 	void Destroy();
 
 	void Bind(VkCommandBuffer cmdBuffer);
@@ -29,9 +31,11 @@ public:
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 	std::string name;
+	glm::vec3 min;
+	glm::vec3 max;
 
 	TextureSampler* texture;
-	Material* material;
+	//Material* material;
 
 	Descriptor descriptor;
 	DeviceContext* devices;

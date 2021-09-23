@@ -22,7 +22,10 @@ public:
 	void Init(DeviceContext* deviceContext);
 	void Update();
 	void Destroy();
+	const glm::mat4& GetMatrix();
+	void SetTexture(TextureSampler* texture);
 
+	std::string name;
 	Transform transform;
 	glm::mat4 modelMatrix;
 
@@ -32,20 +35,19 @@ public:
 
 	std::vector<Buffer> uniformBuffers;
 
-	std::vector<VkDescriptorSet> descriptorSets;
-	std::vector<VkDescriptorSet> offModelDescSets;
-
 	bool shadowReceiver = true;
 	bool shadowCaster = true;
 
 	Descriptor descriptor;
-	Descriptor offscreenDescriptor;
 
 	glm::vec3 min;
 	glm::vec3 max;
+	GameObject* parent = nullptr;
+	std::vector<GameObject*> children;
 
 private:
 	Transform prevTransform;
+	DeviceContext* deviceContext;
 
 };
 

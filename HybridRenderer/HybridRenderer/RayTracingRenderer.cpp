@@ -210,6 +210,8 @@ void RayTracingRenderer::Reinitialise()
 
 void RayTracingRenderer::buildCommandBuffers(Scene* scene)
 {
+	vkQueueWaitIdle(deviceContext->presentQueue);
+	vkDeviceWaitIdle(deviceContext->logicalDevice);
 	VkCommandBufferBeginInfo cmdBufInfo = Initialisers::commandBufferBeginInfo();
 
 	VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
@@ -250,6 +252,7 @@ void RayTracingRenderer::buildCommandBuffers(Scene* scene)
 
 		Utility::setImageLayout(drawCmdBuffers[i], swapChain->images[i].image,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+			//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			ImGUI::enabled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			subresourceRange);
 
@@ -265,7 +268,7 @@ void RayTracingRenderer::buildCommandBuffers(Scene* scene)
 
 void RayTracingRenderer::updateUniformBuffers(Camera* camera)
 {
-	uniformData.projInverse = glm::inverse(camera->projection);
-	uniformData.viewInverse = glm::inverse(camera->view);
+	uniformData.projInverse = glm::inverse(camera->gpuData.projection);
+	uniformData.viewInverse = glm::inverse(camera->gpuData.view);
 	memcpy(ubo.data, &uniformData, sizeof(uniformData));
 }

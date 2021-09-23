@@ -6,44 +6,49 @@ GameObject::~GameObject()
 
 void GameObject::Init(DeviceContext* deviceContext)
 {
-	transform.getMatrix(modelMatrix);
+	this->deviceContext = deviceContext;
+	GetMatrix();
 
-	min = modelMatrix * glm::vec4(model->min, 1.0f);
-	max = modelMatrix * glm::vec4(model->max, 1.0f);
+	if (mesh)
+	{
+		min = modelMatrix * glm::vec4(mesh->min, 1.0f);
+		max = modelMatrix * glm::vec4(mesh->max, 1.0f);
+		texture = mesh->texture;
 
-	auto imageCount = 3;
-	uniformBuffers.resize(imageCount);
 
-	for (size_t i = 0; i < imageCount; i++) {
-		VkDeviceSize bufferSize = sizeof(ModelUBO);
-		uniformBuffers[i].Allocate(deviceContext, bufferSize, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		auto imageCount = deviceContext->imageCount;
+		uniformBuffers.resize(imageCount);
+
+		for (size_t i = 0; i < imageCount; i++) {
+			VkDeviceSize bufferSize = sizeof(ModelUBO);
+			uniformBuffers[i].Allocate(deviceContext, bufferSize,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		}
+
+		DescriptorSetRequest request;
+		request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
+		request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+		request.data.reserve(imageCount);
+		for (size_t i = 0; i < imageCount; i++) {
+
+			request.data.push_back(&uniformBuffers[i].descriptorInfo);
+			request.data.push_back(&texture->descriptorInfo);
+		}
+
+		deviceContext->GetDescriptors(descriptor, &request);
 	}
-
-	DescriptorSetRequest request;
-	request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
-
-	request.data.reserve(imageCount);
-	for (size_t i = 0; i < imageCount; i++) {
-
-		request.data.push_back(&uniformBuffers[i].descriptorInfo);
-	}
-
-	deviceContext->GetDescriptors(descriptor, &request);
 }
 
 void GameObject::Update()
 {
-	if (transform != prevTransform)
-	{
-		transform.getMatrix(modelMatrix);
+	GetMatrix();
 	
-		min = modelMatrix * glm::vec4(model->min, 1.0f);
-		max = modelMatrix * glm::vec4(model->max, 1.0f);
-		
-		prevTransform = transform;
+	if (mesh) {
+		min = modelMatrix * glm::vec4(mesh->min, 1.0f);
+		max = modelMatrix * glm::vec4(mesh->max, 1.0f);
 	}
+	//prevTransform = transform;
 }
 
 void GameObject::Destroy()
@@ -54,16 +59,38 @@ void GameObject::Destroy()
 	{
 		buffer.Destroy();
 	}
-	for (auto& descriptorSet : descriptorSets)
-	{
-		descriptorSet = VK_NULL_HANDLE;
-	}
-	descriptorSets.clear();
+}
 
-	for (auto& descriptorSet : offModelDescSets)
+const glm::mat4& GameObject::GetMatrix()
+{
+	if (parent)
 	{
-		descriptorSet = VK_NULL_HANDLE;
+		transform.getMatrix(modelMatrix, parent->GetMatrix());
 	}
-	offModelDescSets.clear();
+	else {
+		transform.getMatrix(modelMatrix);
+	}
+	//transform.getMatrix(modelMatrix);
+	return modelMatrix;
+}
 
+void GameObject::SetTexture(TextureSampler* texture)
+{
+	this->texture = texture;
+
+	if (mesh) {
+		auto imageCount = deviceContext->imageCount;
+
+		DescriptorSetRequest request;
+		request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
+		request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+		request.data.reserve(imageCount);
+		for (size_t i = 0; i < imageCount; i++) {
+
+			request.data.push_back(&uniformBuffers[i].descriptorInfo);
+			request.data.push_back(&texture->descriptorInfo);
+		}
+
+		deviceContext->GetDescriptors(descriptor, &request);
+	}
 }

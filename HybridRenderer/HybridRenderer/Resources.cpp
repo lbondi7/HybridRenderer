@@ -259,13 +259,6 @@ void Resources::LoadModel(const std::string& name)
                 attrib.vertices[3 * index.vertex_index + 2]
             };
 
-            model->min.x = std::min(model->min.x, vertex.pos.x);
-            model->min.y = std::min(model->min.y, vertex.pos.y);
-            model->min.z = std::min(model->min.z, vertex.pos.z);
-            model->max.x = std::max(model->max.x, vertex.pos.x);
-            model->max.y = std::max(model->max.y, vertex.pos.y);
-            model->max.z = std::max(model->max.z, vertex.pos.z);
-
             vertex.texCoord = {
                 attrib.texcoords[2 * index.texcoord_index + 0],
                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
@@ -299,7 +292,7 @@ void Resources::LoadModel(const std::string& name)
         }
         else {
             //models[name]->meshes[id]->texture = textures["texture"].get();
-            models[name]->meshes[id]->texture = GetTexture("texture.jpg");
+            models[name]->meshes[id]->texture = GetTexture("white.jpg");
         }
         models[name]->meshes[id]->Init(devices);
 

@@ -1,6 +1,7 @@
 #include "HybridEngine.h"
 
 #include "ImGUI_.h"
+#include "DebugLogger.h"
 
 HybridEngine::~HybridEngine()
 {
@@ -14,7 +15,7 @@ void HybridEngine::run()
 	while (window->isActive() && !quit) {
 
         window->resize();
-        timer.update();
+        timer.Update();
 		prepare();
 		update();
 		render();
@@ -50,7 +51,7 @@ void HybridEngine::initialise()
 
     raster.Initialise(window.get(), core.get(), &swapChain, &resources);
 
-    rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources);
+    //rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources);
 
     scene.Initialise(core->deviceContext.get(), &resources);
 
@@ -104,92 +105,65 @@ void HybridEngine::update()
     {
         auto forward = camera.transform.forward;
         forward.y = 0;
-        camera.transform.position += forward * 10.0f * timer.dt;
+        camera.transform.position += forward * 10.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
     {
         auto forward = camera.transform.forward;
         forward.y = 0;
-        camera.transform.position -= forward * 10.0f * timer.dt;
+        camera.transform.position -= forward * 10.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
     {
         auto right = camera.transform.right;
         right.y = 0;
-        camera.transform.position += right * 10.0f * timer.dt;
+        camera.transform.position += right * 10.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
     {
         auto right = camera.transform.right;
         right.y = 0;
-        camera.transform.position -= right * 10.0f * timer.dt;
+        camera.transform.position -= right * 10.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
-        camera.transform.position += camera.worldUp * 10.0f * timer.dt;
+        camera.transform.position += camera.worldUp * 10.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
     {
-        camera.transform.position -= camera.worldUp * 10.0f * timer.dt;
+        camera.transform.position -= camera.worldUp * 10.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_Q) == GLFW_PRESS)
     {
-        camera.transform.rotation.y -= 50.0f * timer.dt;
+        camera.transform.rotation.y -= 50.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_E) == GLFW_PRESS)
     {
-        camera.transform.rotation.y += 50.0f * timer.dt;
+        camera.transform.rotation.y += 50.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_Z) == GLFW_PRESS)
     {
-        camera.transform.rotation.x -= 50.0f * timer.dt;
+        camera.transform.rotation.x -= 50.0f * timer.DeltaTime_f();
     }
     if (glfwGetKey(window->glfwWindow, GLFW_KEY_C) == GLFW_PRESS)
     {
-        camera.transform.rotation.x += 50.0f * timer.dt;
+        camera.transform.rotation.x += 50.0f * timer.DeltaTime_f();
     }
-    
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_8) == GLFW_PRESS)
-    //{
-    //        lightPos += camera.transform.forward * 5.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_5) == GLFW_PRESS)
-    //{
-    //        lightPos -= camera.transform.forward * 5.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_4) == GLFW_PRESS)
-    //{
-    //        lightPos += camera.transform.right * 5.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_6) == GLFW_PRESS)
-    //{
-    //        lightPos -= camera.transform.right * 5.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_9) == GLFW_PRESS)
-    //{
-    //        lightPos.y += 5.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_7) == GLFW_PRESS)
-    //{
-    //        lightPos.y -= 5.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_1) == GLFW_PRESS)
-    //{
-    //    lightRot.y -= 5.0f * timer.dt;
-    //}
-    //if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_3) == GLFW_PRESS)
-    //{
-    //    lightRot.y -= 5.0f * timer.dt;
-    //}
+
+    auto diff = timer.Difference_f();
+    Log(diff);
+    if (diff < 5.0f)
+        camera.gpuData.rayCullDistance -= timer.DeltaTime_f() * 5.0f;
+    else if(diff < 15.0f)
+        camera.gpuData.rayCullDistance += timer.DeltaTime_f() * 5.0f;
 
     camera.update();
 
-    camera.cameraUBO.camPos = camera.transform.position;
-    camera.cameraUBO.view = camera.view;
-    camera.cameraUBO.projection = camera.projection;
-    camera.buffers[imageIndex].AllocatedMap(&camera.cameraUBO);
+    //camera.gpuData.view = camera.view;
+    //camera.gpuData.projection = camera.projection;
+    camera.buffers[imageIndex].AllocatedMap(&camera.gpuData);
 
-    scene.Update(imageIndex, timer.dt);
+    scene.Update(imageIndex, timer.DeltaTime_f());
 }
 
 void HybridEngine::render()
@@ -242,9 +216,11 @@ void HybridEngine::render()
 
     if (raytraceEnabled) 
     {
-        rayTracing.updateUniformBuffers(&camera);
-        rayTracing.GetCommandBuffers(imageIndex, submitCommandBuffers, &scene);
+        //rayTracing.updateUniformBuffers(&camera);
+        //rayTracing.GetCommandBuffers(imageIndex, submitCommandBuffers, &scene);
     }
+
+
 
     if(ImGUI::enabled)
         raster.GetImGuiCommandBuffer(imageIndex, submitCommandBuffers, swapChain.extent);
@@ -281,7 +257,7 @@ void HybridEngine::RecreateSwapChain() {
 void HybridEngine::Deinitilise()
 {
     raster.Deinitialise(true);
-    rayTracing.Deinitialise();
+    //rayTracing.Deinitialise();
 
     swapChain.Destroy();
 
@@ -307,20 +283,31 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
     {
         if (key == GLFW_KEY_SPACE)
         {
-            //Log(app->lightPos, "Light Pos");
-            //app->ortho = !app->ortho;
+
         }
 
         if (key == GLFW_KEY_F2)
         {
-            //Log(app->lightPos, "Light Pos");
-            //app->ortho = !app->ortho;
-
             auto enabled = ImGUI::enabled = !ImGUI::enabled;
             app->widget.enabled = ImGUI::enabled;
             app->raster.commandBuffersReady = false;
             app->rayTracing.commandBuffersReady = false;
             vkQueueWaitIdle(app->core->deviceContext->presentQueue);
+        }
+
+        if (key == GLFW_KEY_F3)
+        {
+            auto enabled = app->rasterEnabled = !app->rasterEnabled;
+            app->raster.commandBuffersReady = false;
+            app->rayTracing.commandBuffersReady = false;
+            //vkQueueWaitIdle(app->core->deviceContext->presentQueue);
+        }
+        if (key == GLFW_KEY_F4)
+        {
+            auto enabled = app->raytraceEnabled = !app->raytraceEnabled;
+            app->raster.commandBuffersReady = false;
+            app->rayTracing.commandBuffersReady = false;
+            //vkQueueWaitIdle(app->core->deviceContext->presentQueue);
         }
 
         if (key == GLFW_KEY_ESCAPE)

@@ -12,10 +12,9 @@ ShadowMap::~ShadowMap()
 	swapChain = nullptr;
 }
 
-void ShadowMap::Create(DeviceContext* _devices, SwapChain* _swapChain)
+void ShadowMap::Create(DeviceContext* _devices)
 {
 	devices = _devices;
-	swapChain = _swapChain;
 }
 
 bool ShadowMap::Update(uint32_t imageIndex) {
@@ -25,13 +24,19 @@ bool ShadowMap::Update(uint32_t imageIndex) {
 	if (ImGUI::enabled && widget.enabled) {
 		if (widget.NewWindow("Shadow Map")) {
 
-			widget.Slider("RayQuery", &shadowUBO.shadowMap, 0, 1);
+			if (widget.Slider("RayQuery", &shadowUBO.shadowMap, 0, 2)) 
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+				}
+			}
 			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
 				vkQueueWaitIdle(devices->presentQueue);
 				Reinitialise();
 				updated = true;
 			}
-			if (widget.Slider("Resolution", &resolution, 1, 2048))
+			if (widget.Slider("Resolution", &resolution, 1, 8000))
 			{
 				vkQueueWaitIdle(devices->presentQueue);
 				Reinitialise();
@@ -41,8 +46,6 @@ bool ShadowMap::Update(uint32_t imageIndex) {
 		}
 		widget.EndWindow();
 	}
-
-	buffers[imageIndex].AllocatedMap(&shadowUBO);
 
 	return updated;
 }
@@ -58,14 +61,14 @@ void ShadowMap::Initialise()
 	depthTexture.CreateImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 	VkFilter shadowmap_filter = devices->formatIsFilterable(devices->getDepthFormat(), VK_IMAGE_TILING_OPTIMAL) 
 		? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	depthTexture.CreateSampler(Initialisers::samplerCreateInfo(shadowmap_filter, 1.0f,
+	depthTexture.CreateSampler(Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, 1.0f,
 		VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_INT_OPAQUE_WHITE));
 
 	depthTexture.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
 	frameBuffer.Create(devices, renderPass.vkRenderPass);
 
-	for (size_t i = 0; i < swapChain->imageCount; i++)
+	for (size_t i = 0; i < devices->imageCount; i++)
 	{
 		VkExtent2D extent = { width, height };
 		std::vector<VkImageView> attachments{ depthTexture.imageView };
@@ -119,6 +122,7 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 		buffer.Allocate(devices, bufferSize,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		buffer.AllocatedMap(&shadowUBO);
 	}
 
 	Initialise();

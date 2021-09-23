@@ -29,21 +29,45 @@ void Mesh::Init(DeviceContext* _devices)
     stagingBuffer.Destroy();
     stagingIndexBuffer.Destroy();
 
+    min = glm::vec3(FLT_MAX);
+    max = glm::vec3(-FLT_MAX);
 
-    DescriptorSetRequest request{};
-    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
-    for (size_t i = 0; i < devices->imageCount; i++) {
-
-        request.data.push_back(&texture->descriptorInfo);
+    for(auto& vertex : vertices)
+    {
+        min.x = std::min(min.x, vertex.pos.x);
+        min.y = std::min(min.y, vertex.pos.y);
+        min.z = std::min(min.z, vertex.pos.z);
+        max.x = std::max(max.x, vertex.pos.x);
+        max.y = std::max(max.y, vertex.pos.y);
+        max.z = std::max(max.z, vertex.pos.z);
     }
-    devices->GetDescriptors(descriptor, &request);
+
+    //DescriptorSetRequest request{};
+    //request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+    //for (size_t i = 0; i < devices->imageCount; i++) {
+
+    //    request.data.push_back(&texture->descriptorInfo);
+    //}
+    //devices->GetDescriptors(descriptor, &request);
 }
+
+//void Mesh::SetTexture(TextureSampler* texture)
+//{
+//    this->texture = texture;
+//    DescriptorSetRequest request{};
+//    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+//    for (size_t i = 0; i < devices->imageCount; i++) {
+//
+//        request.data.push_back(&texture->descriptorInfo);
+//    }
+//    devices->GetDescriptors(descriptor, &request);
+//}
 
 void Mesh::Destroy() {
     vertexBuffer->Destroy();
     indexBuffer->Destroy();
     texture = nullptr;
-    material = nullptr;
+    //material = nullptr;
 }
 
 void Mesh::Bind(VkCommandBuffer cmdBuffer)

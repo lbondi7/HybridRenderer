@@ -144,6 +144,7 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
 
     enabledRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
     enabledRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+    enabledRayTracingPipelineFeatures.rayTraversalPrimitiveCulling = VK_TRUE;
     enabledRayTracingPipelineFeatures.pNext = &enabledBufferDeviceAddresFeatures;
 
     enabledAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
@@ -154,7 +155,7 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     enabledRayQueryFeatures.rayQuery = VK_TRUE;
     enabledRayQueryFeatures.pNext = &enabledAccelerationStructureFeatures;
 
-    //void* deviceCreatepNextChain = &enabledAccelerationStructureFeatures;
+    void* deviceCreatepNextChain = &enabledAccelerationStructureFeatures;
 
     rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
     VkPhysicalDeviceProperties2 deviceProperties2{};
@@ -162,10 +163,12 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     deviceProperties2.pNext = &rayTracingPipelineProperties;
     vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
 
+
     // Get acceleration structure properties, which will be used later on in the sample
     VkPhysicalDeviceFeatures2 deviceFeatures2{};
     deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     deviceFeatures2.pNext = &enabledRayQueryFeatures;
+    //deviceFeatures2.pNext = &enabledAccelerationStructureFeatures;
     vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
 
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());

@@ -10,7 +10,7 @@
 #include "Buffer.h"
 
 struct ShadowUBO {
-	alignas(16) uint16_t shadowMap;
+	uint16_t shadowMap = 2U;
 };
 
 class ShadowMap
@@ -20,7 +20,7 @@ public:
 	ShadowMap() = default;
 	~ShadowMap();
 
-	void Create(DeviceContext* _devices, SwapChain* _swapChain);
+	void Create(DeviceContext* _devices);
 
 	void Initialise(const PipelineInfo& pipelineInfo);
 

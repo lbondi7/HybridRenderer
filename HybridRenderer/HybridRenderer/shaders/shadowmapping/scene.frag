@@ -3,8 +3,8 @@
 #extension GL_EXT_ray_query : enable
 
 layout (set = 3, binding = 0) uniform sampler2D shadowMap;
-layout (set = 4, binding = 0) uniform sampler2D sampledTexture;
-layout (set = 5, binding = 0) uniform accelerationStructureEXT topLevelAS;
+layout (set = 1, binding = 1) uniform sampler2D sampledTexture;
+layout (set = 4, binding = 0) uniform accelerationStructureEXT topLevelAS;
 
 layout (set = 3, binding = 1) uniform ShadowUBO
 {
@@ -89,16 +89,24 @@ vec3 shadingGGX(vec3 N, vec3 V, vec3 L, vec3 color, float roughness, float metal
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 
+
+float random (vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))*
+        43758.5453123);
+}
+
+vec2 offsets[5] = {vec2(0), vec2(0.1), vec2(-0.1), vec2(-0.1, 0.1), vec2(0.1, -0.1)};
+
 void main() {
 
 	vec4 col = texture(sampledTexture, inUV);
-	if(col.a < 0.5)
+	if(col.a < 0.2)
 		discard;
 
 	float shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
 
 	vec4 outColour;
-	float shadowAlpha = 0.0f;
 	vec3 normal = normalize(inNormal);
 	vec3 viewVec = fragVert - inCamPos;
 	vec3 viewDir = normalize(fragVert - inCamPos);
@@ -107,23 +115,59 @@ void main() {
 	vec3 totalLight = vec3(0.0);
 	vec3 lightPos = inLightPos;
 	vec3 lightVec = fragVert - lightPos;
-	vec3 lightDir = normalize(fragVert - lightPos);
+	//vec3 lightDir = normalize(fragVert - lightPos);
 	vec3 invLightDir = normalize(lightPos - fragVert);
-	totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.5, 0.5);
+	totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.8, 0.05);
 	outColour = col * vec4(totalLight, 1.0);
 
 	if(shadowUBO.shadowMap == 0){
 		outColour *= shadow;	
 	}
-	else{
-		if(shadow < 0.5 && (distance(inCamPos, fragVert) < inCull)){
+	else if(shadowUBO.shadowMap == 2 || shadow < 0.5)
+	{
+		if(distance(inCamPos, fragVert) < inCull)
+		{
+			// rayQueryEXT rayQuery;
+
+			// vec4 tempCol;
+			// for(int i = 0; i < 1; ++i)
+			// {
+			// 	vec4 tempCol2 = vec4(0.0);
+			// 	vec3 lPos = inLightPos + vec3(offsets[i], 0);
+			// 	for(int j = 0; j < 1; ++j){
+			// 		vec3 vPos = fragVert + vec3(offsets[j], 0);
+
+			// 		vec3 iLD = normalize(lPos - vPos);
+			// 		rayQueryInitializeEXT(rayQuery, 
+			// 		topLevelAS, 
+			// 		gl_RayFlagsTerminateOnFirstHitEXT, 
+			// 		0xFF, 
+			// 		vPos, 
+			// 		0.01, 
+			// 		iLD, 
+			// 		1000.0);
+
+			// 		// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
+			// 		while (rayQueryProceedEXT(rayQuery)) { 
+			// 		}
+			// 		// If the intersection has hit a triangle, the fragment is shadowed
+			// 		if (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionTriangleEXT ) {
+			// 			//outColour *= shadow;
+			// 			tempCol2 += outColour;
+			// 		}
+			// 	}
+			// 	tempCol2 /= 1.0;
+			// 	tempCol += tempCol2;
+			// }
+			// tempCol /= 1.0;
+			// outColour = tempCol;
 
 			rayQueryEXT rayQuery;
 
 			// initialise the ray to query but doesn't start the traversal
 			rayQueryInitializeEXT(rayQuery, 
 			topLevelAS, 
-			gl_RayFlagsCullNoOpaqueEXT, 
+			gl_RayFlagsCullBackFacingTrianglesEXT, 
 			0xFF, 
 			fragVert, 
 			0.01, 
@@ -131,22 +175,41 @@ void main() {
 			1000.0);
 
 			// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
-			while (rayQueryProceedEXT(rayQuery)) { 
-				    // if (rayQueryGetIntersectionTypeEXT(rayQuery, false) ==
-					// 	gl_RayQueryCandidateIntersectionTriangleEXT)
-					// {
-					// 	rayQueryGetIntersectionTypeEXT
-					// 	if (opaqueHit) rayQueryConfirmIntersectionEXT(rayQuery);
-					// }
-					//OpRayQueryInitializeKHR();
+			while (rayQueryProceedEXT(rayQuery)) 
+			{ 
+				// uint candidateType = rayQueryGetIntersectionTypeEXT(rayQuery, true);
+				// switch(candidateType)
+				// {
+				// 	case gl_RayQueryCandidateIntersectionTriangleEXT:
+				// 		//rayQueryTerminateEXT(rayQuery);
+				// 		// _mat4x3 = rayQueryGetIntersectionObjectToWorldEXT(rayQuery, false);
+				// 		// _mat3x4 = transpose(_mat4x3);
+				// 		//rayQueryConfirmIntersectionEXT(rayQuery);
+				// 		//if (rayQueryGetIntersectionFrontFaceEXT(rayQuery, true))
+				// 		//{
+				// 			vec2 coords = rayQueryGetIntersectionBarycentricsEXT(rayQuery, true);
+				// 			outColour = vec4(texture(sampledTexture, coords).a);
+				// 		//}
+				// 	break;
+				// }
 			}
 			// If the intersection has hit a triangle, the fragment is shadowed
-			if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) {
-				outColour *= shadow;
+			if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) 
+			{
+				if (rayQueryGetIntersectionFrontFaceEXT(rayQuery, true)) 
+				{
+
+					vec2 coords = rayQueryGetIntersectionBarycentricsEXT(rayQuery, true);
+					outColour = vec4(texture(sampledTexture, coords).a);
+				}
+				else{
+					outColour = vec4(0);
+				}
 			}
 		}
 		else{
-			outColour *= shadow;
+			outColour.g = 1.0;
+			//outColour *= shadow;
 		}
 	}
 

@@ -85,12 +85,11 @@ void AccelerationStructure::createAccelerationStructureBuffer(VkAccelerationStru
 /*
 	Create the bottom level acceleration structure contains the scene's actual geometry (vertices, triangles)
 */
-void AccelerationStructure::createBottomLevelAccelerationStructure(Transform& transform, Mesh* mesh)
+void AccelerationStructure::createBottomLevelAccelerationStructure(GameObject& go)
 {
 	type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 
-	glm::mat4 matrix = glm::mat4(1.0f);
-	matrix = transform.getMatrix();
+	auto matrix = go.GetMatrix();
 
 	// Setup identity transform matrix
 	VkTransformMatrixKHR transformMatrix = {
@@ -103,22 +102,22 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(Transform& tr
 	{
 		for (size_t j = 0; j < 4; j++)
 		{
-			transformMatrix.matrix[i][j] = matrix[i][j];
+			transformMatrix.matrix[i][j] = matrix[j][i];
 		}
 	}
 
 	// Create buffers
 	// For the sake of simplicity we won't stage the vertex data to the GPU memory
 	// Vertex buffer
-	vertexBuffer.Create(deviceContext, mesh->vertices.size() * sizeof(Vertex),
+	vertexBuffer.Create(deviceContext, go.mesh->vertices.size() * sizeof(Vertex),
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mesh->vertices.data());
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, go.mesh->vertices.data());
 
 	// Index buffer
-	indexBuffer.Create(deviceContext, mesh->indices.size() * sizeof(uint32_t),
+	indexBuffer.Create(deviceContext, go.mesh->indices.size() * sizeof(uint32_t),
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		mesh->indices.data());
+		go.mesh->indices.data());
 	// Transform buffer
 	transformBuffer.Create(deviceContext, sizeof(VkTransformMatrixKHR),
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
@@ -134,7 +133,7 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(Transform& tr
 	transformBufferDeviceAddress.deviceAddress = transformBuffer.GetDeviceAddress();
 
 	VkAccelerationStructureGeometryTrianglesDataKHR triangles = Initialisers::ASGTriangleData(vertexBufferDeviceAddress,
-		sizeof(Vertex), mesh->vertices.size(), indexBufferDeviceAddress, transformBufferDeviceAddress);
+		sizeof(Vertex), go.mesh->vertices.size(), indexBufferDeviceAddress, transformBufferDeviceAddress);
 
 	// Build
 	VkAccelerationStructureGeometryKHR accelerationStructureGeometry =
@@ -143,7 +142,7 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(Transform& tr
 	// Get size info
 	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = Initialisers::BLABuildGeometryInfo(&accelerationStructureGeometry);
 
-	const uint32_t numTriangles = mesh->indices.size() / 3;
+	const uint32_t numTriangles = go.mesh->indices.size() / 3;
 	CreateBuildRange(accelerationStructureBuildGeometryInfo, numTriangles);
 }
 
@@ -161,7 +160,7 @@ void AccelerationStructure::createTopLevelAccelerationStructure(std::vector<Acce
 	uint32_t i = 0;
 	for (auto& instance : instances)
 	{
-		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR, blas[i].deviceAddress, i);
+		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR, blas[i].deviceAddress, i);
 		i++;
 	}
 
