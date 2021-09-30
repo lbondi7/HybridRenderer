@@ -367,7 +367,7 @@ void Resources::LoadTexture(const std::string& name, bool flipped)
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     texture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
     VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, 1.0f, VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        flipped ? VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT : VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+        flipped ? VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT : VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_INT_OPAQUE_WHITE);
     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     texture->CreateSampler(samplerInfo);
     //texture->descriptorInfo = Initialisers::descriptorImageInfo(texture->imageView, texture->sampler);

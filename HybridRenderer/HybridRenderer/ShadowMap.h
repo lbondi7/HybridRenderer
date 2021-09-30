@@ -11,9 +11,8 @@
 
 struct ShadowUBO {
 	int shadowMap = 2;
-	int vertexRotate = 0;
-	int texRotate = 0;
-	int baryRotate = 0;
+	int confirmIntersection = 0;
+	int terminateRay = 0;
 };
 
 class ShadowMap

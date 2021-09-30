@@ -199,7 +199,7 @@ void Scene::Update(uint32_t imageIndex, float dt)
     float zFar = 1000.0f;
 
 
-    lightPos = glm::vec3(0.0f, 7.5f, -10.0f);
+    lightPos = glm::vec3(0.0f, 20.5f, -5.0f);
     lightFOV = 90.0f;
     glm::vec3 lightLookAt = glm::vec3(0, 0, 0);
     // Matrix from light's point of view

@@ -14,9 +14,8 @@ layout (set = 3, binding = 0) uniform sampler2D shadowMap;
 layout (set = 3, binding = 1) uniform ShadowUBO
 {
 	int shadowMap;
-	int vertexRotate;
-	int texRotate;
-	int baryRotate;
+	int confirmIntersection;
+	int terminateRay;
 } shadowUBO;
 
 struct Vertex
@@ -37,7 +36,7 @@ struct ObjDesc
 layout(buffer_reference, scalar) buffer Vertices {
 	Vertex v[]; 
 }; // Positions of an object
-layout(buffer_reference, std430, buffer_reference_align = 16) buffer Indices {
+layout(buffer_reference, scalar) buffer Indices {
 	ivec3 i[]; 
 }; // Triangle indices
 //layout(buffer_reference, scalar) buffer TexIndices {int i; }; // Material ID for each triangle
@@ -116,57 +115,12 @@ void main() {
 		if(distance(inCamPos, fragVert) < inCull)
 		{
 
-			{
-				// rayQueryEXT rayQuery;
-				// vec4 tempCol;
-				// int lightSample = 1;
-				// int vertexSample = 1;
-				// for(int i = 0; i < lightSample; ++i)
-				// {
-				// 	vec4 tempCol2 = vec4(0.0);
-				// 	vec3 lPos = inLightPos + vec3(offsets[i], 0);
-				// 	for(int j = 0; j < vertexSample; ++j){
-				// 		vec3 vPos = fragVert + vec3(offsets[j], 0);
-				// 		vec3 iLD = normalize(lPos - vPos);
-				// 		rayQueryInitializeEXT(rayQuery, 
-				// 		topLevelAS, 
-				// 		gl_RayFlagsTerminateOnFirstHitEXT, 
-				// 		0xFF, 
-				// 		vPos, 
-				// 		0.01, 
-				// 		iLD, 
-				// 		1000.0);
-				// 		// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
-				// 		while (rayQueryProceedEXT(rayQuery)) { 
-				// 		}
-				// 		// If the intersection has hit a triangle, the fragment is shadowed
-				// 		if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) 
-				//     	{
-				// 			vec2 coords = rayQueryGetIntersectionBarycentricsEXT(rayQuery, true);
-				// 			tempCol2 += vec4(texture(sampledTexture, coords).a);
-				// 			// if(texture(sampledTexture, coords).a > 0.5)
-				// 			// {
-				// 			// 	tempCol2 += vec4(texture(sampledTexture, coords).a);
-				// 			// }
-				// 		}
-				// 		else
-				// 		{
-				// 			tempCol2 = outColour * 0.1;
-				// 		}
-				// 	}
-				// 	tempCol2 /= vertexSample;
-				// 	tempCol += tempCol2;
-				// }
-				// tempCol /= lightSample;
-				// outColour = tempCol;
-			}
-
 			rayQueryEXT rayQuery;
 
 			// initialise the ray to query but doesn't start the traversal
 			rayQueryInitializeEXT(rayQuery, 
 			topLevelAS, 
-			gl_RayFlagsOpaqueEXT, 
+			gl_RayFlagsNoOpaqueEXT, 
 			0xFF, 
 			fragVert, 
 			0.01, 
@@ -176,118 +130,40 @@ void main() {
 			// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
 			while (rayQueryProceedEXT(rayQuery)) 
 			{ 
+				uint candidateType = rayQueryGetIntersectionTypeEXT(rayQuery, false);
+
+					// If the intersection has hit a triangle, the fragment is shadowed
 			
-			// If the intersection has hit a triangle, the fragment is shadowed
-			}
-				if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) 
+				if (candidateType == gl_RayQueryCandidateIntersectionTriangleEXT) 
 				{
+					if(shadowUBO.terminateRay == 1)
+						rayQueryTerminateEXT(rayQuery);
+					if(shadowUBO.confirmIntersection == 1)	
+						rayQueryConfirmIntersectionEXT(rayQuery);
 
-					// Indices indices     = Indices(objResource.indicesAddress);
-					// Vertices vertices    = Vertices(objResource.vertexAddress);
+					int objIndex = rayQueryGetIntersectionInstanceIdEXT(rayQuery, false);
+					ObjDesc objResource = objDesc.i[objIndex];
+					Indices indices = Indices(objResource.indicesAddress);
+					Vertices vertices = Vertices(objResource.vertexAddress);
+					// Indices of the triangle
+					ivec3 ind = indices.i[rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false)];
 
-					//outColour.r = 1.0;
-					//if (rayQueryGetIntersectionFrontFaceEXT(rayQuery, false)) 
-					//{
-						int objIndex = rayQueryGetIntersectionInstanceIdEXT(rayQuery, true);
-						ObjDesc    objResource = objDesc.i[objIndex];
-						Indices indices = Indices(objResource.indicesAddress);
-						Vertices vertices = Vertices(objResource.vertexAddress);
-						// Indices of the triangle
-						ivec3 ind = indices.i[rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, true)];
-
-						// // Vertex of the triangle
-						Vertex v0 = vertices.v[ind.x];
-						Vertex v1 = vertices.v[ind.y];
-						Vertex v2 = vertices.v[ind.z];
-						if(shadowUBO.vertexRotate == 0){
-							v0 = vertices.v[ind.x];
-							v1 = vertices.v[ind.y];
-							v2 = vertices.v[ind.z];
-						}
-						if(shadowUBO.vertexRotate == 1){
-							v0 = vertices.v[ind.x];
-							v1 = vertices.v[ind.z];
-							v2 = vertices.v[ind.y];
-						}
-						if(shadowUBO.vertexRotate == 2){
-							v0 = vertices.v[ind.y];
-							v1 = vertices.v[ind.x];
-							v2 = vertices.v[ind.z];
-						}
-						if(shadowUBO.vertexRotate == 3){
-							v0 = vertices.v[ind.y];
-							v1 = vertices.v[ind.z];
-							v2 = vertices.v[ind.x];
-						}
-						if(shadowUBO.vertexRotate == 4){
-							v0 = vertices.v[ind.z];
-							v1 = vertices.v[ind.x];
-							v2 = vertices.v[ind.y];
-						}
-						if(shadowUBO.vertexRotate == 5){
-							v0 = vertices.v[ind.z];
-							v1 = vertices.v[ind.y];
-							v2 = vertices.v[ind.x];
-						}
-
-						vec2 attribs = rayQueryGetIntersectionBarycentricsEXT(rayQuery, true);
-						// const vec3 barycentrics = vec3(attribs.x, 1.0 - attribs.y - attribs.x, attribs.y);
-
-						vec3 barycentrics = vec3(0);
-						if(shadowUBO.baryRotate == 0){
-							barycentrics = vec3(attribs.x, attribs.y, 1.0 - attribs.y - attribs.x);
-						}
-						if(shadowUBO.baryRotate == 1){
-							barycentrics = vec3(attribs.x, 1.0 - attribs.y - attribs.x, attribs.y);
-						}
-						if(shadowUBO.baryRotate == 2){
-							barycentrics = vec3(attribs.y, attribs.x, 1.0 - attribs.y - attribs.x);
-						}
-						if(shadowUBO.baryRotate == 3){
-							barycentrics = vec3(attribs.y, 1.0 - attribs.y - attribs.x, attribs.x);
-						}
-						if(shadowUBO.baryRotate == 4){
-							barycentrics = vec3(1.0 - attribs.y - attribs.x, attribs.x, attribs.y);
-						}
-						if(shadowUBO.baryRotate == 5){
-							barycentrics = vec3(1.0 - attribs.y - attribs.x, attribs.y, attribs.x);
-						}
-
-						//vec2 texCoord = v0.uvCoord * barycentrics.x + v1.uvCoord * barycentrics.y + v2.uvCoord * barycentrics.z;
-						vec2 texCoord = vec2(0);
-						if(shadowUBO.texRotate == 0){
-							texCoord = v0.uvCoord * barycentrics.x + v1.uvCoord * barycentrics.y + v2.uvCoord * barycentrics.z;
-						}
-						if(shadowUBO.texRotate == 1){
-							texCoord = v0.uvCoord * barycentrics.x + v1.uvCoord * barycentrics.z + v2.uvCoord * barycentrics.y;
-						}
-						if(shadowUBO.texRotate == 2){
-							texCoord = v0.uvCoord * barycentrics.y + v1.uvCoord * barycentrics.x + v2.uvCoord * barycentrics.z;
-						}
-						if(shadowUBO.texRotate == 3){
-							texCoord = v0.uvCoord * barycentrics.y + v1.uvCoord * barycentrics.z + v2.uvCoord * barycentrics.x;
-						}
-						if(shadowUBO.texRotate == 4){
-							texCoord = v0.uvCoord * barycentrics.z + v1.uvCoord * barycentrics.x + v2.uvCoord * barycentrics.y;
-						}
-						if(shadowUBO.texRotate == 5){
-							texCoord = v0.uvCoord * barycentrics.z + v1.uvCoord * barycentrics.y + v2.uvCoord * barycentrics.x;
-						}
-
-						float alpha = texture(textureSamplers[objResource.textureIndex], texCoord).a;
-						//float alpha = texture(textureSamplers[objResource.textureIndex], attribs).a;
-						if(alpha > 0.5){
-							outColour *= (0.1);
-						}
-						// else{
-						// 	outColour *= 0.1;
-						// }
-						
-					//}
-					// else{
-					// 	outColour *= 0.1;
-					//}
+					// // Vertex of the triangle
+					Vertex v0 = vertices.v[ind.y];
+					Vertex v1 = vertices.v[ind.z];
+					Vertex v2 = vertices.v[ind.x];
+					vec2 attribs = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);
+					vec3 barycentrics = vec3(attribs.x, attribs.y, 1.0 - attribs.y - attribs.x);
+					vec2 texCoord = v0.uvCoord * barycentrics.x + v1.uvCoord * barycentrics.y + v2.uvCoord * barycentrics.z;
+					float alpha = texture(textureSamplers[objResource.textureIndex], texCoord).a;
+					if(alpha > 0.5){
+						outColour *= 0.1;
+					}
 				}
+				else{
+					outColour.r = 1.0;
+				}
+			}
 		}
 		else if(shadowUBO.shadowMap != 2)
 		{
@@ -295,7 +171,11 @@ void main() {
 			outColour *= 0.1;
 		}
 	}
-
+	else
+	{
+		//outColour.g = 1.0;
+		outColour *= shadow;
+	}
 	outFragColor = outColour;
 }
 

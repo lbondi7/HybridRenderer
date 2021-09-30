@@ -31,27 +31,21 @@ bool ShadowMap::Update(uint32_t imageIndex) {
 					buffer.AllocatedMap(&shadowUBO);
 				}
 			}
-			if (widget.Slider("VertexRotate", &shadowUBO.vertexRotate, 0, 5))
+			if (widget.Slider("Confirm Intersection", &shadowUBO.confirmIntersection, 0, 1))
 			{
 				for (auto& buffer : buffers)
 				{
 					buffer.AllocatedMap(&shadowUBO);
 				}
 			}
-			if (widget.Slider("TexRotate", &shadowUBO.texRotate, 0, 5))
+			if (widget.Slider("Terminate Ray", &shadowUBO.terminateRay, 0, 1))
 			{
 				for (auto& buffer : buffers)
 				{
 					buffer.AllocatedMap(&shadowUBO);
 				}
 			}
-			if (widget.Slider("BaryRotate", &shadowUBO.baryRotate, 0, 5))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-				}
-			}
+
 			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
 				vkQueueWaitIdle(devices->presentQueue);
 				Reinitialise();
@@ -147,6 +141,7 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 
 
 	buffers.resize(devices->imageCount);
+	shadowUBO.shadowMap = 1;
 	for (auto& buffer : buffers)
 	{
 		VkDeviceSize bufferSize = sizeof(ShadowUBO);
