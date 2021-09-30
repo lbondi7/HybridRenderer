@@ -18,6 +18,7 @@ public:
 	VkCommandPool commandPool;
 
 	VkPhysicalDeviceProperties physicalDeviceProperties;
+	VkPhysicalDeviceProperties2 physicalDevicePropertiesExt;
 
 	void SetupDevices(VkInstance instance, VkSurfaceKHR surface);
 
@@ -44,16 +45,16 @@ public:
 
 	uint32_t imageCount;
 
-	DescriptorSetManager dsm;
+	DescriptorSetManager descriptorSetManager;
 
 
 	VkPhysicalDeviceRayTracingPipelinePropertiesKHR  rayTracingPipelineProperties{};
-	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
 
-	VkPhysicalDeviceBufferDeviceAddressFeatures enabledBufferDeviceAddresFeatures{};
-	VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabledRayTracingPipelineFeatures{};
-	VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures{};
-	VkPhysicalDeviceRayQueryFeaturesKHR enabledRayQueryFeatures{};
+	VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddresFeatures{};
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
+	VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties{};
+	VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
 
 private:
 	void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);

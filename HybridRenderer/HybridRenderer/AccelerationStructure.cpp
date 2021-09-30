@@ -2,6 +2,7 @@
 
 #include "Utility.h"
 #include "Initilizers.h"
+#include "DebugLogger.h"
 
 AccelerationStructure::~AccelerationStructure()
 {
@@ -23,64 +24,8 @@ void AccelerationStructure::Initialise(DeviceContext* _deviceContext)
 void AccelerationStructure::Destroy() {
 	
 	vkDestroyAccelerationStructureKHR(deviceContext->logicalDevice, handle, nullptr);
-	asBuffer.Destroy();
-	if (type == VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR) 
-	{
-		vertexBuffer.Destroy();
-		indexBuffer.Destroy();
-	}
-	transformBuffer.Destroy();
+	buffer.Destroy();
 }
-
-ScratchBuffer AccelerationStructure::CreateScratchBuffer(VkDeviceSize size)
-{
-	ScratchBuffer scratchBuffer{};
-
-	VkBufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size = size;
-	bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-	vkCreateBuffer(deviceContext->logicalDevice, &bufferCreateInfo, nullptr, &scratchBuffer.handle);
-
-	VkMemoryRequirements memoryRequirements{};
-	vkGetBufferMemoryRequirements(deviceContext->logicalDevice, scratchBuffer.handle, &memoryRequirements);
-
-	VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
-	memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
-	memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-
-	VkMemoryAllocateInfo memoryAllocateInfo = {};
-	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
-	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	memoryAllocateInfo.memoryTypeIndex = Utility::findMemoryType(memoryRequirements.memoryTypeBits, deviceContext->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	vkAllocateMemory(deviceContext->logicalDevice, &memoryAllocateInfo, nullptr, &scratchBuffer.memory);
-	vkBindBufferMemory(deviceContext->logicalDevice, scratchBuffer.handle, scratchBuffer.memory, 0);
-
-	VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
-	bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-	bufferDeviceAddressInfo.buffer = scratchBuffer.handle;
-	scratchBuffer.deviceAddress = vkGetBufferDeviceAddressKHR(deviceContext->logicalDevice, &bufferDeviceAddressInfo);
-
-	return scratchBuffer;
-}
-
-void AccelerationStructure::DeleteScratchBuffer(ScratchBuffer& scratchBuffer)
-{
-	if (scratchBuffer.memory != VK_NULL_HANDLE) {
-		vkFreeMemory(deviceContext->logicalDevice, scratchBuffer.memory, nullptr);
-	}
-	if (scratchBuffer.handle != VK_NULL_HANDLE) {
-		vkDestroyBuffer(deviceContext->logicalDevice, scratchBuffer.handle, nullptr);
-	}
-}
-
-void AccelerationStructure::createAccelerationStructureBuffer(VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo)
-{
-	asBuffer.Create(deviceContext, buildSizeInfo.accelerationStructureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-}
-
 
 /*
 	Create the bottom level acceleration structure contains the scene's actual geometry (vertices, triangles)
@@ -92,7 +37,7 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(GameObject& g
 	auto matrix = go.GetMatrix();
 
 	// Setup identity transform matrix
-	VkTransformMatrixKHR transformMatrix = {
+	transformMatrix = {
 		1.0f, 0.0f, 0.0f, 0.0f,
 		0.0f, 1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f
@@ -106,19 +51,19 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(GameObject& g
 		}
 	}
 
-	// Create buffers
-	// For the sake of simplicity we won't stage the vertex data to the GPU memory
-	// Vertex buffer
-	vertexBuffer.Create(deviceContext, go.mesh->vertices.size() * sizeof(Vertex),
+	Buffer accelerationVertexBuffer;
+	Buffer accelerationIndexBuffer;
+	Buffer transformBuffer;
+
+	accelerationVertexBuffer.Create(deviceContext, go.mesh->vertices.size() * sizeof(Vertex),
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, go.mesh->vertices.data());
 
-	// Index buffer
-	indexBuffer.Create(deviceContext, go.mesh->indices.size() * sizeof(uint32_t),
+	accelerationIndexBuffer.Create(deviceContext, go.mesh->indices.size() * sizeof(uint32_t),
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		go.mesh->indices.data());
-	// Transform buffer
+
 	transformBuffer.Create(deviceContext, sizeof(VkTransformMatrixKHR),
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -128,8 +73,8 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(GameObject& g
 	VkDeviceOrHostAddressConstKHR indexBufferDeviceAddress{};
 	VkDeviceOrHostAddressConstKHR transformBufferDeviceAddress{};
 
-	vertexBufferDeviceAddress.deviceAddress = vertexBuffer.GetDeviceAddress();
-	indexBufferDeviceAddress.deviceAddress = indexBuffer.GetDeviceAddress();
+	vertexBufferDeviceAddress.deviceAddress = go.mesh->vertexBuffer.GetDeviceAddress();
+	indexBufferDeviceAddress.deviceAddress = go.mesh->indexBuffer.GetDeviceAddress();
 	transformBufferDeviceAddress.deviceAddress = transformBuffer.GetDeviceAddress();
 
 	VkAccelerationStructureGeometryTrianglesDataKHR triangles = Initialisers::ASGTriangleData(vertexBufferDeviceAddress,
@@ -144,23 +89,27 @@ void AccelerationStructure::createBottomLevelAccelerationStructure(GameObject& g
 
 	const uint32_t numTriangles = go.mesh->indices.size() / 3;
 	CreateBuildRange(accelerationStructureBuildGeometryInfo, numTriangles);
+	accelerationIndexBuffer.Destroy();
+	accelerationVertexBuffer.Destroy();
+	transformBuffer.Destroy();
 }
 
 void AccelerationStructure::createTopLevelAccelerationStructure(std::vector<AccelerationStructure>& blas)
 {
 	type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-	VkTransformMatrixKHR transformMatrix = {
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f };
 
+	transformMatrix = {
+	1.0f, 0.0f, 0.0f, 0.0f,
+	0.0f, 1.0f, 0.0f, 0.0f,
+	0.0f, 0.0f, 1.0f, 0.0f
+	};
 
 	std::vector<VkAccelerationStructureInstanceKHR>instances;
 	instances.resize(blas.size());
 	uint32_t i = 0;
 	for (auto& instance : instances)
 	{
-		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR, blas[i].deviceAddress, i);
+		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR, blas[i].deviceAddress, i);
 		i++;
 	}
 
@@ -196,16 +145,26 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 		&primitiveCount,
 		&accelerationStructureBuildSizesInfo);
 
-	createAccelerationStructureBuffer(accelerationStructureBuildSizesInfo);
+	buffer.Allocate(deviceContext, accelerationStructureBuildSizesInfo.accelerationStructureSize, 
+		VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo = Initialisers::ASCreateInfo(asBuffer.vkBuffer,
-		accelerationStructureBuildSizesInfo.accelerationStructureSize, 0, type);
+	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo = Initialisers::ASCreateInfo(buffer.bufferInfo.buffer,
+		accelerationStructureBuildSizesInfo.accelerationStructureSize, buffer.bufferInfo.offset, type);
+
+//	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo = Initialisers::ASCreateInfo(buffer.vkBuffer,
+//		accelerationStructureBuildSizesInfo.accelerationStructureSize, 0, type);
+
 	vkCreateAccelerationStructureKHR(deviceContext->logicalDevice, &accelerationStructureCreateInfo, nullptr, &handle);
 
-	ScratchBuffer scratchBuffer = CreateScratchBuffer(accelerationStructureBuildSizesInfo.buildScratchSize);
+	Buffer scratchBuffer;
+	scratchBuffer.Create(deviceContext, accelerationStructureBuildSizesInfo.buildScratchSize,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	//ScratchBuffer scratchBuffer = CreateScratchBuffer(accelerationStructureBuildSizesInfo.buildScratchSize);
 
 	VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo =
-		Initialisers::ABuildGeometryInfo(accelerationStructureBuildGeometryInfo, handle, scratchBuffer.deviceAddress);
+		Initialisers::ABuildGeometryInfo(accelerationStructureBuildGeometryInfo, handle, scratchBuffer.GetDeviceAddress());
 
 	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo = Initialisers::ASBuildRangeInfo(primitiveCount);
 
@@ -216,8 +175,7 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 		// Implementation supports building acceleration structure building on host
 		vkBuildAccelerationStructuresKHR(
 			deviceContext->logicalDevice,
-			VK_NULL_HANDLE,
-			1,
+			VK_NULL_HANDLE, 1,
 			&accelerationBuildGeometryInfo,
 			accelerationBuildStructureRangeInfos.data());
 	}
@@ -226,8 +184,7 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 		// Acceleration structure needs to be build on the deviceContext->logicalDevice
 		VkCommandBuffer commandBuffer = deviceContext->generateCommandBuffer();
 		vkCmdBuildAccelerationStructuresKHR(
-			commandBuffer,
-			1,
+			commandBuffer, 1,
 			&accelerationBuildGeometryInfo,
 			accelerationBuildStructureRangeInfos.data());
 		deviceContext->EndCommandBuffer(commandBuffer);
@@ -236,5 +193,5 @@ void AccelerationStructure::CreateBuildRange(const VkAccelerationStructureBuildG
 	VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo = Initialisers::ASDeviceAddressInfo(handle);
 	deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(deviceContext->logicalDevice, &accelerationDeviceAddressInfo);
 
-	DeleteScratchBuffer(scratchBuffer);
+	scratchBuffer.Destroy();
 }

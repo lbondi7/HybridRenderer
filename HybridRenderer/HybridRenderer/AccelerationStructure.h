@@ -21,12 +21,6 @@ public:
 
 	void Destroy();
 
-	ScratchBuffer CreateScratchBuffer(VkDeviceSize size);
-
-	void DeleteScratchBuffer(ScratchBuffer& scratchBuffer);
-
-	void createAccelerationStructureBuffer(VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
-
 	void createBottomLevelAccelerationStructure(GameObject& go);
 
 	void createTopLevelAccelerationStructure(std::vector<AccelerationStructure>& blas);
@@ -35,12 +29,10 @@ public:
 
 	VkAccelerationStructureKHR handle;
 	uint64_t deviceAddress = 0;
-	Buffer asBuffer;
-	Buffer vertexBuffer;
-	Buffer indexBuffer;
-	Buffer transformBuffer;
+	Buffer buffer;
 	uint32_t indexCount;
 	VkAccelerationStructureTypeKHR type;
+	VkTransformMatrixKHR transformMatrix;
 
 private:
 

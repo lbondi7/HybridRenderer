@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DescriptorSetRequest.h"
+
 struct Descriptor
 {
 	std::vector<VkDescriptorSet> sets;

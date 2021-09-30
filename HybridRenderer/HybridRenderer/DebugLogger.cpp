@@ -1,4 +1,5 @@
 #include "DebugLogger.h"
+#include <iostream>
 
 
 void DebugLogger::Log(const char* log)
@@ -9,6 +10,27 @@ void DebugLogger::Log(const char* log)
 void DebugLogger::Log(int i, const char* name)
 {
 	std::cout << name << ": " << i << std::endl;
+}
+
+
+void DebugLogger::Log(uint8_t i, const char* name)
+{
+    std::cout << name << ": " << i << std::endl;
+}
+
+void DebugLogger::Log(uint16_t i, const char* name)
+{
+    std::cout << name << ": " << i << std::endl;
+}
+
+void DebugLogger::Log(uint32_t i, const char* name)
+{
+    std::cout << name << ": " << i << std::endl;
+}
+
+void DebugLogger::Log(uint64_t i, const char* name)
+{
+    std::cout << name << ": " << i << std::endl;
 }
 
 void DebugLogger::Log(float f, const char* name)
@@ -112,4 +134,9 @@ VkResult DebugLogger::Log(VkResult result)
           break;
     }
 	return result;
+}
+
+void DebugLogger::Log(void* data, const char* name)
+{
+    std::cout << name << ": " << data << std::endl;
 }

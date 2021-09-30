@@ -25,8 +25,8 @@ public:
 	void Bind(VkCommandBuffer cmdBuffer);
 
 
-	std::unique_ptr<Buffer> vertexBuffer;
-	std::unique_ptr<Buffer> indexBuffer;
+	Buffer vertexBuffer;
+	Buffer indexBuffer;
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;

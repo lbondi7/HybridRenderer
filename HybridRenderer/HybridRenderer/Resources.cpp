@@ -272,12 +272,15 @@ void Resources::LoadModel(const std::string& name)
 
             vertex.color = { 1.0f, 1.0f, 1.0f };
 
-            if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(models[name]->meshes[id]->vertices.size());
-                models[name]->meshes[id]->vertices.push_back(vertex);
-            }
+            models[name]->meshes[id]->vertices.push_back(vertex);
+            models[name]->meshes[id]->indices.push_back(static_cast<int>(models[name]->meshes[id]->indices.size()));
 
-            models[name]->meshes[id]->indices.push_back(uniqueVertices[vertex]);
+            //if (uniqueVertices.count(vertex) == 0) {
+            //    uniqueVertices[vertex] = static_cast<uint32_t>(models[name]->meshes[id]->vertices.size());
+            //    models[name]->meshes[id]->vertices.push_back(vertex);
+            //}
+
+            //models[name]->meshes[id]->indices.push_back(uniqueVertices[vertex]);
         }
 
         auto materialId = shape.mesh.material_ids[0];
@@ -300,19 +303,41 @@ void Resources::LoadModel(const std::string& name)
     }
 }
 
-TextureSampler* Resources::GetTexture(const std::string& name) {
+TextureSampler* Resources::GetTexture(const std::string& name, bool flipped) {
     auto trimmedName = trimName(name);
+    if (flipped)
+        trimmedName += "_flipped";
     if (textures.contains(trimmedName)) {
         return textures[trimmedName].get();
     }
-    LoadTexture(name);
+    LoadTexture(name, flipped);
     return textures[trimmedName].get();
 }
 
-void Resources::LoadTexture(const std::string& name)
+uint32_t Resources::GetTextureID(const std::string& name, bool flipped) {
+    auto trimmedName = trimName(name);
+
+    if (flipped)
+        trimmedName += "_flipped";
+
+    uint32_t i = 0;
+    for (auto& texture : textures)
+    {
+        if (texture.first == trimmedName)
+            return i;
+
+        ++i;
+    }
+
+    return 0;
+}
+
+void Resources::LoadTexture(const std::string& name, bool flipped)
 {
     int texWidth, texHeight, texChannels;
     auto trimmedName = trimName(name);
+    if (flipped)
+        trimmedName += "_flipped";
     stbi_uc* pixels = stbi_load(("textures/" + name).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
@@ -327,9 +352,9 @@ void Resources::LoadTexture(const std::string& name)
     stbi_image_free(pixels);
 
     textures.emplace(trimmedName, std::make_unique<TextureSampler>());
-
     auto& texture = textures[trimmedName];
-
+    texture->name = trimmedName;
+    texture->id = static_cast<uint32_t>(textures.size());
     texture->Create(devices, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
     texture->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, 
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -341,8 +366,11 @@ void Resources::LoadTexture(const std::string& name)
         VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     texture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-    texture->CreateSampler();
-    texture->descriptorInfo = Initialisers::descriptorImageInfo(texture->imageView, texture->sampler);
+    VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, 1.0f, VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        flipped ? VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT : VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    texture->CreateSampler(samplerInfo);
+    //texture->descriptorInfo = Initialisers::descriptorImageInfo(texture->imageView, texture->sampler);
     stagingBuffer.Destroy();
 }
 

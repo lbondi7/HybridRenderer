@@ -867,7 +867,7 @@ namespace Initialisers {
 		accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
 		accelerationStructureCreateInfo.buffer = buffer;
 		accelerationStructureCreateInfo.size = size;
-		accelerationStructureCreateInfo.offset;
+		accelerationStructureCreateInfo.offset = offset;
 		accelerationStructureCreateInfo.type = type;
 		return accelerationStructureCreateInfo;
 	}
@@ -1004,9 +1004,19 @@ namespace Initialisers {
 		return accelerationStructureBuildRangeInfo;
 	}
 
-	VkAccelerationStructureInstanceKHR ASInstance(VkTransformMatrixKHR transformMatrix, VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset, uint32_t mask) {
+	VkAccelerationStructureInstanceKHR ASInstance(const VkTransformMatrixKHR& transformMatrix, VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset, uint32_t mask) {
 		VkAccelerationStructureInstanceKHR instance{};
 		instance.transform = transformMatrix;
+		instance.flags = flags;
+		instance.accelerationStructureReference = accelerationStructureReference;
+		instance.instanceCustomIndex = instanceCustomIndex;
+		instance.mask = mask;
+		instance.instanceShaderBindingTableRecordOffset = instanceShaderBindingTableRecordOffset;
+		return instance;
+	}
+
+	VkAccelerationStructureInstanceKHR ASInstance(VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset, uint32_t mask) {
+		VkAccelerationStructureInstanceKHR instance{};
 		instance.flags = flags;
 		instance.accelerationStructureReference = accelerationStructureReference;
 		instance.instanceCustomIndex = instanceCustomIndex;

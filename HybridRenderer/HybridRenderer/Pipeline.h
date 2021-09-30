@@ -24,6 +24,7 @@ struct PipelineInfo {
     std::vector<VkDynamicState> dynamicStates;
     std::vector<VkPushConstantRange> pushConstants;
     bool conservativeRasterisation = false;
+    std::string layoutsName;
 };
 
 class Pipeline
@@ -48,6 +49,7 @@ public:
 
     void Create(DeviceContext* _devices, RenderPass* _renderPass, const PipelineInfo& _pipelineInfo);
 
+    bool SortLayouts(DescriptorSetLayout* l1, DescriptorSetLayout* l2);
 
     void Init();
 

@@ -42,12 +42,29 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     penultimateRenderPass.Create(deviceContext, info);
 
     PipelineInfo pipelineInfo{};
+    shadowMap.Create(deviceContext);
+    pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
+        resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_FRAGMENT_BIT) };
+    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION , VertexAttributes::UV_COORD});
+    pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
+    pipelineInfo.depthBiasEnable = VK_TRUE;
+    pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS };
+    pipelineInfo.conservativeRasterisation = true;
+    pipelineInfo.colourAttachmentCount = 0;
+    pipelineInfo.layoutsName = "offscreen";
+    //pipelineInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+
+    shadowMap.Initialise(pipelineInfo);
+
+    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
     pipelineInfo.shaders = { resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT) ,
         resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT) };
     //resources->GetShaders(pipelineInfo.shaders, {"scene"});
-    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
-    pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    pipelineInfo.layoutsName = "scene";
+    pipelineInfo.colourAttachmentCount = 1;
+    pipelineInfo.conservativeRasterisation = false;
+    pipelineInfo.depthBiasEnable = VK_FALSE;
     //pipelineInfo.cullMode = VK_CULL_MODE_NONE;
 
     pipeline.Create(deviceContext, &renderPass, pipelineInfo);
@@ -61,19 +78,8 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
         penultimateFrameBuffer.createFramebuffer(attachments, swapChain->extent);
     }
 
-    resources->GetModel("tree2");
+   // resources->GetModel("tree2");
 
-    shadowMap.Create(deviceContext);
-    pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
-        resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_FRAGMENT_BIT) };
-    pipelineInfo.depthBiasEnable = VK_TRUE;
-    pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS };
-    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION , VertexAttributes::UV_COORD});
-    pipelineInfo.conservativeRasterisation = true;
-    pipelineInfo.colourAttachmentCount = 0;
-    //pipelineInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-
-    shadowMap.Initialise(pipelineInfo);
 
     AllocateCommandBuffers();
 

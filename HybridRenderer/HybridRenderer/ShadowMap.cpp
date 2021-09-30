@@ -31,6 +31,27 @@ bool ShadowMap::Update(uint32_t imageIndex) {
 					buffer.AllocatedMap(&shadowUBO);
 				}
 			}
+			if (widget.Slider("VertexRotate", &shadowUBO.vertexRotate, 0, 5))
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+				}
+			}
+			if (widget.Slider("TexRotate", &shadowUBO.texRotate, 0, 5))
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+				}
+			}
+			if (widget.Slider("BaryRotate", &shadowUBO.baryRotate, 0, 5))
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+				}
+			}
 			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
 				vkQueueWaitIdle(devices->presentQueue);
 				Reinitialise();
@@ -76,20 +97,31 @@ void ShadowMap::Initialise()
 	}
 
 
-	DescriptorSetRequest request;
-	request.ids.emplace_back(
-		DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
-			VK_SHADER_STAGE_FRAGMENT_BIT ));
-	request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-		VK_SHADER_STAGE_FRAGMENT_BIT));
+	DescriptorSetRequest request({ {"scene", 3} });
+	//DescriptorSetRequest request(2);
+	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	request.AddDescriptorImageData(0, &depthTexture.descriptorInfo);
+	request.AddDescriptorBufferData(1, buffers.data());
 
-	request.data.reserve(devices->imageCount * request.ids.size());
+	//request.binding = 0;
+	//request.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//request.shaderFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	//request.AddBufferData(lightBuffers.data());
+	//deviceContext->GetDescriptors(lightDescriptor, &accelerationStructureRequest);
+	//request.ids.emplace_back(
+	//	DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
+	//		VK_SHADER_STAGE_FRAGMENT_BIT ));
+	//request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+	//	VK_SHADER_STAGE_FRAGMENT_BIT));
 
-	for (size_t i = 0; i < devices->imageCount; i++) {
+	//request.data.reserve(devices->imageCount * request.ids.size());
 
-		request.data.emplace_back(&depthTexture.descriptorInfo);
-		request.data.push_back(&buffers[i].descriptorInfo);
-	}
+	//for (size_t i = 0; i < devices->imageCount; i++) {
+
+	//	request.data.emplace_back(&depthTexture.descriptorInfo);
+	//	request.data.push_back(&buffers[i].descriptorInfo);
+	//}
 
 	devices->GetDescriptors(descriptor, &request);
 
@@ -113,7 +145,6 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 
 	renderPass.Create(devices, info);
 
-	pipeline.Create(devices, &renderPass, pipelineInfo);
 
 	buffers.resize(devices->imageCount);
 	for (auto& buffer : buffers)
@@ -121,12 +152,12 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 		VkDeviceSize bufferSize = sizeof(ShadowUBO);
 		buffer.Allocate(devices, bufferSize,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		buffer.AllocatedMap(&shadowUBO);
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &shadowUBO);
 	}
 
 	Initialise();
 
+	pipeline.Create(devices, &renderPass, pipelineInfo);
 }
 
 void ShadowMap::Reinitialise(bool complete)

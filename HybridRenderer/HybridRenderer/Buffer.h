@@ -37,6 +37,8 @@ public:
 
 	uint64_t GetDeviceAddress();
 
+	uint64_t GetAllocatedDeviceAddress();
+
 	//uint64_t GetDeviceAddress2();
 
 	VkBuffer vkBuffer;
@@ -56,6 +58,8 @@ private:
 
 	DeviceContext* deviceContext;
 	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
-};
 
+	void Stage(void* data);
+	void AllocatedStage(void* data);
+};
 

@@ -31,7 +31,7 @@ struct Vertex {
 
     static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions(const std::vector<VertexAttributes>& attributes) {
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-        
+        attributeDescriptions.reserve(4);
         for (auto attribute : attributes)
         {
             if (attribute == VertexAttributes::POSITION)
@@ -51,13 +51,8 @@ struct Vertex {
                 attributeDescriptions.emplace_back(Initialisers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)));
             }
         }
-        //{
-        //Initialisers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)),
-        //Initialisers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)),
-        //Initialisers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)),
-        //Initialisers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, normal))
-        //};
 
+        attributeDescriptions.shrink_to_fit();
         return attributeDescriptions;
     }
 
@@ -70,7 +65,9 @@ struct Vertex {
 namespace std {
     template<> struct hash<Vertex> {
         size_t operator()(Vertex const& vertex) const {
-            return (((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec2>()(vertex.texCoord) << 1) >> 1) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec3>()(vertex.normal) << 1);
+            return (((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec2>()(vertex.texCoord) << 1) >> 1) ^ 
+                (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ 
+                (hash<glm::vec3>()(vertex.normal) << 1);
         }
     };
 }

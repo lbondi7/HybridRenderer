@@ -10,7 +10,10 @@
 #include "Buffer.h"
 
 struct ShadowUBO {
-	uint16_t shadowMap = 2U;
+	int shadowMap = 2;
+	int vertexRotate = 0;
+	int texRotate = 0;
+	int baryRotate = 0;
 };
 
 class ShadowMap
@@ -35,10 +38,11 @@ public:
 	uint32_t resolution = 2048;
 
 	FrameBuffer frameBuffer;
+
 	Pipeline pipeline;
 
 	TextureSampler depthTexture;
-	//CubemapTexture depthCubemap;
+
 	RenderPass renderPass;
 
 	Descriptor descriptor;

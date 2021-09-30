@@ -290,7 +290,9 @@ namespace Initialisers {
 
 	VkAccelerationStructureBuildRangeInfoKHR ASBuildRangeInfo(uint32_t primitiveCount, uint32_t primitiveOffset = 0, uint32_t firstVertex = 0, uint32_t transformOffset = 0);
 
-	VkAccelerationStructureInstanceKHR ASInstance(VkTransformMatrixKHR transformMatrix, VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset = 0, uint32_t mask = 0xFF);
+	VkAccelerationStructureInstanceKHR ASInstance(const VkTransformMatrixKHR& transformMatrix, VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset = 0, uint32_t mask = 0xFF);
+
+	VkAccelerationStructureInstanceKHR ASInstance(VkGeometryInstanceFlagsKHR flags, uint64_t accelerationStructureReference, uint32_t instanceCustomIndex, uint32_t instanceShaderBindingTableRecordOffset = 0, uint32_t mask = 0xFF);
 
 	VkAccelerationStructureDeviceAddressInfoKHR ASDeviceAddressInfo(const VkAccelerationStructureKHR& accelerationStructure);
 

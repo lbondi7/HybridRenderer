@@ -48,6 +48,7 @@ public:
 	DeviceContext* devices = nullptr;
 
 	std::string name;
+	uint32_t id;
 
 	bool hasImageView = false;
 

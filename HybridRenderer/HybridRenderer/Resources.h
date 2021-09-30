@@ -31,9 +31,11 @@ public:
 
 	void LoadModel(const std::string& name);
 
-	TextureSampler* GetTexture(const std::string& name);
+	TextureSampler* GetTexture(const std::string& name, bool flipped = false);
 
-	void LoadTexture(const std::string& name);
+	uint32_t GetTextureID(const std::string& name, bool flipped = false);
+
+	void LoadTexture(const std::string& name, bool flipped = false);
 
 	void LoadShader(const std::string& name, VkShaderStageFlagBits stage);
 

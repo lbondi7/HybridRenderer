@@ -34,14 +34,19 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 		buffers[i].Allocate(deviceContext, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
 
-	DescriptorSetRequest request;
-	request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
+	DescriptorSetRequest request({ { "scene", 0 } });
+	//DescriptorSetRequest request(1);
+	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+	request.AddDescriptorBufferData(0, buffers.data());
 
-	request.data.reserve(imageCount);
-	for (size_t i = 0; i < imageCount; i++) {
+	//DescriptorBinding request;
+	//request.ids.emplace_back(DescriptorBinding::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
 
-		request.data.push_back(&buffers[i].descriptorInfo);
-	}
+	//request.data.reserve(imageCount);
+	//for (size_t i = 0; i < imageCount; i++) {
+
+	//	request.data.push_back(&buffers[i].descriptorInfo);
+	//}
 
 	deviceContext->GetDescriptors(descriptor, &request);
 	//descriptor.initialise(deviceContext, request);
@@ -158,7 +163,7 @@ void Camera::setScissor(glm::vec2 size, glm::vec2 offset)
 
 void Camera::SetCullDistance(float cullDistance)
 {
-	gpuData.rayCullDistance = std::clamp(cullDistance, 0.0f, 100.0f);
+	gpuData.rayCullDistance = std::clamp(cullDistance, 0.0f, 25.0f);
 }
 
 bool Camera::valuesUpdated(float windowWidth, float windowHeight) {

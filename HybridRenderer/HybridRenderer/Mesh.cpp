@@ -7,32 +7,41 @@ Mesh::~Mesh()
 void Mesh::Init(DeviceContext* _devices)
 {
     devices = _devices;
-	vertexBuffer = std::make_unique<Buffer>();
-	indexBuffer = std::make_unique<Buffer>();
 
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-    Buffer stagingBuffer;
-    stagingBuffer.Create(devices, bufferSize, vertices.data());
+    //Buffer stagingBuffer;
+    //stagingBuffer.Create(devices, bufferSize, vertices.data());
 
-    vertexBuffer->Allocate(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vertexBuffer->AllocatedCopyFrom(&stagingBuffer);
+    //vertexBuffer.Create(devices, bufferSize, 
+    //    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+    //    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+    //    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertices.data());
+    vertexBuffer.Create(devices, bufferSize, 
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertices.data());
 
     bufferSize = sizeof(indices[0]) * indices.size();
 
-    Buffer stagingIndexBuffer;
-    stagingIndexBuffer.Create(devices, bufferSize, indices.data());
+    //indexBuffer.Create(devices, bufferSize, 
+    //    VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+    //    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+    //    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indices.data());
+    indexBuffer.Create(devices, bufferSize, 
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indices.data());
+    //indexBuffer.AllocatedCopyFrom(&stagingIndexBuffer);
 
-    indexBuffer->Allocate(devices, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    indexBuffer->AllocatedCopyFrom(&stagingIndexBuffer);
+    //stagingBuffer.Destroy();
+    //stagingIndexBuffer.Destroy();
 
-    stagingBuffer.Destroy();
-    stagingIndexBuffer.Destroy();
 
     min = glm::vec3(FLT_MAX);
     max = glm::vec3(-FLT_MAX);
 
-    for(auto& vertex : vertices)
+    for (auto& vertex : vertices)
     {
         min.x = std::min(min.x, vertex.pos.x);
         min.y = std::min(min.y, vertex.pos.y);
@@ -41,39 +50,24 @@ void Mesh::Init(DeviceContext* _devices)
         max.y = std::max(max.y, vertex.pos.y);
         max.z = std::max(max.z, vertex.pos.z);
     }
-
-    //DescriptorSetRequest request{};
-    //request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
-    //for (size_t i = 0; i < devices->imageCount; i++) {
-
-    //    request.data.push_back(&texture->descriptorInfo);
-    //}
-    //devices->GetDescriptors(descriptor, &request);
 }
 
-//void Mesh::SetTexture(TextureSampler* texture)
-//{
-//    this->texture = texture;
-//    DescriptorSetRequest request{};
-//    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
-//    for (size_t i = 0; i < devices->imageCount; i++) {
-//
-//        request.data.push_back(&texture->descriptorInfo);
-//    }
-//    devices->GetDescriptors(descriptor, &request);
-//}
-
 void Mesh::Destroy() {
-    vertexBuffer->Destroy();
-    indexBuffer->Destroy();
+    vertexBuffer.Destroy();
+    indexBuffer.Destroy();
     texture = nullptr;
     //material = nullptr;
 }
 
 void Mesh::Bind(VkCommandBuffer cmdBuffer)
 {
+    if (vertexBuffer.vkBuffer) 
+        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer.vkBuffer, &vertexBuffer.offset);
+    else
+        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer.bufferInfo.buffer, &vertexBuffer.bufferInfo.offset);
 
-    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer->bufferInfo.buffer, &vertexBuffer->bufferInfo.offset);
-
-    vkCmdBindIndexBuffer(cmdBuffer, indexBuffer->bufferInfo.buffer, indexBuffer->bufferInfo.offset, VK_INDEX_TYPE_UINT32);
+    if(indexBuffer.vkBuffer)
+        vkCmdBindIndexBuffer(cmdBuffer, indexBuffer.vkBuffer, indexBuffer.offset, VK_INDEX_TYPE_UINT32);
+    else 
+        vkCmdBindIndexBuffer(cmdBuffer, indexBuffer.bufferInfo.buffer, indexBuffer.bufferInfo.offset, VK_INDEX_TYPE_UINT32);
 }

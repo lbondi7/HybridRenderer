@@ -10,4 +10,5 @@ void main()
 	if (alpha < 0.2) {
 		discard;
 	}
+
 }

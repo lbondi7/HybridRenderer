@@ -55,13 +55,6 @@
 //    }
 //
 //}
-//
-//const void VkCheckShit(VkResult res) {
-//    if (res != VK_SUCCESS)																				
-//    {
-//        std::cout << "Fatal : VkResult is \"" << errorString(res);
-//    }
-//}
 
 
 const uint32_t WIDTH = 800;
@@ -143,12 +136,18 @@ enum VertexAttributes {
     NORMAL
 };
 
-struct DescriptorSetRequest {
-
-    using BindingType = std::tuple<uint32_t, VkDescriptorType, VkShaderStageFlagBits>;
-    std::vector<BindingType> ids;
-    std::vector<void*> data;
-};
+//struct DescriptorSetRequest {
+//
+//    using BindingType = std::tuple<uint32_t, VkDescriptorType, VkShaderStageFlagBits>;
+//    std::vector<BindingType> ids;
+//    std::vector<void*> data;
+//    uint32_t descriptorCount = 1;
+//    VkShaderStageFlagBits shaderFlags;
+//    VkDescriptorType type;
+//    uint32_t binding;
+//
+//
+//};
 
 struct PushConstBlock {
     glm::vec2 scale;

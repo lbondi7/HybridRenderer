@@ -54,7 +54,7 @@ void RayTracingPipeline::CreateDescriptorSetLayouts() {
 
         }
 
-        descriptorSetLayouts.push_back(deviceContext->dsm.addLayoutAndReturn(i, bindings));
+        descriptorSetLayouts.push_back(deviceContext->descriptorSetManager.addLayoutAndReturn(i, bindings));
 
         bindings.clear();
     }

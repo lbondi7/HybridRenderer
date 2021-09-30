@@ -18,6 +18,8 @@ public:
 
 	DescriptorSetLayout* addLayoutAndReturn(uint32_t set, const std::vector<VkDescriptorSetLayoutBinding>& bindings, bool newLayout = false);
 
+	void GetLayouts(std::vector<DescriptorSetLayout*>& layouts, const std::string& name);
+
 	void getDescriptor(Descriptor& descriptor, const DescriptorSetRequest& request);
 
 	void freeDescriptorSet(VkDescriptorSet* descriptorSet);
@@ -25,6 +27,8 @@ public:
 	void update(Descriptor& descriptor, const DescriptorSetRequest& request);
 
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
+
+	std::vector<DescriptorSetLayout> m_layouts;
 
 	std::vector<DescriptorPool> pools;
 

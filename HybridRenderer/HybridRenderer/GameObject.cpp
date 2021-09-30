@@ -26,17 +26,36 @@ void GameObject::Init(DeviceContext* deviceContext)
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		}
 
-		DescriptorSetRequest request;
-		request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
-		request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
-		request.data.reserve(imageCount);
-		for (size_t i = 0; i < imageCount; i++) {
+		//DescriptorSetRequest request(2);
+		DescriptorSetRequest request({ {"scene", 1}, {"offscreen", 1} }, 2);
+		request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+		request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		request.AddDescriptorBufferData(0, uniformBuffers.data());
+		request.AddDescriptorImageData(1, &texture->descriptorInfo);
 
-			request.data.push_back(&uniformBuffers[i].descriptorInfo);
-			request.data.push_back(&texture->descriptorInfo);
-		}
+		//DescriptorSetRequest request;
+		//request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
+		//request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+		//request.data.reserve(imageCount);
+		//for (size_t i = 0; i < imageCount; i++) {
+
+		//	request.data.push_back(&uniformBuffers[i].descriptorInfo);
+		//	request.data.push_back(&texture->descriptorInfo);
+		//}
 
 		deviceContext->GetDescriptors(descriptor, &request);
+
+
+		//request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
+		//request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+		//request.data.reserve(imageCount);
+		//for (size_t i = 0; i < imageCount; i++) {
+
+		//	request.data.push_back(&uniformBuffers[i].descriptorInfo);
+		//	request.data.push_back(&texture->descriptorInfo);
+		//}
+
+		//deviceContext->GetDescriptors(descriptor, &request);
 	}
 }
 
@@ -81,15 +100,21 @@ void GameObject::SetTexture(TextureSampler* texture)
 	if (mesh) {
 		auto imageCount = deviceContext->imageCount;
 
-		DescriptorSetRequest request;
-		request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
-		request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
-		request.data.reserve(imageCount);
-		for (size_t i = 0; i < imageCount; i++) {
+		DescriptorSetRequest request({ {"scene", 1}, {"offscreen", 1} }, 2);
+		request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+		request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		request.AddDescriptorBufferData(0, uniformBuffers.data());
+		request.AddDescriptorImageData(1, &texture->descriptorInfo);
 
-			request.data.push_back(&uniformBuffers[i].descriptorInfo);
-			request.data.push_back(&texture->descriptorInfo);
-		}
+		//DescriptorSetRequest request;
+		//request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
+		//request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+		//request.data.reserve(imageCount);
+		//for (size_t i = 0; i < imageCount; i++) {
+
+		//	request.data.push_back(&uniformBuffers[i].descriptorInfo);
+		//	request.data.push_back(&texture->descriptorInfo);
+		//}
 
 		deviceContext->GetDescriptors(descriptor, &request);
 	}

@@ -39,6 +39,7 @@ public:
 	bool shadowCaster = true;
 
 	Descriptor descriptor;
+	Descriptor offscreenDescriptor;
 
 	glm::vec3 min;
 	glm::vec3 max;

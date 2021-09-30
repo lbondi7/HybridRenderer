@@ -177,7 +177,7 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Source Files\Vulkan\Shader</Filter>
     </ClCompile>
-    <ClCompile Include="DescriptorSet.cpp">
+    <ClCompile Include="DescriptorSetRequest.cpp">
       <Filter>Source Files\Vulkan\Descriptors</Filter>
     </ClCompile>
     <ClCompile Include="Timer.cpp">
@@ -326,7 +326,7 @@
     <ClInclude Include="Shader.h">
       <Filter>Header Files\Vulkan\Shader</Filter>
     </ClInclude>
-    <ClInclude Include="DescriptorSet.h">
+    <ClInclude Include="DescriptorSetRequest.h">
       <Filter>Header Files\Vulkan\Descriptors</Filter>
     </ClInclude>
     <ClInclude Include="DescriptorPoolData.h">

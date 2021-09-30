@@ -13,9 +13,9 @@ void DescriptorPool::init(VkDevice _logicalDevice, const DescriptorSetRequest& r
     temporary = _temporary;
     
 
-    for (auto r : request.ids)
+    for (auto r : request.bindings)
     {
-        auto& descriptorType = std::get<1>(r);
+        auto& descriptorType = r.type;
         bool hasType = false;
         for (auto type : types)
         {
@@ -37,18 +37,10 @@ void DescriptorPool::init(VkDevice _logicalDevice, const DescriptorSetRequest& r
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
         { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-        //{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-        //{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 }, 
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-        //{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-        //{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-        //{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
         { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1000 }
     };
-
-    //data.count.insert(std::make_pair(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, std::make_pair(0, 1000)));
-    //data.count.insert(std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, std::make_pair(0, 1000)));
 
     for (auto& poolSize : poolSizes)
     {
@@ -73,40 +65,13 @@ void DescriptorPool::destroy()
     count = 0;
 }
 
-//bool DescriptorPool::isAvailable(const DescriptorSetRequest& request)
-//{
-//    if (count >= maxSets)
-//        return false;
-//
-//    for (auto r : request.ids)
-//    {
-//        bool hasType = false;
-//        for (auto type : types)
-//        {
-//            if (type == std::get<1>(r))
-//            {
-//                hasType = true;
-//            }
-//        }
-//
-//        if (hasType)
-//            continue;
-//
-//        return false;
-//    }
-//
-//    return true;
-//}
-
 bool DescriptorPool::isAvailable(const DescriptorSetRequest& request)
 {
-
-    for (auto r : request.ids)
+    for (auto r : request.bindings)
     {
+        auto& count = data.count[r.type];
 
-        auto& count = data.count[std::get<1>(r)];
-
-        if (count.first >= count.second)
+        if (count.first + r.descriptorCount >= count.second)
             return false;
     }
 
@@ -148,9 +113,12 @@ void DescriptorPool::allocate(Descriptor& descriptor, VkDescriptorSetLayout layo
 
     for (size_t i = 0; i < imageCount; i++)
     {
-        for (auto& r : request.ids)
+        for (auto& r : request.bindings)
         {
-            data.count[std::get<1>(r)].first++;
+            for (size_t j = 0; j < r.descriptorCount; j++)
+            {
+                data.count[r.type].first++;
+            }
         }
     }
 }

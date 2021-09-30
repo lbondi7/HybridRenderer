@@ -2,7 +2,7 @@
 
 #include "Constants.h"
 #include "DescriptorPoolData.h"
-#include "DescriptorSet.h"
+#include "DescriptorSetRequest.h"
 #include "Descriptor.h"
 
 class DescriptorPool
@@ -39,7 +39,7 @@ public:
 
 	VkDevice logicalDevice;
 
-	std::vector<DescriptorSet> dsets;
+	std::vector<DescriptorBinding> dsets;
 
 	std::vector<VkDescriptorType> types;
 };

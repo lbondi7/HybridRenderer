@@ -170,7 +170,7 @@
     <ClCompile Include="DepthRenderPass.cpp" />
     <ClCompile Include="DepthTexture.cpp" />
     <ClCompile Include="DescriptorPool.cpp" />
-    <ClCompile Include="DescriptorSet.cpp" />
+    <ClCompile Include="DescriptorSetRequest.cpp" />
     <ClCompile Include="DescriptorSetLayout.cpp" />
     <ClCompile Include="DescriptorSetManager.cpp" />
     <ClCompile Include="Device.cpp" />
@@ -222,7 +222,7 @@
     <ClInclude Include="Descriptor.h" />
     <ClInclude Include="DescriptorPool.h" />
     <ClInclude Include="DescriptorPoolData.h" />
-    <ClInclude Include="DescriptorSet.h" />
+    <ClInclude Include="DescriptorSetRequest.h" />
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="DescriptorSetManager.h" />
     <ClInclude Include="Device.h" />

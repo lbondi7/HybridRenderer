@@ -3,6 +3,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <algorithm>
 
 Pipeline::~Pipeline()
 {
@@ -30,6 +31,11 @@ void Pipeline::Create(DeviceContext* _devices, RenderPass* _renderPass, const Pi
 
 }
 
+bool Pipeline::SortLayouts(DescriptorSetLayout* l1, DescriptorSetLayout* l2)
+{
+    return false;
+}
+
 void Pipeline::Init()
 {
     createGraphicsPipeline();
@@ -37,42 +43,51 @@ void Pipeline::Init()
 
 void Pipeline::createDescriptorSetLayouts() {
 
-    std::vector<DescriptorData> descriptors;
 
-    for (auto& shader : pipelineInfo.shaders)
+    devices->descriptorSetManager.GetLayouts(descriptorSetLayouts, pipelineInfo.layoutsName);
+    std::sort(descriptorSetLayouts.begin(), descriptorSetLayouts.end(), [] (DescriptorSetLayout* lhs, DescriptorSetLayout* rhs)
     {
-        for (auto& descriptor : shader->descriptors)
-        {
-            if (descriptor.set >= layoutCount)
-                layoutCount = descriptor.set;
+        return lhs->set < rhs->set;
+    });
 
-            if (!DescriptorData::contains(descriptor, descriptors))
-            {
-                descriptors.emplace_back(descriptor);
-            }
-        }
-    }
+    layoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 
-    layoutCount += 1;
-    descriptorSetLayouts.reserve(layoutCount);
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-    for (size_t i = 0; i < layoutCount; i++)
-    {
-        bindings.reserve(descriptors.size());
-        for (auto& descriptor : descriptors)
-        {
-            if (descriptor.set != i)
-                continue;
+    //std::vector<DescriptorData> descriptors;
 
-            bindings.emplace_back(
-                Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
+    //for (auto& shader : pipelineInfo.shaders)
+    //{
+    //    for (auto& descriptor : shader->descriptors)
+    //    {
+    //        if (descriptor.set >= layoutCount)
+    //            layoutCount = descriptor.set;
 
-        }
+    //        if (!DescriptorData::contains(descriptor, descriptors))
+    //        {
+    //            descriptors.emplace_back(descriptor);
+    //        }
+    //    }
+    //}
 
-        descriptorSetLayouts.push_back(devices->dsm.addLayoutAndReturn(i, bindings));
+    //layoutCount += 1;
+    //descriptorSetLayouts.reserve(layoutCount);
+    //std::vector<VkDescriptorSetLayoutBinding> bindings;
+    //for (size_t i = 0; i < layoutCount; i++)
+    //{
+    //    bindings.reserve(descriptors.size());
+    //    for (auto& descriptor : descriptors)
+    //    {
+    //        if (descriptor.set != i)
+    //            continue;
 
-        bindings.clear();
-    }
+    //        bindings.emplace_back(
+    //            Initialisers::descriptorSetLayoutBinding(descriptor.binding, descriptor.type, descriptor.stage));
+
+    //    }
+
+    //    descriptorSetLayouts.push_back(devices->descriptorSetManager.addLayoutAndReturn(i, bindings));
+
+    //    bindings.clear();
+    //}
 }
 
 void Pipeline::createGraphicsPipeline() {

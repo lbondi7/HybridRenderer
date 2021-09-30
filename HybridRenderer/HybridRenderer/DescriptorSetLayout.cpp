@@ -40,18 +40,25 @@ bool DescriptorSetLayout::checkBindings(const std::vector<VkDescriptorSetLayoutB
 
 bool DescriptorSetLayout::matches(const DescriptorSetRequest& request)
 {
-
-    if (request.ids.size() != bindings.size())
+    if (request.bindings.size() != bindings.size())
         return false;
 
-    for (size_t i = 0; i < request.ids.size(); i++)
+    for (size_t i = 0; i < request.bindings.size(); i++)
     {
-        auto [binding, descriptorType, shaderStage] = request.ids[i];
-        if (bindings[i].binding != binding ||
-            bindings[i].descriptorType != descriptorType ||
-            bindings[i].stageFlags != shaderStage)
+        auto& descriptor = request.bindings[i];
+        if (bindings[i].binding != descriptor.binding ||
+            bindings[i].descriptorType != descriptor.type ||
+            bindings[i].stageFlags != descriptor.shaderFlags ||
+            bindings[i].descriptorCount != descriptor.descriptorCount)
             return false;
     }
 
-    return true;
+    for (auto& tag : request.layoutTags) {
+        if (this->tag == tag.first) {
+            if (set == tag.second)
+                return true;
+        }
+    }
+
+    return false;
 }

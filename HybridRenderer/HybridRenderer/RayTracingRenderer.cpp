@@ -137,16 +137,21 @@ void RayTracingRenderer::CreateDescriptorSets()
 	storageImageDescriptor.imageView = storageImage.imageView;
 	storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-	DescriptorSetRequest request{};
-	request.ids.push_back({0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
-	request.ids.push_back({1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
+	DescriptorSetRequest request(2);
+	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	request.AddDescriptorImageData(0, &storageImageDescriptor);
+	request.AddDescriptorImageData(1, &ubo.descriptorInfo);
 
-	request.data.reserve(request.ids.size() * deviceContext->imageCount);
-	for (size_t i = 0; i < deviceContext->imageCount; i++)
-	{
-		request.data.push_back(&storageImageDescriptor);
-		request.data.push_back(&ubo.descriptorInfo);
-	}
+	//request.ids.push_back({0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
+	//request.ids.push_back({1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
+
+	//request.data.reserve(request.ids.size() * deviceContext->imageCount);
+	//for (size_t i = 0; i < deviceContext->imageCount; i++)
+	//{
+	//	request.data.push_back(&storageImageDescriptor);
+	//	request.data.push_back(&ubo.descriptorInfo);
+	//}
 
 	deviceContext->GetDescriptors(rtDescriptor, &request);
 }
@@ -192,16 +197,22 @@ void RayTracingRenderer::Reinitialise()
 	storageImageDescriptor.imageView = storageImage.imageView;
 	storageImageDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-	DescriptorSetRequest request{};
-	request.ids.push_back({ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
-	request.ids.push_back({ 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
+	DescriptorSetRequest request(2);
+	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	request.AddDescriptorImageData(0, &storageImageDescriptor);
+	request.AddDescriptorImageData(1, &ubo.descriptorInfo);
 
-	request.data.reserve(request.ids.size() * deviceContext->imageCount);
-	for (size_t i = 0; i < deviceContext->imageCount; i++)
-	{
-		request.data.push_back(&storageImageDescriptor);
-		request.data.push_back(&ubo.descriptorInfo);
-	}
+	//request.ids.push_back({ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
+	//request.ids.push_back({ 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR });
+
+	//request.data.reserve(request.ids.size() * deviceContext->imageCount);
+	//for (size_t i = 0; i < deviceContext->imageCount; i++)
+	//{
+	//	request.data.push_back(&storageImageDescriptor);
+	//	request.data.push_back(&ubo.descriptorInfo);
+	//}
+
 	rtDescriptor.requestData = request;
 	deviceContext->GetDescriptors(rtDescriptor);
 

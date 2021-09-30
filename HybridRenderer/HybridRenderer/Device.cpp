@@ -15,21 +15,21 @@ void DeviceContext::SetupDevices(VkInstance instance, VkSurfaceKHR surface)
 
     SetupAllocator();
 
-    dsm.init(logicalDevice);
+    descriptorSetManager.init(logicalDevice);
 
     createCommandPool(surface);
 }
 
 void DeviceContext::SetupAllocator()
 {
-    allocator.init(logicalDevice, physicalDevice);
+    allocator.init(logicalDevice, physicalDevice, physicalDeviceProperties, physicalDevicePropertiesExt);
 }
 
 
 void DeviceContext::Destroy()
 {
     allocator.destroy();
-    dsm.destroy();
+    descriptorSetManager.destroy();
     vkDestroyDevice(logicalDevice, nullptr);
 }
 
@@ -72,7 +72,7 @@ void DeviceContext::EndCommandBuffer(VkCommandBuffer cmdBuffer)
     }
 
     // Submit to the queue
-    if (Log(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence)) != VK_SUCCESS) {
+    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
 
         throw std::runtime_error("failed to submit 1 time command buffer!");
     }
@@ -134,40 +134,50 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     deviceFeatures.fillModeNonSolid = VK_TRUE;
     deviceFeatures.robustBufferAccess = VK_TRUE;
     deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
+    deviceFeatures.shaderInt64 = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
     // Enable features required for ray tracing using feature chaining via pNext		
-    enabledBufferDeviceAddresFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-    enabledBufferDeviceAddresFeatures.bufferDeviceAddress = VK_TRUE;
+    bufferDeviceAddresFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    bufferDeviceAddresFeatures.bufferDeviceAddress = VK_TRUE;
 
-    enabledRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-    enabledRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
-    enabledRayTracingPipelineFeatures.rayTraversalPrimitiveCulling = VK_TRUE;
-    enabledRayTracingPipelineFeatures.pNext = &enabledBufferDeviceAddresFeatures;
+    rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    rayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+    rayTracingPipelineFeatures.rayTraversalPrimitiveCulling = VK_TRUE;
+    rayTracingPipelineFeatures.pNext = &bufferDeviceAddresFeatures;
 
-    enabledAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-    enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
-    enabledAccelerationStructureFeatures.pNext = &enabledRayTracingPipelineFeatures;
+    accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    accelerationStructureFeatures.accelerationStructure = VK_TRUE;
+    accelerationStructureFeatures.pNext = &rayTracingPipelineFeatures;
 
-    enabledRayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
-    enabledRayQueryFeatures.rayQuery = VK_TRUE;
-    enabledRayQueryFeatures.pNext = &enabledAccelerationStructureFeatures;
+    rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    rayQueryFeatures.rayQuery = VK_TRUE;
+    rayQueryFeatures.pNext = &accelerationStructureFeatures;
 
-    void* deviceCreatepNextChain = &enabledAccelerationStructureFeatures;
+    VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
+    descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+
+    // Enable non-uniform indexing
+    descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+    descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+    descriptorIndexingFeatures.pNext = &rayQueryFeatures;
 
     rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
-    VkPhysicalDeviceProperties2 deviceProperties2{};
-    deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    deviceProperties2.pNext = &rayTracingPipelineProperties;
-    vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+    accelerationStructureProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
+    physicalDevicePropertiesExt.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    physicalDevicePropertiesExt.pNext = &accelerationStructureProperties;
+    vkGetPhysicalDeviceProperties2(physicalDevice, &physicalDevicePropertiesExt);
 
 
     // Get acceleration structure properties, which will be used later on in the sample
     VkPhysicalDeviceFeatures2 deviceFeatures2{};
     deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    deviceFeatures2.pNext = &enabledRayQueryFeatures;
+    deviceFeatures2.pNext = &descriptorIndexingFeatures;
     //deviceFeatures2.pNext = &enabledAccelerationStructureFeatures;
     vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
 
@@ -252,5 +262,5 @@ void DeviceContext::GetDescriptors(Descriptor& descriptor, const DescriptorSetRe
 {
     if(request)
         descriptor.requestData = *request;
-    dsm.getDescriptor(descriptor, descriptor.requestData);
+    descriptorSetManager.getDescriptor(descriptor, descriptor.requestData);
 }

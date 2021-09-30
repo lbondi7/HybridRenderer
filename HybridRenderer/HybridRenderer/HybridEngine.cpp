@@ -49,12 +49,7 @@ void HybridEngine::initialise()
 
     resources.LoadTexture("texture.jpg");
 
-    raster.Initialise(window.get(), core.get(), &swapChain, &resources);
-
-    //rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources);
-
     scene.Initialise(core->deviceContext.get(), &resources);
-
     auto imageCount = core->deviceContext->imageCount;
 
     camera.lookAt = glm::vec3(0, 0, 0);
@@ -62,6 +57,13 @@ void HybridEngine::initialise()
     camera.transform.rotation.y = 180.f;
 
     camera.init(core->deviceContext.get(), swapChain.extent);
+
+    raster.Initialise(window.get(), core.get(), &swapChain, &resources);
+
+    //rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources);
+
+
+
 
     nextImageSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     presentSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -152,7 +154,7 @@ void HybridEngine::update()
 
     if (timer.MSPF_f() > timer.Threshold_f(60))
         camera.SetCullDistance(camera.gpuData.rayCullDistance - (timer.DeltaTime_f() * std::max(1.0f, camera.gpuData.rayCullDistance) / 2.0f));
-    else if(timer.MSPF_f() < timer.Threshold_f(63))
+    else
         camera.SetCullDistance(camera.gpuData.rayCullDistance + (timer.DeltaTime_f() * std::max(1.0f, camera.gpuData.rayCullDistance) / 2.0f));
 
     camera.update();

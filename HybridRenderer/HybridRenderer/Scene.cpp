@@ -1,5 +1,7 @@
 #include "Scene.h"
 
+#include "DebugLogger.h"
+
 Scene::~Scene()
 {
 }
@@ -8,8 +10,8 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 {
     this->deviceContext = deviceContext;
 
-    gameObjectCount = 400;
-    gameObjects.reserve(gameObjectCount * 10);
+    gameObjectCount = 4;
+    gameObjects.reserve(10000);
     gameObjects.resize(static_cast<uint32_t>(gameObjectCount));
 
     float value = 0;
@@ -31,20 +33,11 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 
     for (size_t i = 0; i < gameObjectCount; i++)
     {
-        if (i == 0)
-        {
-            CreateGameObject(&gameObjects[i], resources->GetModel("plane"));
-            gameObjects[i].transform.scale = glm::vec3(100.0f);
-            gameObjects[i].SetTexture(resources->GetTexture("white.jpg"));
-            gameObjects[i].name = "Floor " + i;
-            continue;
-        }
-        else {
-            CreateGameObject(&gameObjects[i], resources->GetModel("tree2"));
-            gameObjects[i].Init(deviceContext);
-            gameObjects[i].name = "Tree Parent " + i;
-            gameObjects[i].transform.position = glm::vec3(x, 0, z);
-        }
+        CreateGameObject(&gameObjects[i], resources->GetModel("tree2"));
+        gameObjects[i].Init(deviceContext);
+        gameObjects[i].name = "Tree Parent " + i;
+        gameObjects[i].transform.position = glm::vec3(x, 0, z);
+
         if (x >= max)
         {
             z += dist;
@@ -55,39 +48,135 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
         }
     }
 
+    gameObjects[0].transform.rotation.x += 10.0f;
+    gameObjects[1].transform.position.x += 5.0f;
+
+    gameObjects[1].GetMatrix();
+
+    {
+        auto& go = gameObjects.emplace_back();
+        CreateGameObject(&go, resources->GetModel("plane"));
+        go.transform.scale = glm::vec3(100.0f);
+        go.SetTexture(resources->GetTexture("white3.png"));
+        go.name = "Floor ";
+    }
+
+    {
+        auto& go = gameObjects.emplace_back();
+        CreateGameObject(&go, resources->GetModel("plane"));
+        go.transform.rotation.y = 90.0f;
+        go.transform.position.z = -2.0f;
+        go.transform.position.y = 1.0f;
+        go.SetTexture(resources->GetTexture("amogus.png"));
+        go.name = "Amogus";
+    }
+
     gameObjectCount = gameObjects.size();
 
+    struct ObjDesc {
+        int textureIndex;
+        uint64_t verticesAddress;
+        uint64_t indicesAddress;
+    };
+
+    std::vector<ObjDesc> objecDescs;
+    std::vector<uint32_t> textureIDs;
+    std::vector<VkDescriptorImageInfo> textures;
+    objecDescs.reserve(gameObjects.size());
+    textures.reserve(gameObjects.size());
+    bottomLevelASs.reserve(gameObjects.size());
     for (auto& go : gameObjects)
     {
         if (go.mesh) {
+            ObjDesc objDesc;
+            objDesc.verticesAddress = go.mesh->vertexBuffer.GetDeviceAddress();
+            objDesc.indicesAddress = go.mesh->indexBuffer.GetDeviceAddress();
             AccelerationStructure blas;
             blas.Initialise(deviceContext);
             blas.createBottomLevelAccelerationStructure(go);
-            bottomLevelASs.push_back(blas);
+            bottomLevelASs.emplace_back(blas);
+            bool textureFound = false;
+            for (size_t i = 0; i < textures.size(); ++i)
+            {
+                if (textures[i].imageLayout == go.texture->descriptorInfo.imageLayout &&
+                    textures[i].imageView == go.texture->descriptorInfo.imageView &&
+                    textures[i].sampler == go.texture->descriptorInfo.sampler)
+                {
+                    objDesc.textureIndex = i;
+                    Log(objDesc.textureIndex, "Texture Index");
+                    textureFound = true;
+                    break;
+                }
+            }
+
+            if (!textureFound) 
+            {
+                textures.emplace_back(go.texture->descriptorInfo);
+                objDesc.textureIndex = textures.size() - 1;
+                Log(objDesc.textureIndex, "Texture Index");
+            }
+
+            objecDescs.emplace_back(objDesc);
         }
     }
 
     topLevelAS.Initialise(deviceContext);
     topLevelAS.createTopLevelAccelerationStructure(bottomLevelASs);
 
-    DescriptorSetRequest request;
-    auto imageCount = 3;
-    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_FRAGMENT_BIT));
-    request.data.reserve(imageCount);
+    Buffer objectBuffer;
+
+    objectBuffer.Create(deviceContext, sizeof(ObjDesc) * objecDescs.size(),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, objecDescs.data());
+
     auto accelerationStructureInfo = Initialisers::descriptorSetAccelerationStructureInfo(&topLevelAS.handle);
-    for (size_t i = 0; i < imageCount; i++) {
+    //DescriptorSetRequest accelerationStructureRequest(3);
+    DescriptorSetRequest accelerationStructureRequest({ {"scene", 4} }, 3);
+    accelerationStructureRequest.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_FRAGMENT_BIT);
+    accelerationStructureRequest.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    accelerationStructureRequest.AddDescriptorBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, static_cast<uint32_t>(textures.size()));
+    accelerationStructureRequest.AddDescriptorImageData(0, &accelerationStructureInfo);
+    accelerationStructureRequest.AddDescriptorImageData(1, &objectBuffer.descriptorInfo);
+    accelerationStructureRequest.AddDescriptorImageData(2, textures.data());
+    deviceContext->GetDescriptors(asDescriptor, &accelerationStructureRequest);
 
-        request.data.push_back(&accelerationStructureInfo);
-    }
-    deviceContext->GetDescriptors(asDescriptor, &request);
+    auto imageCount = 3;
 
-    request.ids.clear();
-    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+    //descriptorPool.init(deviceContext->logicalDevice, accelerationStructureRequest);
 
-    deviceContext->GetDescriptors(rtASDescriptor, &request);
+    //DescriptorSetLayout layout;
+    //layout.bindings = { {0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_FRAGMENT_BIT } };
+    //layout.init(deviceContext->logicalDevice);
 
-    request.data.clear();
-    request.ids.clear();
+    //descriptorPool.allocate(asDescriptor, layout.layout, accelerationStructureRequest);
+
+    //auto writeCount = static_cast<uint32_t>(accelerationStructureRequest.bindings.size());
+
+    //for (size_t i = 0; i < 3; i++) {
+
+    //    std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+    //    for (size_t j = 0; j < writeCount; ++j) {
+    //        bool isImage = false;
+
+    //        auto& descriptorInfo = accelerationStructureRequest.bindings[j];
+    //        isImage =
+    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_SAMPLER ||
+    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+    //        bool isAccelerationStructure = descriptorInfo.type == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR ||
+    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV;
+
+    //        descriptorWrites.push_back(Initialisers::writeDescriptorSet(asDescriptor.sets[i],
+    //                descriptorInfo.binding, descriptorInfo.type, (const VkWriteDescriptorSetAccelerationStructureKHR*)descriptorInfo.data[i], 
+    //                descriptorInfo.descriptorCount));
+    //    }
+
+    //    vkUpdateDescriptorSets(deviceContext->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
+    //}
 
     lightBuffers.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++) {
@@ -97,14 +186,11 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
-    request.ids.emplace_back(DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
-    request.data.reserve(imageCount);
-    for (size_t i = 0; i < imageCount; i++) {
-
-        request.data.push_back(&lightBuffers[i].descriptorInfo);
-    }
-    deviceContext->GetDescriptors(lightDescriptor, &request);
-
+    DescriptorSetRequest lightRequest({ {"scene", 2}, {"offscreen", 0} }, 1);
+    //DescriptorSetRequest lightRequest(1);
+    lightRequest.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    lightRequest.AddDescriptorBufferData(0, lightBuffers.data());
+    deviceContext->GetDescriptors(lightDescriptor, &lightRequest);
 }
 
 void Scene::Update(uint32_t imageIndex, float dt)
@@ -112,6 +198,9 @@ void Scene::Update(uint32_t imageIndex, float dt)
     float zNear = 1.0f;
     float zFar = 1000.0f;
 
+
+    lightPos = glm::vec3(0.0f, 7.5f, -10.0f);
+    lightFOV = 90.0f;
     glm::vec3 lightLookAt = glm::vec3(0, 0, 0);
     // Matrix from light's point of view
     glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
