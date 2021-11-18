@@ -3,7 +3,7 @@
 #include "Buffer.h"
 #include "Vertex.h"
 #include "Material.h"
-#include "TextureSampler.h"
+#include "Texture.h"
 #include "Descriptor.h"
 
 #include <memory>

@@ -104,6 +104,7 @@ void Buffer::Allocate(DeviceContext* _devices, VkDeviceSize _size, VkBufferUsage
         }
         else if (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
+            bufferInfo.data = data;
             AllocatedMap(_data);
         }
     }
@@ -167,9 +168,6 @@ void Buffer::Destroy() {
     if (memory != VK_NULL_HANDLE)
     {
         vkFreeMemory(deviceContext->logicalDevice, memory, nullptr);
-        //deviceContext->allocator.memoryAllocCount--;
-        //Log(deviceContext->allocator.memoryAllocCount, "Memory Allocation Count");
-
     }
 }
 
@@ -197,6 +195,7 @@ void Buffer::Unmap()
 void Buffer::AllocatedMap(const void* src_data) {
 
     auto& memoryData = deviceContext->allocator.getMemory(bufferInfo.memoryID);
+
     vkMapMemory(deviceContext->logicalDevice, memoryData.memory, bufferInfo.memOffset, descriptorInfo.range, 0, &data);
     memcpy(data, src_data, static_cast<size_t>(descriptorInfo.range));
     vkUnmapMemory(deviceContext->logicalDevice, memoryData.memory);

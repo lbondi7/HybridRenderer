@@ -14,7 +14,7 @@ struct PipelineInfo {
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
     std::vector<VkVertexInputBindingDescription> vertexInputBindings;
     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
-    VkPrimitiveTopology topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     int polygonMode = 0;
     VkBool32 depthBiasEnable = VK_FALSE;
     uint32_t colourAttachmentCount = 1;

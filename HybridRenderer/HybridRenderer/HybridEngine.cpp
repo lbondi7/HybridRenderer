@@ -62,9 +62,6 @@ void HybridEngine::initialise()
 
     //rayTracing.Initialise(core->deviceContext.get(), window.get(), &swapChain, &resources);
 
-
-
-
     nextImageSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     presentSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -152,10 +149,48 @@ void HybridEngine::update()
         camera.transform.rotation.x += 50.0f * timer.DeltaTime_f();
     }
 
-    if (timer.MSPF_f() > timer.Threshold_f(60))
-        camera.SetCullDistance(camera.gpuData.rayCullDistance - (timer.DeltaTime_f() * std::max(1.0f, camera.gpuData.rayCullDistance) / 2.0f));
-    else
-        camera.SetCullDistance(camera.gpuData.rayCullDistance + (timer.DeltaTime_f() * std::max(1.0f, camera.gpuData.rayCullDistance) / 2.0f));
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_8) == GLFW_PRESS)
+    {
+        scene.lightPos.z += 10.0 * timer.DeltaTime_f();
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_5) == GLFW_PRESS)
+    {
+        scene.lightPos.z -= 10.0f * timer.DeltaTime_f();
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_4) == GLFW_PRESS)
+    {
+        scene.lightPos.x += 10.0f * timer.DeltaTime_f();
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_6) == GLFW_PRESS)
+    {
+        scene.lightPos.x -= 10.0f * timer.DeltaTime_f();
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_ADD) == GLFW_PRESS)
+    {
+        scene.lightPos.y -= 10.0f * timer.DeltaTime_f();
+    }
+    if (glfwGetKey(window->glfwWindow, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
+    {
+        scene.lightPos.y += 10.0f * timer.DeltaTime_f();
+    }
+
+    if (camera.adaptiveDistance)
+    {
+        if (timer.MSPF_f() < timer.Threshold_f(80))
+        {
+            //Log(timer.Threshold_f(90), "Threshold");
+            //Log(timer.MSPF_f(), "Less Than");
+            //camera.SetCullDistance(camera.gpuData.rayCullDistance + (timer.DeltaTime_f() * 20.0f));
+            camera.SetCullDistance(camera.gpuData.rayCullDistance + (timer.DeltaTime_f() * std::max(1.0f, std::powf(camera.gpuData.rayCullDistance, 2)) / 2.0f));
+        }
+        else if (timer.MSPF_f() > timer.Threshold_f(70))
+        {
+            //Log(timer.Threshold_f(80), "Threshold");
+            //Log(timer.MSPF_f(), "Greater Than");
+            //camera.SetCullDistance(camera.gpuData.rayCullDistance - (timer.DeltaTime_f() * 20.0f));
+            camera.SetCullDistance(camera.gpuData.rayCullDistance - (timer.DeltaTime_f() * std::max(1.0f, std::powf(camera.gpuData.rayCullDistance, 2)) / 2.0f));
+        }
+    }
 
     camera.update();
     camera.buffers[imageIndex].AllocatedMap(&camera.gpuData);
@@ -193,6 +228,7 @@ void HybridEngine::render()
                 widget.MenuItem("Raster Renderer", &raster.widget.enabled);
                 widget.MenuItem("Camera", &camera.widget.enabled);
                 widget.MenuItem("ShadowMap", &raster.shadowMap.widget.enabled);
+                widget.MenuItem("Light", &scene.lightWidget.enabled);
                 
                 widget.EndMenu();
             }
@@ -216,8 +252,6 @@ void HybridEngine::render()
         //rayTracing.updateUniformBuffers(&camera);
         //rayTracing.GetCommandBuffers(imageIndex, submitCommandBuffers, &scene);
     }
-
-
 
     if(ImGUI::enabled)
         raster.GetImGuiCommandBuffer(imageIndex, submitCommandBuffers, swapChain.extent);
@@ -275,6 +309,8 @@ void HybridEngine::Deinitilise()
 void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
+
+    app->scene.KeyCallback(key, scancode, action, mods);
 
     if (action == GLFW_PRESS)
     {

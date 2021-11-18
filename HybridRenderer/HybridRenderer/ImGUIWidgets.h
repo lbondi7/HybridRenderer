@@ -1,7 +1,7 @@
 #pragma once
 #include "Constants.h"
 
-#include "TextureSampler.h"
+#include "Texture.h"
 
 class ImGUIWidget
 {

@@ -2,7 +2,7 @@
 #include "Constants.h"
 #include "Transform.h"
 #include "Model.h"
-#include "TextureSampler.h"
+#include "Texture.h"
 #include "Descriptor.h"
 
 #include <vector>

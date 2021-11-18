@@ -3,11 +3,15 @@
 #include "GameObject.h"
 #include "Resources.h"
 #include "AccelerationStructure.h"
-
+#include "ImGUIWidgets.h"
 
 struct LightUBO {
-	alignas(16) glm::mat4 depthBiasMVP;
-	alignas(16) glm::vec3 lightPos;
+	glm::mat4 proj;
+	glm::mat4 view;
+	alignas(16) glm::vec3 position{0.0f, 50.0f, 0.0f};
+	alignas(16) glm::vec3 direction{0, -1, 1};
+	alignas(8) glm::vec2 clippingPlanes{0.1f, 100.0f};
+	float size = 1.0f;
 };
 
 class Scene
@@ -19,6 +23,8 @@ public:
 	void Initialise(DeviceContext* deviceContext, Resources* resources);
 	void Update(uint32_t imageIndex, float dt);
 	void Destroy();
+
+	void KeyCallback(int key, int scancode, int action, int mods);
 
 	std::vector<GameObject> gameObjects;
 
@@ -44,12 +50,16 @@ public:
 
 	LightUBO lightUBO;
 
+	ImGUIWidget lightWidget;
+
 private:
 
 	DeviceContext* deviceContext;
 	void CreateGameObject(GameObject* object, Model* model);
 
 	DescriptorPool descriptorPool;
+
+	bool lookAtCentre = true;
 
 };
 

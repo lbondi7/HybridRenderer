@@ -86,11 +86,11 @@ void Allocator::getBuffer(BufferInfo& bufferInfo, VkDeviceSize size, VkBufferUsa
     vkGetBufferMemoryRequirements(logicalDevice, buffer.buffer, &memRequirements);
 
     auto memoryData = getMemory(memRequirements, memProperties, usage);
-    vkBindBufferMemory(logicalDevice, buffer.buffer, memoryData->memory, memoryData->size);
     buffer.size += minAlignment;
     buffer.memoryID = memoryData->id;
     buffer.memStartOffset = memoryData->size;
     buffer.currentMemoryOffset += minAlignment;
+    vkBindBufferMemory(logicalDevice, buffer.buffer, memoryData->memory, memoryData->size);
 
     bufferInfo.buffer = buffer.buffer;
     bufferInfo.memoryID = buffer.memoryID;

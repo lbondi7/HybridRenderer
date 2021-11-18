@@ -21,7 +21,7 @@ struct BufferData {
     VkBufferUsageFlags usage;
     uint32_t id = 0;
     uint32_t memoryID = 0;
-    void* mapped = nullptr;
+    void* data = nullptr;
 };
 
 
@@ -33,6 +33,8 @@ struct BufferInfo {
     VkBufferUsageFlags usage;
     uint32_t id = 0;
     uint32_t memoryID = 0;
+    bool mapped = false;
+    void* data = nullptr;
 };
 
 

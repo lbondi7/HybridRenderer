@@ -1,6 +1,7 @@
 #include "Scene.h"
 
 #include "DebugLogger.h"
+#include "ImGUI_.h"
 
 Scene::~Scene()
 {
@@ -10,7 +11,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 {
     this->deviceContext = deviceContext;
 
-    gameObjectCount = 4;
+    gameObjectCount = 50;
     gameObjects.reserve(10000);
     gameObjects.resize(static_cast<uint32_t>(gameObjectCount));
 
@@ -48,11 +49,6 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
         }
     }
 
-    gameObjects[0].transform.rotation.x += 10.0f;
-    gameObjects[1].transform.position.x += 5.0f;
-
-    gameObjects[1].GetMatrix();
-
     {
         auto& go = gameObjects.emplace_back();
         CreateGameObject(&go, resources->GetModel("plane"));
@@ -67,6 +63,16 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
         go.transform.rotation.y = 90.0f;
         go.transform.position.z = -2.0f;
         go.transform.position.y = 1.0f;
+        go.SetTexture(resources->GetTexture("amogus.png"));
+        go.name = "Amogus";
+    }
+
+    {
+        auto& go = gameObjects.emplace_back();
+        CreateGameObject(&go, resources->GetModel("plane"));
+        go.transform.rotation.y = 90.0f;
+        go.transform.position.z = -3.0f;
+        go.transform.position.y = 2.0f;
         go.SetTexture(resources->GetTexture("amogus.png"));
         go.name = "Amogus";
     }
@@ -130,7 +136,6 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, objecDescs.data());
 
     auto accelerationStructureInfo = Initialisers::descriptorSetAccelerationStructureInfo(&topLevelAS.handle);
-    //DescriptorSetRequest accelerationStructureRequest(3);
     DescriptorSetRequest accelerationStructureRequest({ {"scene", 4} }, 3);
     accelerationStructureRequest.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_FRAGMENT_BIT);
     accelerationStructureRequest.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -141,42 +146,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     deviceContext->GetDescriptors(asDescriptor, &accelerationStructureRequest);
 
     auto imageCount = 3;
-
-    //descriptorPool.init(deviceContext->logicalDevice, accelerationStructureRequest);
-
-    //DescriptorSetLayout layout;
-    //layout.bindings = { {0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_FRAGMENT_BIT } };
-    //layout.init(deviceContext->logicalDevice);
-
-    //descriptorPool.allocate(asDescriptor, layout.layout, accelerationStructureRequest);
-
-    //auto writeCount = static_cast<uint32_t>(accelerationStructureRequest.bindings.size());
-
-    //for (size_t i = 0; i < 3; i++) {
-
-    //    std::vector<VkWriteDescriptorSet> descriptorWrites;
-
-    //    for (size_t j = 0; j < writeCount; ++j) {
-    //        bool isImage = false;
-
-    //        auto& descriptorInfo = accelerationStructureRequest.bindings[j];
-    //        isImage =
-    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
-    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_SAMPLER ||
-    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-
-    //        bool isAccelerationStructure = descriptorInfo.type == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR ||
-    //            descriptorInfo.type == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV;
-
-    //        descriptorWrites.push_back(Initialisers::writeDescriptorSet(asDescriptor.sets[i],
-    //                descriptorInfo.binding, descriptorInfo.type, (const VkWriteDescriptorSetAccelerationStructureKHR*)descriptorInfo.data[i], 
-    //                descriptorInfo.descriptorCount));
-    //    }
-
-    //    vkUpdateDescriptorSets(deviceContext->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
-    //}
+    lightPos = glm::vec3(0.0f, 50.0f, -0.0f);
 
     lightBuffers.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++) {
@@ -187,26 +157,39 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     }
 
     DescriptorSetRequest lightRequest({ {"scene", 2}, {"offscreen", 0} }, 1);
-    //DescriptorSetRequest lightRequest(1);
     lightRequest.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
     lightRequest.AddDescriptorBufferData(0, lightBuffers.data());
     deviceContext->GetDescriptors(lightDescriptor, &lightRequest);
+
+    lightWidget.enabled = true;
+    
 }
 
 void Scene::Update(uint32_t imageIndex, float dt)
 {
-    float zNear = 1.0f;
-    float zFar = 1000.0f;
+    if (ImGUI::enabled && lightWidget.enabled) {
+        if (lightWidget.NewWindow("Light")) {
+
+            lightWidget.Slider3("Position", lightUBO.position, -75.0f, 75.0f);
+            lightWidget.Slider3("Direction", lightUBO.direction, -2.0f, 2.0f);
+            lightWidget.Slider("Size", &lightUBO.size, 0.0f, 3.0f);
+            lightWidget.Slider2("Clipping Planes", lightUBO.clippingPlanes, 0.0f, 100.0f);
+            lightWidget.CheckBox("Focus On Centre", &lookAtCentre);
+        }
+        lightWidget.EndWindow();
+    }
 
 
-    lightPos = glm::vec3(0.0f, 20.5f, -5.0f);
+
+    //lightPos = glm::vec3(0.0f, 5.0f, -5.0f);
     lightFOV = 90.0f;
-    glm::vec3 lightLookAt = glm::vec3(0, 0, 0);
+    glm::vec3 lightLookAt = glm::vec3(0, 1, 1);
     // Matrix from light's point of view
     glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
     glm::mat4 depthViewMatrix = glm::mat4(1.0f);
-    depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-    depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
+    //depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
+    depthProjectionMatrix = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f,  0.1f, lightUBO.clippingPlanes.y);
+    depthViewMatrix = glm::lookAt(lightUBO.position, lookAtCentre ? lightLookAt : lightUBO.position + lightUBO.direction, glm::vec3(0, 1, 0));
     depthProjectionMatrix[1][1] *= -1;
 
     //if (!ortho)
@@ -222,10 +205,11 @@ void Scene::Update(uint32_t imageIndex, float dt)
     //}
     glm::mat4 depthModelMatrix = glm::yawPitchRoll(lightRot.y, lightRot.x, lightRot.z);
 
-    //uboOffscreenVS.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
+    //lightUBO.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
 
-    lightUBO.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
-    lightUBO.lightPos = lightPos;
+    lightUBO.view = depthViewMatrix;
+    lightUBO.proj = depthProjectionMatrix * depthViewMatrix;
+    lightUBO.direction = lookAtCentre ? lightLookAt - lightUBO.position : lightUBO.direction;
     lightBuffers[imageIndex].AllocatedMap(&lightUBO);
 
     //gameObjects[gameObjectCount - 1].transform.position = lightPos;
@@ -261,6 +245,54 @@ void Scene::Destroy()
 
     for (auto& go : gameObjects) {
         go.Destroy();
+    }
+}
+
+void Scene::KeyCallback(int key, int scancode, int action, int mods)
+{
+    switch (action)
+    {
+    case GLFW_PRESS:
+    {
+        switch (key)
+        {
+        case GLFW_KEY_KP_4:
+            //lightPos.x -= 2.0;
+            break;
+        case GLFW_KEY_KP_6:
+           // lightPos.x += 2.0;
+            break;
+        case GLFW_KEY_KP_5:
+           // lightPos.z -= 2.0;
+            break;
+        case GLFW_KEY_KP_8:
+          //  lightPos.z += 2.0;
+            break;
+        case GLFW_KEY_KP_ADD:
+           // lightPos.y -= 2.0;
+            break;
+        case GLFW_KEY_KP_SUBTRACT:
+           // lightPos.y += 2.0;
+            break;
+        }
+
+        break;
+    }
+    case GLFW_RELEASE:
+    {
+        switch (key)
+        {
+        case GLFW_KEY_UP:
+            break;
+        case GLFW_KEY_DOWN:
+            break;
+        case GLFW_KEY_LEFT:
+            break;
+        case GLFW_KEY_RIGHT:
+            break;
+        }
+        break;
+    }
     }
 }
 

@@ -3,7 +3,7 @@
 #include "Constants.h"
 
 #include "Buffer.h"
-#include "TextureSampler.h"
+#include "Texture.h"
 #include "Pipeline.h"
 #include "FrameBuffer.h"
 

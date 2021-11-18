@@ -4,7 +4,7 @@
 #include "DepthRenderPass.h"
 #include "FrameBuffer.h"
 #include "Pipeline.h"
-#include "CubemapTexture.h"
+#include "Texture.h"
 #include "Descriptor.h"
 #include "ImGUIWidgets.h"
 #include "Buffer.h"
@@ -13,6 +13,10 @@ struct ShadowUBO {
 	int shadowMap = 2;
 	int confirmIntersection = 0;
 	int terminateRay = 0;
+	float alphaThreshold = 0.02;
+	float bias = 0.13f;
+	float blockerScale = 1.0f;
+	int pcfFilterSize = 1;
 };
 
 class ShadowMap

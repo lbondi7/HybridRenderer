@@ -35,23 +35,11 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 	}
 
 	DescriptorSetRequest request({ { "scene", 0 } });
-	//DescriptorSetRequest request(1);
 	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
 	request.AddDescriptorBufferData(0, buffers.data());
-
-	//DescriptorBinding request;
-	//request.ids.emplace_back(DescriptorBinding::BindingType(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT));
-
-	//request.data.reserve(imageCount);
-	//for (size_t i = 0; i < imageCount; i++) {
-
-	//	request.data.push_back(&buffers[i].descriptorInfo);
-	//}
-
 	deviceContext->GetDescriptors(descriptor, &request);
-	//descriptor.initialise(deviceContext, request);
 	gpuData.rayCullDistance = 5.0f;
-
+	adaptiveDistance = true;
 	transform.position.y = 4.0f;
 	update(_extent.width, _extent.height);
 }
@@ -62,13 +50,13 @@ void Camera::update(float windowWidth, float windowHeight)
 	{
 		transform.getMatrix(model);
 
-		gpuData.view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
+		auto view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
 
-		gpuData.projection = glm::perspective(glm::radians(FOV), windowWidth / windowHeight, nearPlane, farPlane);
+		auto projection = glm::perspective(glm::radians(FOV), windowWidth / windowHeight, nearPlane, farPlane);
 		//projection[1][1] *= -1;
 		//updateValues(windowWidth, windowHeight);
 
-		frustum.update(gpuData.projection * gpuData.view);
+		frustum.update(projection * view);
 
 	}
 }
@@ -88,11 +76,11 @@ void Camera::update(const VkExtent2D& _extent)
 		vkScissor.extent.height = _extent.height * scissor.w;
 		transform.getMatrix(model);
 
-		gpuData.view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
+		auto view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
 
-		gpuData.projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
-		gpuData.projection[1][1] *= -1;
-
+		auto projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
+		projection[1][1] *= -1;
+		gpuData.viewProjection = projection * view;
 		updateValues(extent);
 	}
 }
@@ -103,10 +91,11 @@ void Camera::update()
 	{
 		transform.getMatrix(model);
 
+		auto view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
+		auto projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
+		projection[1][1] *= -1;
+		gpuData.viewProjection = projection * view;
 		gpuData.position = transform.position;
-		gpuData.view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
-		gpuData.projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
-		gpuData.projection[1][1] *= -1;
 
 		updateValues(extent);
 	}
@@ -118,6 +107,8 @@ void Camera::update()
 			widget.Slider("FOV", &FOV, 1.0f, 179.0f);
 
 			widget.Slider("Ray Query Cull Distance", &gpuData.rayCullDistance, 1.0f, 100.0f);
+
+			widget.CheckBox("Adaptive Distance", &adaptiveDistance);
 
 			//widget.Slider4("Viewport", viewport, 0.0f, 1.0f);
 
@@ -163,7 +154,11 @@ void Camera::setScissor(glm::vec2 size, glm::vec2 offset)
 
 void Camera::SetCullDistance(float cullDistance)
 {
-	gpuData.rayCullDistance = std::clamp(cullDistance, 0.0f, 25.0f);
+	float difference = gpuData.rayCullDistance - cullDistance;
+	float abs = std::abs(difference);
+	if (abs < 0.05)
+		return;
+	gpuData.rayCullDistance = std::clamp(std::lerp(gpuData.rayCullDistance, cullDistance, abs), 0.0f, 1000.0f);
 }
 
 bool Camera::valuesUpdated(float windowWidth, float windowHeight) {

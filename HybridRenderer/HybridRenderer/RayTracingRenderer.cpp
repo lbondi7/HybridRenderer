@@ -279,7 +279,7 @@ void RayTracingRenderer::buildCommandBuffers(Scene* scene)
 
 void RayTracingRenderer::updateUniformBuffers(Camera* camera)
 {
-	uniformData.projInverse = glm::inverse(camera->gpuData.projection);
-	uniformData.viewInverse = glm::inverse(camera->gpuData.view);
+	//uniformData.projInverse = glm::inverse(camera->gpuData.projection);
+	//uniformData.viewInverse = glm::inverse(camera->gpuData.view);
 	memcpy(ubo.data, &uniformData, sizeof(uniformData));
 }

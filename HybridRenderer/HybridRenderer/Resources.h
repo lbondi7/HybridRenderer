@@ -2,7 +2,7 @@
 
 #include "Mesh.h"
 #include "Model.h"
-#include "TextureSampler.h"
+#include "Texture.h"
 #include "Shader.h"
 #include "Device.h"
 

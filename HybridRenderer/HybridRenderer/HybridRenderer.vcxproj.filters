@@ -168,12 +168,6 @@
     <ClCompile Include="Texture.cpp">
       <Filter>Source Files\Vulkan\Texture</Filter>
     </ClCompile>
-    <ClCompile Include="TextureSampler.cpp">
-      <Filter>Source Files\Vulkan\Texture</Filter>
-    </ClCompile>
-    <ClCompile Include="DepthTexture.cpp">
-      <Filter>Source Files\Vulkan\Texture</Filter>
-    </ClCompile>
     <ClCompile Include="Shader.cpp">
       <Filter>Source Files\Vulkan\Shader</Filter>
     </ClCompile>
@@ -290,13 +284,7 @@
     <ClInclude Include="DescriptorSetLayout.h">
       <Filter>Header Files\Vulkan\Descriptors</Filter>
     </ClInclude>
-    <ClInclude Include="DepthTexture.h">
-      <Filter>Header Files\Vulkan\Textures</Filter>
-    </ClInclude>
     <ClInclude Include="CubemapTexture.h">
-      <Filter>Header Files\Vulkan\Textures</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureSampler.h">
       <Filter>Header Files\Vulkan\Textures</Filter>
     </ClInclude>
     <ClInclude Include="Pipeline.h">

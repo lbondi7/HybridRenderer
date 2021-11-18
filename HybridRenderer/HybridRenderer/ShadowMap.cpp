@@ -15,10 +15,11 @@ ShadowMap::~ShadowMap()
 void ShadowMap::Create(DeviceContext* _devices)
 {
 	devices = _devices;
+	widget.enabled = true;
 }
 
-bool ShadowMap::Update(uint32_t imageIndex) {
-
+bool ShadowMap::Update(uint32_t imageIndex) 
+{
 
 	bool updated = false;
 	if (ImGUI::enabled && widget.enabled) {
@@ -45,6 +46,37 @@ bool ShadowMap::Update(uint32_t imageIndex) {
 					buffer.AllocatedMap(&shadowUBO);
 				}
 			}
+			if (widget.Slider("AlphaThreshold", &shadowUBO.alphaThreshold, 0.0, 0.1))
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+				}
+			}
+			if (widget.Slider("Bias", &shadowUBO.bias, -0.2, 0.2))
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+				
+				}
+			}
+			if (widget.Slider("BlockerScale", &shadowUBO.blockerScale, 0.0, 1.0))
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+
+				}
+			}
+			if (widget.Slider("PCF Filter Size", &shadowUBO.pcfFilterSize, 0, 10))
+			{
+				for (auto& buffer : buffers)
+				{
+					buffer.AllocatedMap(&shadowUBO);
+				}
+			}
+
 
 			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
 				vkQueueWaitIdle(devices->presentQueue);
@@ -90,32 +122,11 @@ void ShadowMap::Initialise()
 		frameBuffer.createFramebuffer(attachments, extent);
 	}
 
-
 	DescriptorSetRequest request({ {"scene", 3} });
-	//DescriptorSetRequest request(2);
 	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 	request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
 	request.AddDescriptorImageData(0, &depthTexture.descriptorInfo);
 	request.AddDescriptorBufferData(1, buffers.data());
-
-	//request.binding = 0;
-	//request.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	//request.shaderFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	//request.AddBufferData(lightBuffers.data());
-	//deviceContext->GetDescriptors(lightDescriptor, &accelerationStructureRequest);
-	//request.ids.emplace_back(
-	//	DescriptorSetRequest::BindingType(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
-	//		VK_SHADER_STAGE_FRAGMENT_BIT ));
-	//request.ids.emplace_back(DescriptorSetRequest::BindingType(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-	//	VK_SHADER_STAGE_FRAGMENT_BIT));
-
-	//request.data.reserve(devices->imageCount * request.ids.size());
-
-	//for (size_t i = 0; i < devices->imageCount; i++) {
-
-	//	request.data.emplace_back(&depthTexture.descriptorInfo);
-	//	request.data.push_back(&buffers[i].descriptorInfo);
-	//}
 
 	devices->GetDescriptors(descriptor, &request);
 
@@ -125,6 +136,8 @@ void ShadowMap::Initialise()
 
 void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 {
+	shadowUBO.bias = 0.05f;
+	shadowUBO.blockerScale = 0.1f;
 	//render pass
 	RenderPassInfo info{};
 	info.attachments.push_back({ AttachmentType::DEPTH, devices->getDepthFormat(), VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -139,7 +152,6 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 
 	renderPass.Create(devices, info);
 
-
 	buffers.resize(devices->imageCount);
 	shadowUBO.shadowMap = 1;
 	for (auto& buffer : buffers)
@@ -149,10 +161,12 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &shadowUBO);
 	}
-
+	resolution = 500u;
 	Initialise();
 
 	pipeline.Create(devices, &renderPass, pipelineInfo);
+
+
 }
 
 void ShadowMap::Reinitialise(bool complete)

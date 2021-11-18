@@ -33,7 +33,7 @@ public:
 
 	void SetFrameRate(int frameRate);
 
-	void SetBuffer(double buffer);
+	void SetFramerateBufferLimits(int lowerFramerate, int upperFramerate);
 
 	int FPS();
 
@@ -52,6 +52,8 @@ private:
 	double mspfThreshold;
 	double mspfBuffer;
 	bool average = false;
+	double bufferLowerLimit;
+	double bufferUpperLimit;
 
 	size_t mspfCount;
 	

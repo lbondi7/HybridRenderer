@@ -5,7 +5,9 @@
 
 RasterRenderer::RasterRenderer(Window* window, VulkanCore* core, SwapChain* swapChain)
 {
-
+    swapChain = nullptr;
+    deviceContext = nullptr;
+    resources = nullptr;
 }
 
 void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swapChain, Resources* _resources)
@@ -14,18 +16,9 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     this->swapChain = swapChain;
     resources = _resources;
 
-    //swapChain.Create(core->surface, deviceContext, &window->width, &window->height);
-
     imgui.create(window->glfwWindow, core->instance, core->surface, deviceContext, swapChain);
     
-    //swapChain.Create(window.glfwWindow, surface, deviceContext);
-
     RenderPassInfo info{};
-    //info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    //    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
-    //info.attachments.push_back({ AttachmentType::DEPTH, Utility::findDepthFormat(deviceContext->physicalDevice), VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    //    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
-
 
     info.attachments.push_back({ AttachmentType::COLOUR, swapChain->imageFormat, VK_ATTACHMENT_LOAD_OP_CLEAR,
     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
@@ -52,20 +45,19 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     pipelineInfo.conservativeRasterisation = true;
     pipelineInfo.colourAttachmentCount = 0;
     pipelineInfo.layoutsName = "offscreen";
-    //pipelineInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    pipelineInfo.cullMode = VK_CULL_MODE_NONE;
 
     shadowMap.Initialise(pipelineInfo);
 
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
     pipelineInfo.shaders = { resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT) ,
         resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT) };
-    //resources->GetShaders(pipelineInfo.shaders, {"scene"});
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
     pipelineInfo.layoutsName = "scene";
     pipelineInfo.colourAttachmentCount = 1;
     pipelineInfo.conservativeRasterisation = false;
     pipelineInfo.depthBiasEnable = VK_FALSE;
-    //pipelineInfo.cullMode = VK_CULL_MODE_NONE;
+    pipelineInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 
     pipeline.Create(deviceContext, &renderPass, pipelineInfo);
 
@@ -279,210 +271,3 @@ void RasterRenderer::GetImGuiCommandBuffer(uint32_t imageIndex, std::vector<VkCo
         submitCommandBuffers.emplace_back(imgui.commandBuffers[imageIndex]);
     }
 }
-
-//void RasterRenderer::drawFrame() {
-
-    //VkSemaphore iAS = imageAvailableSemaphores[currentFrame];
-    //VkSemaphore rFS = renderFinishedSemaphores[currentFrame];
-
-    //uint32_t imageIndex;
-    //VkResult result = vkAcquireNextImageKHR(deviceContext->logicalDevice, swapChain.vkSwapChain, UINT64_MAX, iAS, VK_NULL_HANDLE, &imageIndex);
-
-
-    //if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    //    recreateSwapChain();
-    //    return;
-    //}
-    //else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    //    throw std::runtime_error("failed to acquire swap chain image!");
-    //}
-
-    ////updateUniformBuffer(imageIndex);
-
-    //imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-    //vkWaitForFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-    //vkResetFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
-
-
-    //std::vector<VkCommandBuffer> submitCommandBuffers =
-    //{ commandBuffers[imageIndex] };
-
-    //if (imgui.enabled) {
-
-    //    rebuildCommandBuffer(imageIndex);
-
-    //    submitCommandBuffers.emplace_back(imgui.commandBuffers[imageIndex]);
-    //}
-
-    //VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    //VkSubmitInfo submitInfo = Initialisers::submitInfo(
-    //    submitCommandBuffers.data(), static_cast<uint32_t>(submitCommandBuffers.size()), &iAS, 1, &rFS, 1, waitStages);
-
-
-    //if (vkQueueSubmit(deviceContext->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to submit draw command buffer!");
-    //}
-
-    //VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
-    //VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(&rFS, 1, swapChains, 1, &imageIndex);
-    //result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
-
-
-    //vkWaitForFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-    //uint32_t imageIndex;
-    //VkResult result = vkAcquireNextImageKHR(deviceContext->logicalDevice, swapChain.vkSwapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-
-    //if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    //    recreateSwapChain();
-    //    return;
-    //}
-    //else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    //    throw std::runtime_error("failed to acquire swap chain image!");
-    //}
-
-    //updateUniformBuffer(imageIndex);
-
-    //imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-    //VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame]};
-    //VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    //VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
-
-
-    //std::array<VkCommandBuffer, 1> submitCommandBuffers =
-    //{ commandBuffers[imageIndex] };
-
-    //VkSubmitInfo submitInfo = Initialisers::submitInfo(submitCommandBuffers.data(), static_cast<uint32_t>(submitCommandBuffers.size()), waitSemaphores, 1, signalSemaphores, 1, waitStages);
-
-    //vkResetFences(deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
-
-    //if (vkQueueSubmit(deviceContext->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to submit draw command buffer!");
-    //}
- 
-    //VkSwapchainKHR swapChains[] = { swapChain.vkSwapChain };
-
-    //VkPresentInfoKHR presentInfo = Initialisers::presentInfoKHR(signalSemaphores, 1, swapChains, 1, &imageIndex);
-
-    //result = vkQueuePresentKHR(deviceContext->presentQueue, &presentInfo);
-
-    //if (imgui.enabled)
-    //{
-    //    vkQueueWaitIdle(deviceContext->presentQueue);
-    //    buildCommandBuffers();
-    //}
-
-    //if (counted == 0)
-    //{
-
-    //    Texture dstImage;
-    //    dstImage.Create(deviceContext, 800, 600, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    //    VkCommandBuffer copyCmd = deviceContext->generateCommandBuffer();
-
-    //    dstImage.insertImageMemoryBarrier(
-    //        copyCmd,
-    //        0,
-    //        VK_ACCESS_TRANSFER_WRITE_BIT,
-    //        VK_IMAGE_LAYOUT_UNDEFINED,
-    //        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
-    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
-    //        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-    //    // colorAttachment.image is already in VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, and does not need to be transitioned
-
-    //    VkImageCopy imageCopyRegion{};
-    //    imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    //    imageCopyRegion.srcSubresource.layerCount = 1;
-    //    imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    //    imageCopyRegion.dstSubresource.layerCount = 1;
-    //    imageCopyRegion.extent.width = 800;
-    //    imageCopyRegion.extent.height = 600;
-    //    imageCopyRegion.extent.depth = 1;
-
-    //    vkCmdCopyImage(
-    //        copyCmd,
-    //        swapChain.images[0].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-    //        dstImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    //        1,
-    //        &imageCopyRegion);
-
-    //    dstImage.insertImageMemoryBarrier(
-    //        copyCmd,
-    //        VK_ACCESS_TRANSFER_WRITE_BIT,
-    //        VK_ACCESS_MEMORY_READ_BIT,
-    //        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    //        VK_IMAGE_LAYOUT_GENERAL,
-    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
-    //        VK_PIPELINE_STAGE_TRANSFER_BIT,
-    //        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-
-    //    deviceContext->EndCommandBuffer(copyCmd);
-
-    //    // Get layout of the image (including row pitch)
-    //    VkImageSubresource subResource{};
-    //    subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    //    VkSubresourceLayout subResourceLayout;
-
-    //    vkGetImageSubresourceLayout(deviceContext->logicalDevice, dstImage.image, &subResource, &subResourceLayout);
-
-    //    // Map image memory so we can start copying from it
-    //    vkMapMemory(deviceContext->logicalDevice, dstImage.vkMemory, 0, VK_WHOLE_SIZE, 0, (void**)&imagedata);
-    //    imagedata += subResourceLayout.offset;
-
-
-    //    const char* filename = "headless.ppm";
-    //    std::ofstream file(filename, std::ios::out | std::ios::binary);
-
-    //    // ppm header
-    //    file << "P6\n" << 800 << "\n" << 600 << "\n" << 255 << "\n";
-
-    //    // If source is BGR (destination is always RGB) and we can't use blit (which does automatic conversion), we'll have to manually swizzle color components
-    //    // Check if source is BGR and needs swizzle
-    //    std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
-    //    const bool colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), VK_FORMAT_R8G8B8A8_UNORM) != formatsBGR.end());
-
-    //    // ppm binary pixel data
-    //    for (int32_t y = 0; y < 600; y++) {
-    //        unsigned int* row = (unsigned int*)imagedata;
-    //        for (int32_t x = 0; x < 800; x++) {
-    //            if (colorSwizzle) {
-    //                file.write((char*)row + 2, 1);
-    //                file.write((char*)row + 1, 1);
-    //                file.write((char*)row, 1);
-    //            }
-    //            else {
-    //                file.write((char*)row, 3);
-    //            }
-    //            row++;
-    //        }
-    //        imagedata += subResourceLayout.rowPitch;
-    //    }
-    //    file.close();
-
-    //    printImage = false;
-
-    //    vkUnmapMemory(deviceContext->logicalDevice, dstImage.vkMemory);
-    //    dstImage.Destroy();
-    //    printImage = true;
-    //    counted--;
-    //}
-
-    //if(!printImage)
-    //    counted--;
-
-    //if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.framebufferResized) {
-    //    window.framebufferResized = false;
-    //    recreateSwapChain();
-    //}
-    //else if (result != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to present swap chain image!");
-    //}
-
-    //currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-//}

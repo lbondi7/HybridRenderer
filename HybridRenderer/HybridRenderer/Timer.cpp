@@ -1,10 +1,11 @@
 #include "Timer.h"
+#include "DebugLogger.h"
 
 Timer::Timer()
 {
     prevTime = prevSecond = std::chrono::high_resolution_clock::now();
     SetFrameRate(2000);
-    average = false;
+    average = true;
     mspfCount = 10;
 }
 
@@ -21,6 +22,7 @@ void Timer::Update()
     frameCount++;
     if (std::chrono::duration<double, std::chrono::seconds::period>(prevTime - prevSecond).count() >= 1.0) {
         fps = frameCount;
+        Log(frameCount);
         prevSecond = std::chrono::high_resolution_clock::now();
         frameCount = 0;
     }
@@ -31,7 +33,7 @@ void Timer::Update()
     prevMspf.emplace_front(deltaTime);
     if (prevMspf.size() > mspfCount)
         prevMspf.pop_back();
-
+    
     if (average) {
         mspf = 0.0;
         for (size_t i = 0; i < prevMspf.size(); i++)
@@ -42,9 +44,7 @@ void Timer::Update()
         mspf /= static_cast<double>(prevMspf.size());
     }
 
-
     deltaTime /= 1000.0;
-
 }
 
 float Timer::DeltaTime_f() {
@@ -100,9 +100,10 @@ void Timer::SetFrameRate(int frameRate)
     mspfThreshold = 1000.0 / static_cast<double>(frameRate);
 }
 
-void Timer::SetBuffer(double buffer)
+void Timer::SetFramerateBufferLimits(int lowerFramerate, int upperFramerate)
 {
-    mspfBuffer = buffer;
+    bufferLowerLimit = 1000.0 / static_cast<double>(lowerFramerate);
+    bufferUpperLimit = 1000.0 / static_cast<double>(upperFramerate);
 }
 
 int Timer::FPS()

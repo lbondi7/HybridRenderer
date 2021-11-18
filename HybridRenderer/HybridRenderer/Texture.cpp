@@ -157,16 +157,11 @@ void Texture::CopyFromTexture(Texture other)
 
     VkBufferImageCopy region = Initialisers::bufferImageCopy(width, height);
 
-    //vkCmdCopyImage(commandBuffer, other.image, other.descriptorInfo.imageLayout, image, )
-
     devices->EndCommandBuffer(commandBuffer);
-
 }
 
 
 void Texture::Destroy() {
-    //if(hasSampler)
-    //    vkDestroySampler(devices->logicalDevice, sampler, nullptr);
     if(hasImageView)
         vkDestroyImageView(devices->logicalDevice, imageView, nullptr);
 
@@ -209,4 +204,45 @@ void Texture::insertImageMemoryBarrier(
         0, nullptr,
         0, nullptr,
         1, &imageMemoryBarrier);
+}
+
+TextureSampler::~TextureSampler()
+{
+    if (initialised && !destroyed)
+        vkDestroySampler(devices->logicalDevice, sampler, nullptr);
+}
+
+void TextureSampler::CreateSampler() {
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(devices->physicalDevice, &properties);
+
+    //VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_TRUE, properties.limits.maxSamplerAnisotropy, VK_SAMPLER_MIPMAP_MODE_LINEAR);
+    VkSamplerCreateInfo samplerInfo = Initialisers::samplerCreateInfo(VK_FILTER_LINEAR, properties.limits.maxSamplerAnisotropy, VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+
+    if (vkCreateSampler(devices->logicalDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
+    descriptorInfo.sampler = sampler;
+}
+
+void TextureSampler::CreateSampler(const VkSamplerCreateInfo& samplerInfo) {
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(devices->physicalDevice, &properties);
+
+    if (vkCreateSampler(devices->logicalDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
+    descriptorInfo.sampler = sampler;
+}
+
+void TextureSampler::Destroy()
+{
+    if (!destroyed)
+        vkDestroySampler(devices->logicalDevice, sampler, nullptr);
+
+    Texture::Destroy();
+
 }

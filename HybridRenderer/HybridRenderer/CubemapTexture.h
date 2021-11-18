@@ -1,5 +1,5 @@
 #pragma once
-#include "TextureSampler.h"
+#include "Texture.h"
 
 class CubemapTexture : public TextureSampler
 {
