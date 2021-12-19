@@ -21,10 +21,10 @@ layout (set = 2, binding = 0) uniform LightUBO
 {
 	mat4 proj;
 	mat4 view;
+	vec4 size_clippingPlanes;
 	vec3 pos;
 	vec3 direction;
-	vec2 clippingPlanes;
-	float size;
+	ivec4 extra;
 } light;
 
 
@@ -34,12 +34,12 @@ layout (location = 2) out vec3 outCamPos;
 layout (location = 3) out vec3 outLightPos;
 layout (location = 4) out vec4 outShadowCoord;
 layout (location = 5) out vec2 outUV;
-layout (location = 6) out vec3 outPos;
+layout (location = 6) out vec3 outWorldPos;
 layout (location = 7) out float outCull;
-layout (location = 8) out vec4 outShadowViewCoord;
-layout (location = 9) out vec3 outLightDirection;
-layout (location = 10) out vec2 outLightClippingPlanes;
-layout (location = 11) out float outLightSize;
+layout (location = 8) out vec3 outLightDirection;
+layout (location = 9) out vec2 outLightClippingPlanes;
+layout (location = 10) out vec2 outLightSize;
+layout (location = 11) out int outLightType;
 
 out gl_PerVertex 
 {
@@ -57,21 +57,20 @@ void main()
 {
 
 	outColor = inColor;
-	outNormal = inNormal;
+	//outNormal = inNormal;
 	outUV = inUV;
-	gl_Position = cam.vp * model.matrix * vec4(inPos.xyz, 1.0);
+	outWorldPos = vec3(model.matrix * vec4(inPos, 1.0));
+	gl_Position = cam.vp * vec4(outWorldPos, 1.0);
 
-	outPos = vec3(model.matrix * vec4(inPos, 1.0));
-	outNormal = inNormal;
+	outNormal = vec3(model.matrix * vec4(inNormal, 1.0));
 	outLightPos = light.pos;
 	outCamPos = cam.pos;
 	outCull = cam.rayCullDistance;
-	outLightClippingPlanes = light.clippingPlanes;
-	//outLightSize = light.size / (2 * 0.1 * tan(45 * 0.5) * 800.0/600.0);
-	outLightSize = light.size;
+	outLightClippingPlanes = light.size_clippingPlanes.zw;
+	outLightSize = light.size_clippingPlanes.xy;
 	outLightDirection = light.direction;
+	outLightType = light.extra.x;
 
-	outShadowViewCoord = (light.view * model.matrix) * vec4(inPos, 1.0);
-	outShadowCoord = (light.proj * model.matrix) * vec4(inPos, 1.0);
+	outShadowCoord = (light.proj * light.view) * vec4(outWorldPos, 1.0);
 }
 

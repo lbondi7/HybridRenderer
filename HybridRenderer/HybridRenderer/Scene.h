@@ -8,10 +8,10 @@
 struct LightUBO {
 	glm::mat4 proj;
 	glm::mat4 view;
-	alignas(16) glm::vec3 position{0.0f, 50.0f, 0.0f};
-	alignas(16) glm::vec3 direction{0, -1, 1};
-	alignas(8) glm::vec2 clippingPlanes{0.1f, 100.0f};
-	float size = 1.0f;
+	alignas(16) glm::vec4 size_clippingPlanes{1.0f, 3.0f, 0.1f, 100.0f};
+	alignas(16) glm::vec3 position{ 0.0f, 4.0f, -5.0f };
+	alignas(16) glm::vec3 direction{0.0f, 4.0f, -5.0f};
+	alignas(16) glm::ivec4 extra;
 };
 
 class Scene
@@ -60,6 +60,7 @@ private:
 	DescriptorPool descriptorPool;
 
 	bool lookAtCentre = true;
+	Buffer objectBuffer;
 
 };
 

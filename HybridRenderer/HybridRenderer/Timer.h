@@ -3,6 +3,8 @@
 #include <chrono>
 #include <deque>
 
+#include "ImGUIWidgets.h"
+
 class Timer
 {
 public:
@@ -10,6 +12,8 @@ public:
 	~Timer();
 
 	void Update();
+
+	void Render();
 
 	float DeltaTime_f();
 
@@ -24,6 +28,12 @@ public:
 	double MSPF_d();
 
 	float MSPF_f();
+
+	float SPF_f();
+
+	double PrevMSPFAverage_d();
+
+	float PrevMSPFAverage_f();
 
 	double Threshold_d();
 
@@ -41,6 +51,12 @@ public:
 
 	double Threshold_d(int framerate);
 
+	float GetDifference_f(int framerate);
+
+	float GetDifferenceWithBuffer_f(int framerate, int buffer = 5);
+
+	ImGUIWidget widget;
+
 private:
 	std::chrono::high_resolution_clock::time_point prevTime;
 	std::chrono::high_resolution_clock::time_point startTime;
@@ -50,12 +66,14 @@ private:
 	double elapsed;
 	double mspf;
 	double mspfThreshold;
+	double prevMSPFAverage;
 	double mspfBuffer;
 	bool average = false;
 	double bufferLowerLimit;
 	double bufferUpperLimit;
 
 	size_t mspfCount;
+	size_t prevMSPFCount;
 	
 	std::deque<double> prevMspf;
 	int fps;

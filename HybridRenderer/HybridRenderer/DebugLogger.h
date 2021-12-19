@@ -12,6 +12,7 @@ namespace DebugLogger
 	void Log(uint32_t i, const char* name = "Uint32_t");
 	void Log(uint64_t i, const char* name = "Uint64_t");
 	void Log(float f, const char* name = "Float");
+	void Log(double d, const char* name);
 	void Log(const glm::vec2& v, const char* name = "Vec2");
 	void Log(const glm::vec3& v, const char* name = "Vec3");
 	void Log(const glm::vec4& v, const char* name = "Vec3");

@@ -37,6 +37,7 @@ public:
 
 	bool shadowReceiver = true;
 	bool shadowCaster = true;
+	bool inBVH = true;
 
 	Descriptor descriptor;
 	Descriptor offscreenDescriptor;

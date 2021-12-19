@@ -35,7 +35,7 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     penultimateRenderPass.Create(deviceContext, info);
 
     PipelineInfo pipelineInfo{};
-    shadowMap.Create(deviceContext);
+    shadowMap.Create(deviceContext, 3);
     pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
         resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_FRAGMENT_BIT) };
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION , VertexAttributes::UV_COORD});
@@ -45,7 +45,7 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     pipelineInfo.conservativeRasterisation = true;
     pipelineInfo.colourAttachmentCount = 0;
     pipelineInfo.layoutsName = "offscreen";
-    pipelineInfo.cullMode = VK_CULL_MODE_NONE;
+    pipelineInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
 
     shadowMap.Initialise(pipelineInfo);
 
@@ -163,7 +163,7 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
         auto& frame = shadowMap.frameBuffer.frames[i];
         shadowMap.renderPass.Begin(commandBuffers[i], frame.vkFrameBuffer, frame.extent, &clearValues[0]);
 
-        vkCmdSetDepthBias(commandBuffers[i], 1.25f, 0.0f, 1.75f);
+        vkCmdSetDepthBias(commandBuffers[i], depthBias.x, depthBias.y, depthBias.z);
 
         VkViewport viewport = Initialisers::viewport(0, 0, (float)frame.extent.width, (float)frame.extent.height);
         VkRect2D scissor = Initialisers::scissor(frame.extent);
@@ -200,11 +200,11 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
         else
             penultimateRenderPass.Begin(commandBuffers[i], penultimateFrameBuffer.frames[i].vkFrameBuffer, penultimateFrameBuffer.frames[i].extent, clearValues.data(), static_cast<uint32_t>(clearValues.size()));
 
+        vkCmdSetDepthBias(commandBuffers[i], 0.0f, 0.0f, 0.0f);
         camera->vkSetViewport(commandBuffers[i]);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
-
-        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], scene->asDescriptor.sets[i] };
+        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], scene->asDescriptor.sets[i]};
         //std::array<VkDescriptorSet, 4> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i] };
 
         for (auto& go : scene->gameObjects) {
@@ -241,9 +241,12 @@ void RasterRenderer::Prepare()
 
             if (widget.NewWindow("Raster Render")) {
 
-                widget.Slider("Size", &storageImageSize, 2, 8);
+                if (widget.Slider3("Depth Bias", depthBias, -5.0, 5.0)) 
+                {
+                    commandBuffersReady = false;
+                }
 
-                widget.Image(0, { swapChain->extent.width / storageImageSize, swapChain->extent.height / storageImageSize });
+                //widget.Image(0, { swapChain->extent.width / storageImageSize, swapChain->extent.height / storageImageSize });
             }
             widget.EndWindow();
         }

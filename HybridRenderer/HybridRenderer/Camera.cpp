@@ -38,9 +38,10 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
 	request.AddDescriptorBufferData(0, buffers.data());
 	deviceContext->GetDescriptors(descriptor, &request);
-	gpuData.rayCullDistance = 5.0f;
-	adaptiveDistance = true;
+	gpuData.rayCullDistance = 15.0f;
+	adaptiveDistance = false;
 	transform.position.y = 4.0f;
+	widget.enabled = true;
 	update(_extent.width, _extent.height);
 }
 
@@ -108,6 +109,8 @@ void Camera::update()
 
 			widget.Slider("Ray Query Cull Distance", &gpuData.rayCullDistance, 1.0f, 100.0f);
 
+			widget.Slider("Adaptive Distance Multiplier", &multiplier, 0.1f, 100.0f);
+
 			widget.CheckBox("Adaptive Distance", &adaptiveDistance);
 
 			//widget.Slider4("Viewport", viewport, 0.0f, 1.0f);
@@ -154,11 +157,7 @@ void Camera::setScissor(glm::vec2 size, glm::vec2 offset)
 
 void Camera::SetCullDistance(float cullDistance)
 {
-	float difference = gpuData.rayCullDistance - cullDistance;
-	float abs = std::abs(difference);
-	if (abs < 0.05)
-		return;
-	gpuData.rayCullDistance = std::clamp(std::lerp(gpuData.rayCullDistance, cullDistance, abs), 0.0f, 1000.0f);
+	gpuData.rayCullDistance = std::clamp(cullDistance, 5.0f, 100.0f);
 }
 
 bool Camera::valuesUpdated(float windowWidth, float windowHeight) {

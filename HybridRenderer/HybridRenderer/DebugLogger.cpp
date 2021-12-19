@@ -38,6 +38,11 @@ void DebugLogger::Log(float f, const char* name)
 	std::cout << name << ": " << f << std::endl;
 }
 
+void DebugLogger::Log(double d, const char* name)
+{
+    std::cout << name << ": " << d << std::endl;
+}
+
 void DebugLogger::Log(const glm::vec2& v, const char* name)
 {
 	std::cout << name << ": x(" << v.x << "), y(" << v.y << ")" << std::endl;

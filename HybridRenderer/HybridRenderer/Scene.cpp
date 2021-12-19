@@ -11,7 +11,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 {
     this->deviceContext = deviceContext;
 
-    gameObjectCount = 50;
+    gameObjectCount = 1;
     gameObjects.reserve(10000);
     gameObjects.resize(static_cast<uint32_t>(gameObjectCount));
 
@@ -57,24 +57,23 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
         go.name = "Floor ";
     }
 
-    {
-        auto& go = gameObjects.emplace_back();
-        CreateGameObject(&go, resources->GetModel("plane"));
-        go.transform.rotation.y = 90.0f;
-        go.transform.position.z = -2.0f;
-        go.transform.position.y = 1.0f;
-        go.SetTexture(resources->GetTexture("amogus.png"));
-        go.name = "Amogus";
-    }
+    //{
+    //    auto& go = gameObjects.emplace_back();
+    //    CreateGameObject(&go, resources->GetModel("plane"));
+    //    go.transform.rotation.y = 90.0f;
+    //    go.transform.position.z = 0.0f;
+    //    go.transform.position.y = 1.0f;
+    //    go.SetTexture(resources->GetTexture("amogus.png"));
+    //    go.name = "Amogus";
+    //}
 
     {
         auto& go = gameObjects.emplace_back();
-        CreateGameObject(&go, resources->GetModel("plane"));
-        go.transform.rotation.y = 90.0f;
-        go.transform.position.z = -3.0f;
-        go.transform.position.y = 2.0f;
-        go.SetTexture(resources->GetTexture("amogus.png"));
+        CreateGameObject(&go, resources->GetModel("cube"));
         go.name = "Amogus";
+        go.inBVH = false;
+        go.shadowCaster = false;
+        go.shadowReceiver = false;
     }
 
     gameObjectCount = gameObjects.size();
@@ -93,6 +92,9 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     bottomLevelASs.reserve(gameObjects.size());
     for (auto& go : gameObjects)
     {
+        if (!go.inBVH)
+            continue;
+
         if (go.mesh) {
             ObjDesc objDesc;
             objDesc.verticesAddress = go.mesh->vertexBuffer.GetDeviceAddress();
@@ -109,7 +111,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
                     textures[i].sampler == go.texture->descriptorInfo.sampler)
                 {
                     objDesc.textureIndex = i;
-                    Log(objDesc.textureIndex, "Texture Index");
+                    //Log(objDesc.textureIndex, "Texture Index");
                     textureFound = true;
                     break;
                 }
@@ -119,7 +121,7 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
             {
                 textures.emplace_back(go.texture->descriptorInfo);
                 objDesc.textureIndex = textures.size() - 1;
-                Log(objDesc.textureIndex, "Texture Index");
+                //Log(objDesc.textureIndex, "Texture Index");
             }
 
             objecDescs.emplace_back(objDesc);
@@ -128,8 +130,6 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 
     topLevelAS.Initialise(deviceContext);
     topLevelAS.createTopLevelAccelerationStructure(bottomLevelASs);
-
-    Buffer objectBuffer;
 
     objectBuffer.Create(deviceContext, sizeof(ObjDesc) * objecDescs.size(),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -162,7 +162,6 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     deviceContext->GetDescriptors(lightDescriptor, &lightRequest);
 
     lightWidget.enabled = true;
-    
 }
 
 void Scene::Update(uint32_t imageIndex, float dt)
@@ -170,46 +169,41 @@ void Scene::Update(uint32_t imageIndex, float dt)
     if (ImGUI::enabled && lightWidget.enabled) {
         if (lightWidget.NewWindow("Light")) {
 
-            lightWidget.Slider3("Position", lightUBO.position, -75.0f, 75.0f);
-            lightWidget.Slider3("Direction", lightUBO.direction, -2.0f, 2.0f);
-            lightWidget.Slider("Size", &lightUBO.size, 0.0f, 3.0f);
-            lightWidget.Slider2("Clipping Planes", lightUBO.clippingPlanes, 0.0f, 100.0f);
-            lightWidget.CheckBox("Focus On Centre", &lookAtCentre);
+            lightWidget.Slider3("Position", lightUBO.position, -25.0f, 25.0f);
+            lightWidget.Slider("Size", &lightUBO.size_clippingPlanes.x, 0.0f, 5.0f);
+            lightWidget.Slider("Fustrum Size", lightUBO.size_clippingPlanes.y, 0.0f, 10.0f);
+            lightWidget.Slider("Near", lightUBO.size_clippingPlanes.z, 0.0f, 2.0f);
+            lightWidget.Slider("Far", lightUBO.size_clippingPlanes.w, 5.0f, 100.0f);
+            lightWidget.Slider("Ortho", &lightUBO.extra.x, 0, 1);
         }
         lightWidget.EndWindow();
     }
 
-
-
     //lightPos = glm::vec3(0.0f, 5.0f, -5.0f);
-    lightFOV = 90.0f;
-    glm::vec3 lightLookAt = glm::vec3(0, 1, 1);
-    // Matrix from light's point of view
+    lightFOV = 90.0f; 
+    glm::vec3 lightLookAt = glm::vec3(0, 1, 0);
+    // Matrix from light's point of views
     glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
     glm::mat4 depthViewMatrix = glm::mat4(1.0f);
-    //depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-    depthProjectionMatrix = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f,  0.1f, lightUBO.clippingPlanes.y);
-    depthViewMatrix = glm::lookAt(lightUBO.position, lookAtCentre ? lightLookAt : lightUBO.position + lightUBO.direction, glm::vec3(0, 1, 0));
+    if(lightUBO.extra.x == 0)
+        depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, lightUBO.size_clippingPlanes.z, lightUBO.size_clippingPlanes.w);
+    else
+        depthProjectionMatrix = glm::ortho(-lightUBO.size_clippingPlanes.y, 
+        lightUBO.size_clippingPlanes.y, 
+        -lightUBO.size_clippingPlanes.y, lightUBO.size_clippingPlanes.y,
+        lightUBO.size_clippingPlanes.z, lightUBO.size_clippingPlanes.w);
+
+    depthViewMatrix = glm::lookAt(lightUBO.position, lightLookAt, glm::vec3(0, 1, 0));
     depthProjectionMatrix[1][1] *= -1;
 
-    //if (!ortho)
-    //{
-    //    depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
-    //    depthViewMatrix = glm::lookAt(lightPos, lightLookAt, glm::vec3(0, 1, 0));
-    //}
-    ////depthProjectionMatrix[1][1] *= -1;
-    //else
-    //{
-    //    depthProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
-    //    depthViewMatrix = glm::lookAt(lightInvDir, -lightInvDir, glm::vec3(0, 1, 0));
-    //}
     glm::mat4 depthModelMatrix = glm::yawPitchRoll(lightRot.y, lightRot.x, lightRot.z);
 
     //lightUBO.depthMVP = depthProjectionMatrix * depthViewMatrix *depthModelMatrix;
 
     lightUBO.view = depthViewMatrix;
-    lightUBO.proj = depthProjectionMatrix * depthViewMatrix;
-    lightUBO.direction = lookAtCentre ? lightLookAt - lightUBO.position : lightUBO.direction;
+    lightUBO.proj = depthProjectionMatrix;
+    lightUBO.direction = glm::normalize(lightLookAt - lightUBO.position);
+    //lightUBO.fustrumSize = dt;
     lightBuffers[imageIndex].AllocatedMap(&lightUBO);
 
     //gameObjects[gameObjectCount - 1].transform.position = lightPos;
@@ -219,7 +213,14 @@ void Scene::Update(uint32_t imageIndex, float dt)
         if (!go.mesh)
             continue;
 
+        if (go.name == "Amogus") 
+        {
+            go.transform.position = lightUBO.position;
+            go.transform.scale = glm::vec3(lightUBO.size_clippingPlanes.x);
+        }
+
         go.Update();
+
 
         ModelUBO ubos;
         ubos.model = go.GetMatrix();
@@ -230,6 +231,8 @@ void Scene::Update(uint32_t imageIndex, float dt)
 
 void Scene::Destroy()
 {
+
+    objectBuffer.Destroy();
 
     for (auto& blas : bottomLevelASs)
     {

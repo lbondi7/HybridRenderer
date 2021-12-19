@@ -174,22 +174,41 @@ void HybridEngine::update()
         scene.lightPos.y += 10.0f * timer.DeltaTime_f();
     }
 
+    //Log(timer.MSPF_d(), "MSPF");
+
     if (camera.adaptiveDistance)
     {
-        if (timer.MSPF_f() < timer.Threshold_f(80))
+
+        auto diff = timer.GetDifferenceWithBuffer_f(65, 3);
+        Log(diff);
+        if (std::abs(diff) > 0.5)
         {
-            //Log(timer.Threshold_f(90), "Threshold");
-            //Log(timer.MSPF_f(), "Less Than");
-            //camera.SetCullDistance(camera.gpuData.rayCullDistance + (timer.DeltaTime_f() * 20.0f));
-            camera.SetCullDistance(camera.gpuData.rayCullDistance + (timer.DeltaTime_f() * std::max(1.0f, std::powf(camera.gpuData.rayCullDistance, 2)) / 2.0f));
+            auto diffPow = diff > 0.0 ? std::powf(diff, 2.0f) : -std::powf(diff, 2.0f);
+            //Log(diffPow, "Diff Squared");
+            auto targetDistance = camera.gpuData.rayCullDistance - (diffPow * timer.DeltaTime_f());
+            camera.gpuData.rayCullDistance = std::clamp(
+                std::lerp(camera.gpuData.rayCullDistance, targetDistance, 0.4f),
+                0.0f, 100.0f);
         }
-        else if (timer.MSPF_f() > timer.Threshold_f(70))
-        {
-            //Log(timer.Threshold_f(80), "Threshold");
-            //Log(timer.MSPF_f(), "Greater Than");
-            //camera.SetCullDistance(camera.gpuData.rayCullDistance - (timer.DeltaTime_f() * 20.0f));
-            camera.SetCullDistance(camera.gpuData.rayCullDistance - (timer.DeltaTime_f() * std::max(1.0f, std::powf(camera.gpuData.rayCullDistance, 2)) / 2.0f));
-        }
+
+        //if (timer.MSPF_f() > timer.Threshold_f(65))
+        //{
+        //    //camera.SetCullDistance(camera.gpuData.rayCullDistance - (camera.multiplier *  timer.DeltaTime_f()));
+
+        //    auto diff = timer.MSPF_f() - timer.Threshold_f(65);
+        //    auto diffPow = std::powf(diff, 2);
+        //    //Log(diffPow, "Diff Squared");
+        //    auto targetDistance = camera.gpuData.rayCullDistance - (diffPow  * timer.SPF_f());
+        //    camera.gpuData.rayCullDistance = std::clamp(std::lerp(camera.gpuData.rayCullDistance, targetDistance, 0.5f), 0.0f, 100.0f);
+        //}
+        //else if (timer.MSPF_f() < timer.Threshold_f(75))
+        //{
+        //    auto diff = timer.Threshold_f(75) - timer.MSPF_f();
+        //    auto diffPow = std::powf(diff, 2);
+        //    //Log(diffPow, "Diff Squared");
+        //    auto targetDistance = camera.gpuData.rayCullDistance + (diffPow * timer.SPF_f());
+        //    camera.gpuData.rayCullDistance = std::clamp(std::lerp(camera.gpuData.rayCullDistance, targetDistance, 0.5f), 0.0f, 100.0f);
+        //}
     }
 
     camera.update();
@@ -200,10 +219,7 @@ void HybridEngine::update()
 
 void HybridEngine::render()
 {
-    if (swapChain.outdated) {
-        RecreateSwapChain();
-        return;
-    }
+    timer.Render();
 
     if (ImGUI::enabled && widget.enabled) {
         if (widget.NewMainMenu())
@@ -229,6 +245,7 @@ void HybridEngine::render()
                 widget.MenuItem("Camera", &camera.widget.enabled);
                 widget.MenuItem("ShadowMap", &raster.shadowMap.widget.enabled);
                 widget.MenuItem("Light", &scene.lightWidget.enabled);
+                widget.MenuItem("Timer", &timer.widget.enabled);
                 
                 widget.EndMenu();
             }
@@ -240,6 +257,11 @@ void HybridEngine::render()
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
     vkWaitForFences(core->deviceContext->logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(core->deviceContext->logicalDevice, 1, &inFlightFences[currentFrame]);
+
+    if (swapChain.outdated) {
+        RecreateSwapChain();
+        return;
+    }
 
     std::vector<VkCommandBuffer> submitCommandBuffers;
     submitCommandBuffers.reserve(3);
@@ -270,6 +292,10 @@ void HybridEngine::render()
     if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR) {
         RecreateSwapChain();
     }
+
+    //if (raster.rebuild) {
+    //    raster.Reinitialise();
+    //}
 
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

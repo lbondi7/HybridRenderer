@@ -18,11 +18,19 @@ public:
 
 	bool CheckBox(const char * label, bool* checked);
 
+	bool InputField(const char* label, int* value, int step = 1, int smoothStep = 100);
+
+	bool InputField(const char* label, float* value, float min = 0.0f, float max = 0.0f);
+
 	bool Slider(const char * label, uint32_t* value, uint32_t min, uint32_t max);
 
 	bool Slider(const char* label, uint16_t* value, uint16_t min, uint16_t max);
 
+	bool Slider(const char* label, size_t* value, int min, int max);
+
 	bool Slider(const char* label, int* value, int min, int max);
+
+	bool Slider(const char* label, float& value, float min, float max);
 
 	bool Slider(const char* label, float* value, float min, float max);
 

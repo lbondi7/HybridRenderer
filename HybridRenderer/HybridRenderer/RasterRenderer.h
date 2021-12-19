@@ -73,7 +73,7 @@ public:
     uint32_t imageIndex;
 
     bool framebufferResized = false;
-    bool rebuildSwapChain = false;
+    bool rebuild = false;
     bool ortho = false;
 
     ImGUI imgui;
@@ -95,5 +95,7 @@ public:
     bool countUp = true;
 
     ImGUIWidget widget;
+
+    glm::vec3 depthBias;
 
 };

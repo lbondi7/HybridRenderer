@@ -78,6 +78,7 @@ public:
 
 	CameraGPU gpuData;
 	bool adaptiveDistance = true;
+	float multiplier = 5.0f;
 
 private:
 	bool valuesUpdated(float windowWidth, float windowHeight);

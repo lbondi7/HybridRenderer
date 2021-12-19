@@ -10,13 +10,8 @@
 #include "Buffer.h"
 
 struct ShadowUBO {
-	int shadowMap = 2;
-	int confirmIntersection = 0;
-	int terminateRay = 0;
-	float alphaThreshold = 0.02;
-	float bias = 0.13f;
-	float blockerScale = 1.0f;
-	int pcfFilterSize = 1;
+	alignas(16) glm::ivec4 shadow;
+	alignas(16) glm::vec4 blocker;
 };
 
 class ShadowMap
@@ -26,7 +21,7 @@ public:
 	ShadowMap() = default;
 	~ShadowMap();
 
-	void Create(DeviceContext* _devices);
+	void Create(DeviceContext* _devices, int descriptorSet, const std::string& windowName = "Shadow Map");
 
 	void Initialise(const PipelineInfo& pipelineInfo);
 
@@ -55,9 +50,12 @@ public:
 	ShadowUBO shadowUBO;
 
 	std::vector<Buffer> buffers;
+	
 private:
 
 	void Initialise();
+	int descriptorSet = 0;
+	std::string windowName = "Shadow Map";
 
 	DeviceContext* devices = nullptr;
 	SwapChain* swapChain = nullptr;

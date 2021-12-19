@@ -109,7 +109,7 @@ void AccelerationStructure::createTopLevelAccelerationStructure(std::vector<Acce
 	uint32_t i = 0;
 	for (auto& instance : instances)
 	{
-		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR, blas[i].deviceAddress, i);
+		instance = Initialisers::ASInstance(transformMatrix, VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR, blas[i].deviceAddress, i);
 		i++;
 	}
 

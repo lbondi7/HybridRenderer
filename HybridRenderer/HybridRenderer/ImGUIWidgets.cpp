@@ -40,6 +40,16 @@ bool ImGUIWidget::CheckBox(const char * label, bool* checked)
 	return ImGui::Checkbox(label, checked);
 }
 
+bool ImGUIWidget::InputField(const char* label, int* value, int min, int max)
+{
+	return ImGui::InputInt(label, value, min, max);
+}
+
+bool ImGUIWidget::InputField(const char* label, float* value, float min, float max)
+{
+	return ImGui::InputFloat(label, value, min, max);
+}
+
 bool ImGUIWidget::Slider(const char * label, uint32_t* value, uint32_t min, uint32_t max)
 {
 	return ImGui::SliderInt(label, reinterpret_cast<int*>(value), min, max);
@@ -50,9 +60,19 @@ bool ImGUIWidget::Slider(const char* label, uint16_t* value, uint16_t min, uint1
 	return ImGui::SliderInt(label, reinterpret_cast<int*>(value), min, max);
 }
 
+bool ImGUIWidget::Slider(const char* label, size_t * value, int min, int max)
+{
+	return ImGui::SliderInt(label, reinterpret_cast<int*>(value), min, max);
+}
+
 bool ImGUIWidget::Slider(const char* label, int* value, int min, int max)
 {
 	return ImGui::SliderInt(label, value, min, max);
+}
+
+bool ImGUIWidget::Slider(const char* label, float& value, float min, float max)
+{
+	return ImGui::SliderFloat(label, &value, min, max);
 }
 
 bool ImGUIWidget::Slider(const char* label, float* value, float min, float max)

@@ -1,6 +1,7 @@
 #version 460
 
 #extension GL_EXT_ray_query : enable
+#extension GL_EXT_ray_flags_primitive_culling : enable
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_GOOGLE_include_directive : enable
@@ -8,18 +9,15 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
+layout(primitive_culling);
+
 layout (set = 1, binding = 1) uniform sampler2D sampledTexture;
 
 layout (set = 3, binding = 0) uniform sampler2D shadowMap;
 layout (set = 3, binding = 1) uniform ShadowUBO
 {
-	int shadowMap;
-	int confirmIntersection;
-	int terminateRay;
-	float alphaThreshold;
-	float bias;
-	float blockerScale;
-	int range;
+	ivec4 shadow;
+	vec4 blocker;
 } shadowUBO;
 
 struct Vertex
@@ -56,12 +54,12 @@ layout (location = 2) in vec3 inCamPos;
 layout (location = 3) in vec3 inLightPos;
 layout (location = 4) in vec4 inShadowCoord;
 layout (location = 5) in vec2 inUV;
-layout (location = 6) in vec3 fragVert;
+layout (location = 6) in vec3 inWorldPos;
 layout (location = 7) in float inCull;
-layout (location = 8) in vec4 inShadowViewCoord;
-layout (location = 9) in vec3 inLightDirection;
-layout (location = 10) in vec2 inLightClippingPlanes;
-layout (location = 11) in float inLightSize;
+layout (location = 8) in vec3 inLightDirection;
+layout (location = 9) in vec2 inLightClippingPlanes;
+layout (location = 10) in vec2 inLightSize;
+layout (location = 11) in flat int inLightType;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -80,230 +78,129 @@ vec3 shadingGGX(vec3 N, vec3 V, vec3 L, vec3 color, float roughness, float metal
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-float random(in vec2 xy, in float seed);
+//////////////////////////////////////////////////////////////
 
-float offsetAmount = 0.02;
-vec2 offsets[17] = {vec2(0), vec2(offsetAmount), vec2(-offsetAmount), 
-vec2(-offsetAmount, offsetAmount), vec2(offsetAmount, -offsetAmount), 
-vec2(offsetAmount, 0), vec2(0, offsetAmount), vec2(-offsetAmount, 0), 
-vec2(0, -offsetAmount), 
-vec2(offsetAmount / 2), vec2(-offsetAmount / 2), 
-vec2(-offsetAmount / 2, offsetAmount/ 2), vec2(offsetAmount/ 2, -offsetAmount/ 2), 
-vec2(offsetAmount/ 2, 0), vec2(0, offsetAmount/ 2), vec2(-offsetAmount / 2, 0), 
-vec2(0, -offsetAmount/ 2)};
+/// Spatial - stack overflow
+// https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
 
-const vec2 Poisson25[25] = vec2[](
-    vec2(-0.978698, -0.0884121),
-    vec2(-0.841121, 0.521165),
-    vec2(-0.71746, -0.50322),
-    vec2(-0.702933, 0.903134),
-    vec2(-0.663198, 0.15482),
-    vec2(-0.495102, -0.232887),
-    vec2(-0.364238, -0.961791),
-    vec2(-0.345866, -0.564379),
-    vec2(-0.325663, 0.64037),
-    vec2(-0.182714, 0.321329),
-    vec2(-0.142613, -0.0227363),
-    vec2(-0.0564287, -0.36729),
-    vec2(-0.0185858, 0.918882),
-    vec2(0.0381787, -0.728996),
-    vec2(0.16599, 0.093112),
-    vec2(0.253639, 0.719535),
-    vec2(0.369549, -0.655019),
-    vec2(0.423627, 0.429975),
-    vec2(0.530747, -0.364971),
-    vec2(0.566027, -0.940489),
-    vec2(0.639332, 0.0284127),
-    vec2(0.652089, 0.669668),
-    vec2(0.773797, 0.345012),
-    vec2(0.968871, 0.840449),
-    vec2(0.991882, -0.657338));
-
-
-int samples = 17;
-
-float random(float x){
-       return 0.5 - fract(sin(x) * 23363.14);
+// A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
+uint hash( uint x ) {
+    x += ( x << 10u );
+    x ^= ( x >>  6u );
+    x += ( x <<  3u );
+    x ^= ( x >> 11u );
+    x += ( x << 15u );
+    return x;
 }
 
-float random(vec2 v){
-       return 0.5 - fract(sin(dot(v.xy, vec2(12.9898, 78.233)))* 43758.5453);
+
+
+// Compound versions of the hashing algorithm I whipped together.
+uint hash( uvec2 v ) { return hash( v.x ^ hash(v.y)                         ); }
+uint hash( uvec3 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z)             ); }
+uint hash( uvec4 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z) ^ hash(v.w) ); }
+
+
+
+// Construct a float with half-open range [0:1] using low 23 bits.
+// All zeroes yields 0.0, all ones yields the next smallest representable value below 1.0.
+float floatConstruct( uint m ) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    float  f = uintBitsToFloat( m );       // Range [1:2]
+    return f - 1.0;                        // Range [0:1]
 }
 
-float PHI = 1.61803398874989484820459;  // Φ = Golden Ratio   
 
-float random_g(vec2 xy){
-       return 0.5 - fract(sin(distance(xy*PHI, xy))*xy.x* 33141.1434135135);
+
+// Pseudo-random value in half-open range [0:1].
+float random_p( float x ) { return floatConstruct(hash(floatBitsToUint(x))); }
+float random_p( vec2  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+float random_p( vec3  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+float random_p( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+
+float random( float x ) { return floatConstruct(hash(floatBitsToUint(x))) - 0.5; }
+float random( vec2  v ) { return floatConstruct(hash(floatBitsToUint(v))) - 0.5; }
+float random( vec3  v ) { return floatConstruct(hash(floatBitsToUint(v))) - 0.5; }
+float random( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))) - 0.5; }
+
+
+//////////////////////////////////////////////////////////////
+
+vec2 discSample(float size, vec2 ran){ 
+	float r = size * sqrt(ran.x);
+	float theta = ran.y * 2.0 * 3.14159265359;
+	return vec2(r * cos(theta), r * sin(theta));
 }
 
-float textureProj(vec4 shadowCoord, vec2 off)
+float sigmoidFunction(float x)
 {
-	float shadow = 1.0;
-	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 )
-	{
-		float dist = texture( shadowMap, shadowCoord.st + off ).r;
-		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
-		{
-			shadow = 0.0;
-		}
-	}
-	return shadow;
+	return 1.0 / (1.0 + exp(-x));
 }
-
-float filterPCF(vec4 sc)
-{
-	if (sc.x > 1.0 || sc.y > 1.0 || sc.z > 1.0 || sc.x < 0.0 || sc.y < 0.0 || sc.z < 0.0)
-		return 1.0;
-	ivec2 texDim = textureSize(shadowMap, 0);
-	float scale = 1.1;
-	float dx = scale * 1.0 / float(texDim.x);
-	float dy = scale * 1.0 / float(texDim.y);
-	float shadowFactor = 0.0;
-	int count = 0;
-	float range = 1.5;
-	for (float x = -range; x <= range; x+= 1.0)
-	{
-		for (float y = -range; y <= range; y+= 1.0)
-		{
-			shadowFactor += textureProj(sc, vec2(dx*x, dy*y));
-			count++;
-		}
-	}
-	return shadowFactor / 16.0;
-}
-
-float search_region_radius_uv(float z)
-{
-    return shadowUBO.blockerScale * inLightSize * (z - inLightClippingPlanes.x) / z;
-}
-
-float search_region_radius(float z)
-{
-    return shadowUBO.blockerScale * inLightSize * (z - inLightClippingPlanes.x) / z;
-}
-
-float penumbra_radius_uv(float zReceiver, float zBlocker)
-{
-    return abs(zReceiver - zBlocker) / zBlocker;
-}
-
-float project_to_light_uv(float penumbra_radius, float z)
-{
-    return penumbra_radius * inLightSize * inLightClippingPlanes.x / z;
-}
-
-float z_clip_to_eye(float z)
-{
-    return inLightClippingPlanes.x + (inLightClippingPlanes.y - inLightClippingPlanes.x) * z;
-    //return inLightClippingPlanes.y * inLightClippingPlanes.x / (inLightClippingPlanes.y - z * (inLightClippingPlanes.y - inLightClippingPlanes.x));
-}
-
-void findBlockers(out float accum_blocker_depth,
-                  out int num_blockers,
-                  vec2      uv,
-                  float     z0,
-				  float     bias,
-                  float     search_region_radius_uv)
-{
-	accum_blocker_depth = 0.0;
-    num_blockers        = 0;
-    float biased_depth  = z0 - bias;
-
-    for (int i = 0; i < samples; ++i)
-    {
-        vec2 offset = offsets[i];
-
-        offset *= search_region_radius_uv;
-        float shadow_map_depth = texture(shadowMap, uv + offset).r;
-
-        if (shadow_map_depth < biased_depth)
-        {
-            accum_blocker_depth += shadow_map_depth;
-            num_blockers++;
-        }
-    }
-}
-
 
 float searchArea(float lightSize, float receiver)
 {
-	return shadowUBO.blockerScale * lightSize * (receiver - inLightClippingPlanes.x) / receiver;
+	return (inLightType == 0 ? lightSize : lightSize  / inLightSize.y) * 
+		(receiver - inLightClippingPlanes.x) / receiver;
 }
 
-float averageBlockerDepth(vec3 shadowCoords, float lightSize, float bias)
+float averageBlockerDepth(out int blockerCount, vec2 uv, vec3 shadowCoords, float lightSize, float bias)
 {
 
-	int blockerCount = 0;
+	blockerCount = 0;
 	float averageBlockerDepth = 0.0;
-	float searchArea = searchArea(lightSize, shadowCoords.z);
-	float biasDepth = shadowCoords.z - bias;
+	float searchArea = shadowUBO.blocker.x * (lightSize / shadowCoords.z) * (shadowCoords.z - inLightClippingPlanes.x);
+	float biasDepth = shadowCoords.z;
 
-    for (int i = 0; i < samples; ++i)
+	vec2 ran = vec2(random_p(gl_FragCoord.xy), random_p(gl_FragCoord.yx * shadowUBO.shadow.w));
+	vec2 offset = ran;
+
+    for (int i = 0; i < shadowUBO.shadow.z; ++i)
     {
-        vec2 offset = offsets[i];
-
-        offset *= searchArea;
-        float sampledDepth = texture(shadowMap, shadowCoords.xy + offset).r;
-
-        if (sampledDepth < biasDepth)
+		vec2 offset = discSample(inLightSize.x, ran);
+        float sampledDepth = texture(shadowMap, uv + offset * searchArea).r;
+        sampledDepth = sampledDepth * 0.5 + 0.5;
+        if (sampledDepth + bias < biasDepth)
         {
             averageBlockerDepth += sampledDepth;
             blockerCount++;
         }
+
+		ran = vec2(random_p(ran.x), random_p(ran.y));
     }
-
-
-	if(blockerCount > 0)
+	if (blockerCount > 0)
 		return averageBlockerDepth / float(blockerCount);
 
-	return -1.0;
+	return 1.0;
 }
 
-float pcf(vec2 uv, float z0, float bias, float filter_radius_uv)
+float penumbraSize(float averageBlockerDepth, float receiver, float lightSize, float bias)
+{
+	return (lightSize * (receiver - averageBlockerDepth)) / averageBlockerDepth;
+}
+
+float pcf(vec2 uv, float z0, float bias, float penumbraSize)
 {
     float sum = 0.0;
-
-    for (int i = 0; i < samples; ++i)
+	vec2 ran = vec2(random_p(gl_FragCoord.xy * shadowUBO.shadow.w), random_p(gl_FragCoord.yx));	
+	vec2 offset = ran;
+    for (int i = 0; i < shadowUBO.shadow.z; ++i)
     {
-        vec2 offset = offsets[i];
+		vec2 offset = discSample(penumbraSize, ran);
+		float z = texture(shadowMap, uv + offset).r;
+		z = z * 0.5 + 0.5;
+		sum += (z <= z0) ? 1 : 0;
 
-        offset *= filter_radius_uv;
-        float shadow_map_depth = texture(shadowMap, uv + offset).r;
-        sum += shadow_map_depth < (z0 - bias) ? 0.0 : 1.0;
-    }
-
-    return sum / float(samples);
+		ran = vec2(random_p(ran.x), random_p(ran.y));
+	}
+	return sum / shadowUBO.shadow.z;
 }
 
-float PCSS_f(vec3 sc, vec3 shadowViewCoord)
-{
-	sc = sc * 0.5 + 0.5;
-    float current_depth = sc.z;
-
-	float bias = shadowUBO.bias;
-
-	float z_vs = -(shadowViewCoord.z);
-	float search_region_radius = search_region_radius(sc.z);
-	float accum_blocker_depth;
-	int num_blockers;
-	findBlockers(accum_blocker_depth, num_blockers, sc.xy, sc.z, bias, search_region_radius);
-	if (num_blockers < 1)
-    {
-        return 1.0;
-    }
-
-	float avg_blocker_depth = accum_blocker_depth / float(num_blockers);
-    float avg_blocker_depth_vs = z_clip_to_eye(avg_blocker_depth);
-	float penumbra_radius = penumbra_radius_uv(sc.z, avg_blocker_depth_vs);
-	float filter_radius = project_to_light_uv(penumbra_radius, sc.z);
-
-	if (sc.x > 1.0 || sc.y > 1.0 || sc.z > 1.0 || sc.x < 0.0 || sc.y < 0.0 || sc.z < 0.0)
-		return 1.0;
-
-    return pcf(sc.xy, sc.z, bias, filter_radius);
-}
-
-float pcss_f(vec3 shadowCoords)
+float pcss_f(vec3 shadowCoords, out float diff)
 {
 	vec3 normalisedShadowCoords = shadowCoords * 0.5 + 0.5;
 
@@ -311,190 +208,143 @@ float pcss_f(vec3 shadowCoords)
 	normalisedShadowCoords.x < 0.0 || normalisedShadowCoords.y < 0.0 || normalisedShadowCoords.z < 0.0)
 		return 1.0;
 
-	float bias = shadowUBO.bias;
+	int blockerCount;
+	float averageBlockerDepth = averageBlockerDepth(blockerCount, normalisedShadowCoords.xy, normalisedShadowCoords, inLightSize.x * 0.5, shadowUBO.blocker.w);
+	if(blockerCount <= 0) return 1.0;
+	float penumbraSize = penumbraSize(averageBlockerDepth, normalisedShadowCoords.z, inLightSize.x * 0.25, shadowUBO.blocker.w);
+	float uvRadius = penumbraSize;
 
-	return averageBlockerDepth(normalisedShadowCoords, inLightSize, bias);
+	diff = penumbraSize;
+	return max(1.0 - pcf(normalisedShadowCoords.xy, normalisedShadowCoords.z, averageBlockerDepth, uvRadius), 0.0);
 }
 
 void main() {
 
+	
 	vec4 col = texture(sampledTexture, inUV);
 	if(col.a < 0.9)
 		discard;
 
-	float shadow = 0.0;
-	//shadow = filterPCF(inShadowCoord / inShadowCoord.w);
-	shadow = pcss_f(inShadowCoord.xyz / inShadowCoord.w);
-	vec4 outColour;
+	float shadow = 0.0, diff = 0.0;
+	int exit = 0;
+	shadow = pcss_f(inShadowCoord.xyz / inShadowCoord.w, diff);
+	vec3 outColour;
 
-	outColour = vec4(vec3(shadow), 1.0) * col;
+	//outColour = vec4(vec3(shadow), 1.0) * col;
 
-	// vec3 normal = normalize(inNormal);
-	// vec3 viewVec = fragVert - inCamPos;
-	// vec3 viewDir = normalize(fragVert - inCamPos);
-	// vec3 invViewDir = normalize(inCamPos - fragVert);
+	vec3 normal = normalize(inNormal);
+	vec3 viewVec = inWorldPos - inCamPos;
+	vec3 viewDir = normalize(inWorldPos - inCamPos);
+	vec3 invViewDir = normalize(inCamPos - inWorldPos);
 
-	// vec3 totalLight = vec3(0.0);
-	// vec3 lightPos = inLightPos;
-	// vec3 lightVec = fragVert - lightPos;
-	// //vec3 lightDir = normalize(fragVert - lightPos);
-	// vec3 invLightDir = -normalize(inLightDirection);
-	// //vec3 invLightDir = -normalize(lightPos - fragVert);
-	// totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.8, 0.05);
-	// outColour = col * vec4(totalLight, 1.0);
-	// outColour *= shadow;
+	vec3 totalLight = vec3(0.0);
+	vec3 lightPos = inLightPos;
 
+	float threshold = 1.0;
+	float dist = distance(inCamPos, inWorldPos);
+	if(dist < inCull + (threshold) && shadow < 1.0)
+	{
+		rayQueryEXT rayQuery;
+		int samples;
+		if(shadowUBO.shadow.y == 1)
+			samples = max(int(shadow *  float(shadowUBO.shadow.w)), 4);
+		else
+			samples = int(shadowUBO.shadow.w);
+		
+		//float shadow.z = float(shadowUBO.shadow.w);
+		vec2 ran = vec2(random_p(gl_FragCoord.xy), random_p(gl_FragCoord.xz * shadowUBO.shadow.w));
+	
+		//outColour = vec4(1.0 - shadow, 1.0 - shadow, 1.0 - shadow, 1.0);
 
-	// if(shadow < 1.0 && distance(inCamPos, fragVert) < inCull)
-	// {
-	// 	rayQueryEXT rayQuery;
-	// 	vec4 tempColour = vec4(0.0);
-	// 	bool firstTime = true;
-	// 	float samples = shadow;
-	// 	float ran = random(gl_FragCoord.xy/ vec2(800, 600) * samples);
+		float storedShadow = 0.0;
+		vec3 storedColour = vec3(0.0);
+		vec3 origin = inWorldPos;
+		int hitShit = 0;
+		for (int i = 0; i < int(samples); i++)
+		{
+			// initialise the ray to query but doesn't start the traversal
+			vec2 offset = discSample(inLightSize.x, ran);
+			//vec2 offset = vec2(random(ran.y), random(ran.x)) * lightRadius;
+			vec3 target = (inLightType == 0 ? lightPos : -inLightDirection) + vec3(offset, 0.0) * shadowUBO.blocker.y;
+			ran  = vec2(random_p(ran.x), random_p(ran.y));
+			rayQueryInitializeEXT(rayQuery, 
+			topLevelAS, 
+			gl_RayFlagsNoOpaqueEXT, 
+			0xFF, 
+			origin, 
+			0.01, 
+			inLightType == 0 ? normalize(target - origin) : normalize(target),
+			1000.0);
 
-	// 	for (int i = 0; i < max(int(samples * 16.0), 1); i++)
-	// 	{
+			float hit = 1.0;
+			// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
+			while (rayQueryProceedEXT(rayQuery)) 
+			{ 
+				uint candidateType = rayQueryGetIntersectionTypeEXT(rayQuery, false);
 
-	// 		// initialise the ray to query but doesn't start the traversal
-	// 		vec3 offset = vec3(-ran, 0, ran) * shadowUBO.alphaThreshold;
-	// 		vec3 origin = firstTime ? fragVert : fragVert + offset;
-	// 		ran  = random(ran);
-	// 		firstTime = false;
-	// 		rayQueryInitializeEXT(rayQuery, 
-	// 		topLevelAS, 
-	// 		gl_RayFlagsNoOpaqueEXT, 
-	// 		0xFF, 
-	// 		origin, 
-	// 		0.01, 
-	// 		normalize(lightPos - origin),
-	// 		1000.0);
+				if (candidateType == gl_RayQueryCandidateIntersectionTriangleEXT) 
+				{	
+					if (rayQueryGetIntersectionFrontFaceEXT(rayQuery, true))
+					{	
+						int objIndex = rayQueryGetIntersectionInstanceIdEXT(rayQuery, false);
+						ObjDesc objResource = objDesc.i[objIndex];
+						Indices indices = Indices(objResource.indicesAddress);
+						Vertices vertices = Vertices(objResource.vertexAddress);
+						// Indices of the triangle
+						ivec3 ind = indices.i[rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false)];
 
-	// 		float storedDistance = 1001.0;
-	// 		float storedAlpha = 0.0;
-	// 		int hitCount = 0;
-	// 		// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
-	// 		while (rayQueryProceedEXT(rayQuery)) 
-	// 		{ 
-	// 			uint candidateType = rayQueryGetIntersectionTypeEXT(rayQuery, false);
+						// // Vertex of the triangle
+						Vertex v0 = vertices.v[ind.y];
+						Vertex v1 = vertices.v[ind.z];
+						Vertex v2 = vertices.v[ind.x];
+						vec2 attribs = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);
+						vec3 barycentrics = vec3(attribs.x, attribs.y, 1.0 - attribs.y - attribs.x);
+						vec2 texCoord = v0.uvCoord * barycentrics.x + 
+										v1.uvCoord * barycentrics.y + 
+										v2.uvCoord * barycentrics.z;
+						float alpha = texture(textureSamplers[objResource.textureIndex], texCoord).a;
+						if(alpha >= 0.9){
+							hit = 0.0;
+							hitShit = 1;
+							//if(shadowUBO.shadow.y == 1)
+								rayQueryTerminateEXT(rayQuery);
+						}
+					}
+				}
+			}
+			storedShadow += (shadowUBO.shadow.x == 1 ? hitShit == 0 ? (hit) : shadow : hit);
+			//storedShadow += hit;
+			vec3 invLightDir = (inLightType == 0 ? normalize(target - origin) : normalize(-inLightDirection));
+			totalLight += shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.8, 0.05);
+		}
 
-	// 			if (candidateType == gl_RayQueryCandidateIntersectionTriangleEXT) 
-	// 			{
-	// 				hitCount++;
-	// 				if(shadowUBO.terminateRay == 1)
-	// 					rayQueryTerminateEXT(rayQuery);
-	// 				if(shadowUBO.confirmIntersection == 1)	
-	// 					rayQueryConfirmIntersectionEXT(rayQuery);
+		totalLight /= samples;
+		//storedColour = col.xyz * (shadowUBO.shadow.x == 1 ? storedShadow : storedShadow);
+		//totalLight = vec3(clamp(totalLight.x, 0.0, 1.0), clamp(totalLight.y, 0.0, 1.0), clamp(totalLight.z, 0.0, 1.0));
+		storedColour = col.xyz * totalLight;
+		//outColour = storedColour * (hitShit == 1 ? min((storedShadow / samples), 1.0) : 1.0);
+		//outColour = storedColour * storedShadow;
+		//distance(storedShadow, shadow);
+		// float shadowProximity = 0.1;
+		if(dist > inCull - threshold)
+		{
+			// sigmoid function
+			float sigmoid = sigmoidFunction(dist - (inCull - threshold));
+			outColour = storedColour * (mix(shadow, (hitShit == 1 ? min((storedShadow / samples), 1.0) : 1.0), sigmoid));
+		}
+		else
+		{
+			outColour = storedColour * (hitShit == 1 ? min((storedShadow / samples), 1.0) : 1.0);
+		}
+	}
+	else
+	{
+		vec3 invLightDir = (inLightType == 0 ? normalize(lightPos - inWorldPos) : normalize(-inLightDirection));
+		totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.8, 0.05);
+		outColour = col.xyz * totalLight * shadow;
+	}
 
-	// 				int objIndex = rayQueryGetIntersectionInstanceIdEXT(rayQuery, false);
-	// 				ObjDesc objResource = objDesc.i[objIndex];
-	// 				Indices indices = Indices(objResource.indicesAddress);
-	// 				Vertices vertices = Vertices(objResource.vertexAddress);
-	// 				// Indices of the triangle
-	// 				ivec3 ind = indices.i[rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false)];
-
-	// 				// // Vertex of the triangle
-	// 				Vertex v0 = vertices.v[ind.y];
-	// 				Vertex v1 = vertices.v[ind.z];
-	// 				Vertex v2 = vertices.v[ind.x];
-	// 				vec2 attribs = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);
-	// 				vec3 barycentrics = vec3(attribs.x, attribs.y, 1.0 - attribs.y - attribs.x);
-	// 				vec2 texCoord = v0.uvCoord * barycentrics.x + v1.uvCoord * barycentrics.y + v2.uvCoord * barycentrics.z;
-	// 				float alpha = texture(textureSamplers[objResource.textureIndex], texCoord).a;
-	// 				if(alpha >= 1.0){
-	// 					storedAlpha = alpha;
-	// 					rayQueryTerminateEXT(rayQuery);
-	// 				}
-	// 				else{
-	// 					storedAlpha += alpha;
-	// 				}
-  
-	// 			}
-	// 		}
-	// 		tempColour += outColour * (1.0 - clamp(storedAlpha, 0.0, 1.0));
-	// 		// if(storedAlpha > shadowUBO.alphaThreshold){
-	// 		// 	tempColour += outColour * (1.0 - clamp(storedAlpha, 0.0, 1.0));
-	// 		// }
-	// 	}
-	// 	outColour = tempColour / max((samples * 16.0), 1.0);
-	// 	// if(samples > 0.05)
-	// 	// 	outColour.r = samples;
-	// 	// if(samples > 0.45)
-	// 	// 	outColour.g = samples;
-	// 	// if(samples > 0.75)
-	// 	// 	outColour.b = samples;
-	// }
-	// else
-	// {
-	// 	outColour *= shadow;
-	// }
-
-	// if(shadow < 1.0 && distance(inCamPos, fragVert) < inCull)
-	// {
-	// 	rayQueryEXT rayQuery;
-
-	// 	// initialise the ray to query but doesn't start the traversal
-	// 	rayQueryInitializeEXT(rayQuery, 
-	// 	topLevelAS, 
-	// 	gl_RayFlagsNoOpaqueEXT, 
-	// 	0xFF, 
-	// 	fragVert, 
-	// 	0.01, 
-	// 	invLightDir, 
-	// 	1000.0);
-
-	// 	float storedDistance = 1001.0;
-	// 	float storedAlpha = 0.0;
-	// 	int hitCount = 0;
-
-	// 	// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
-	// 	while (rayQueryProceedEXT(rayQuery)) 
-	// 	{ 
-	// 		uint candidateType = rayQueryGetIntersectionTypeEXT(rayQuery, false);
-
-	// 		if (candidateType == gl_RayQueryCandidateIntersectionTriangleEXT) 
-	// 		{
-	// 			if(shadowUBO.terminateRay == 1)
-	// 				rayQueryTerminateEXT(rayQuery);
-	// 			if(shadowUBO.confirmIntersection == 1)	
-	// 				rayQueryConfirmIntersectionEXT(rayQuery);
-
-	// 			int objIndex = rayQueryGetIntersectionInstanceIdEXT(rayQuery, false);
-	// 			ObjDesc objResource = objDesc.i[objIndex];
-	// 			Indices indices = Indices(objResource.indicesAddress);
-	// 			Vertices vertices = Vertices(objResource.vertexAddress);
-	// 			// Indices of the triangle
-	// 			ivec3 ind = indices.i[rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false)];
-
-	// 			// // Vertex of the triangle
-	// 			Vertex v0 = vertices.v[ind.y];
-	// 			Vertex v1 = vertices.v[ind.z];
-	// 			Vertex v2 = vertices.v[ind.x];
-	// 			vec2 attribs = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);
-	// 			vec3 barycentrics = vec3(attribs.x, attribs.y, 1.0 - attribs.y - attribs.x);
-	// 			vec2 texCoord = v0.uvCoord * barycentrics.x + v1.uvCoord * barycentrics.y + v2.uvCoord * barycentrics.z;
-	// 			float alpha = texture(textureSamplers[objResource.textureIndex], texCoord).a;
-	// 			if(alpha >= 1.0){
-	// 				storedAlpha = alpha;
-	// 				rayQueryTerminateEXT(rayQuery);
-	// 				break;
-	// 			}
-				
-	// 			float d = rayQueryGetIntersectionTEXT(rayQuery, false);
-	// 			storedAlpha += alpha;
-	// 		}
-	// 	}
-
-	// 	if(storedAlpha > shadowUBO.alphaThreshold){
-	// 		outColour *= 1.0 - storedAlpha;
-	// 	}
-	// }
-	// else
-	// {
-	// 	outColour *= shadow;
-	// }
-
-	outFragColor = outColour;
+	outFragColor = vec4(outColour, 1.0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
