@@ -12,6 +12,7 @@
 struct ShadowUBO {
 	alignas(16) glm::ivec4 shadow;
 	alignas(16) glm::vec4 blocker;
+	alignas(16) glm::uvec4 extra;
 };
 
 class ShadowMap
@@ -28,6 +29,8 @@ public:
 	void Reinitialise(bool complete = true);
 
 	void Destroy(bool complete = true);
+
+	void saveScreenshot(const char* filename);
 
 	bool Update(uint32_t imageIndex);
 

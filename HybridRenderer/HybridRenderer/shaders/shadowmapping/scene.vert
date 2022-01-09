@@ -2,8 +2,7 @@
 
 layout (location = 0) in vec3 inPos;
 layout (location = 1) in vec2 inUV;
-layout (location = 2) in vec3 inColor;
-layout (location = 3) in vec3 inNormal;
+layout (location = 2) in vec3 inNormal;
 
 layout (set = 0, binding = 0) uniform CameraUBO
 {
@@ -15,6 +14,7 @@ layout (set = 0, binding = 0) uniform CameraUBO
 layout (set = 1, binding = 0) uniform ModelUBO
 {
 	mat4 matrix;
+	vec3 colour;
 } model;
 
 layout (set = 2, binding = 0) uniform LightUBO
@@ -24,6 +24,7 @@ layout (set = 2, binding = 0) uniform LightUBO
 	vec4 size_clippingPlanes;
 	vec3 pos;
 	vec3 direction;
+	vec4 colour;
 	ivec4 extra;
 } light;
 
@@ -39,7 +40,9 @@ layout (location = 7) out float outCull;
 layout (location = 8) out vec3 outLightDirection;
 layout (location = 9) out vec2 outLightClippingPlanes;
 layout (location = 10) out vec2 outLightSize;
-layout (location = 11) out int outLightType;
+layout (location = 11) out vec4 outLightColour;
+layout (location = 12) out int outLightType;
+
 
 out gl_PerVertex 
 {
@@ -56,21 +59,23 @@ const mat4 biasMat = mat4(
 void main() 
 {
 
-	outColor = inColor;
-	//outNormal = inNormal;
+	outColor = model.colour;
 	outUV = inUV;
 	outWorldPos = vec3(model.matrix * vec4(inPos, 1.0));
 	gl_Position = cam.vp * vec4(outWorldPos, 1.0);
 
-	outNormal = vec3(model.matrix * vec4(inNormal, 1.0));
+	outNormal = normalize(vec3(vec4(inNormal, 1.0)));
 	outLightPos = light.pos;
 	outCamPos = cam.pos;
 	outCull = cam.rayCullDistance;
 	outLightClippingPlanes = light.size_clippingPlanes.zw;
 	outLightSize = light.size_clippingPlanes.xy;
 	outLightDirection = light.direction;
+	outLightColour = light.colour;
 	outLightType = light.extra.x;
 
 	outShadowCoord = (light.proj * light.view) * vec4(outWorldPos, 1.0);
+	//outShadowCoord = vec4(outShadowCoord.xyz / outShadowCoord.w, outShadowCoord.w);
+	//outShadowCoord = outShadowCoord * 0.5 + 0.5;
 }
 

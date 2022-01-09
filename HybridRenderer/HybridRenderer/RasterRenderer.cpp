@@ -43,13 +43,14 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     pipelineInfo.depthBiasEnable = VK_TRUE;
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS };
     pipelineInfo.conservativeRasterisation = true;
+    pipelineInfo.blendEnabled = true;
     pipelineInfo.colourAttachmentCount = 0;
     pipelineInfo.layoutsName = "offscreen";
     pipelineInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
 
     shadowMap.Initialise(pipelineInfo);
 
-    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::V_COLOUR, VertexAttributes::NORMAL });
+    pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::NORMAL });
     pipelineInfo.shaders = { resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT) ,
         resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT) };
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -157,6 +158,7 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
+    if(shadowMap.shadowUBO.shadow.x != 1)
     {
         clearValues[0].depthStencil = { 1.0f, 0 };
 
@@ -208,7 +210,7 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
         //std::array<VkDescriptorSet, 4> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i] };
 
         for (auto& go : scene->gameObjects) {
-            if (!go.mesh)
+            if (!go.mesh || !go.render)
                 continue;
 
             descriptorSets[1] = go.descriptor.sets[i];
@@ -241,7 +243,7 @@ void RasterRenderer::Prepare()
 
             if (widget.NewWindow("Raster Render")) {
 
-                if (widget.Slider3("Depth Bias", depthBias, -5.0, 5.0)) 
+                if (widget.Slider3("Depth Bias", depthBias, -10.0, 10.0)) 
                 {
                     commandBuffersReady = false;
                 }

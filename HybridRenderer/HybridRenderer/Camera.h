@@ -53,7 +53,7 @@ public:
 
 	void update(const VkExtent2D& _extent);
 
-	void update();
+	void update(float dt);
 
 	bool valuesUpdated(const VkExtent2D& _extent);
 
@@ -72,6 +72,8 @@ public:
 
 	void updateWindow(float windowWidth, float windowHeight);
 
+	void ResetPan();
+
 	Frustum frustum;
 
 	ImGUIWidget widget;
@@ -79,6 +81,14 @@ public:
 	CameraGPU gpuData;
 	bool adaptiveDistance = true;
 	float multiplier = 5.0f;
+	std::vector<float> distances;
+
+	bool pan = false;
+	std::vector<glm::vec3> positions;
+	std::vector<float> timings;
+	float time = 0.0;
+	size_t currentIndex = 0;
+	float zoom = 1.0f;
 
 private:
 	bool valuesUpdated(float windowWidth, float windowHeight);

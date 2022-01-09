@@ -4,6 +4,8 @@
 
 #include "imgui/imgui_impl_vulkan.h"
 
+#include <algorithm>
+
 bool ImGUIWidget::NewWindow(const char* name)
 {
 	newWindow = true;
@@ -16,6 +18,12 @@ void ImGUIWidget::EndWindow()
 		ImGui::End();
 
 	newWindow = false;
+}
+
+bool ImGUIWidget::Button(const char* text, const glm::vec2& size)
+{
+	ImVec2 imSize = {size.x, size.y};
+	return ImGui::Button(text, imSize);
 }
 
 void ImGUIWidget::Text(const char* text)
@@ -120,11 +128,27 @@ bool ImGUIWidget::Slider4(const char* label, glm::vec4& vec, float min, float ma
 	return result;
 }
 
+bool ImGUIWidget::Slider4(const char* label, glm::uvec4& vec, int min, int max)
+{
+	int values[4] = { vec.x, vec.y, vec.z, vec.w };
+	auto result = ImGui::SliderInt4(label, values, min, max);
+	vec = { values[0], values[1], values[2], values[3] };
+	return result;
+}
+
 bool ImGUIWidget::ColourEdit(const char* label, glm::vec3& vec)
 {
 	float values[3] = { vec.x, vec.y, vec.z };
 	auto result = ImGui::ColorEdit3(label, values);
 	vec = { values[0], values[1], values[2] };
+	return result;
+}
+
+bool ImGUIWidget::ColourEdit3(const char* label, glm::vec4& vec)
+{
+	float values[3] = { vec.x, vec.y, vec.z };
+	auto result = ImGui::ColorEdit3(label, values);
+	vec = { values[0], values[1], values[2], vec.w };
 	return result;
 }
 
@@ -141,6 +165,14 @@ bool ImGUIWidget::ColourPicker(const char* label, glm::vec3& vec)
 	float values[3] = { vec.x, vec.y, vec.z };
 	auto result = ImGui::ColorPicker3(label, values);
 	vec = { values[0], values[1], values[2] };
+	return result;
+}
+
+bool ImGUIWidget::ColourPicker3(const char* label, glm::vec4& vec)
+{
+	float values[3] = { vec.x, vec.y, vec.z };
+	auto result = ImGui::ColorPicker3(label, values);
+	vec = { values[0], values[1], values[2] , vec.w};
 	return result;
 }
 

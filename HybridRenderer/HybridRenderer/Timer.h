@@ -57,8 +57,13 @@ public:
 
 	ImGUIWidget widget;
 
+	std::vector<double> outputMSPF;
+	std::vector<double> outputAverageMSPF;
+	std::vector<double> prevMspf;
+	float lerpAmount = 0.4f;
 private:
 	std::chrono::high_resolution_clock::time_point prevTime;
+	std::chrono::high_resolution_clock::time_point prevFixedDeltaTime;
 	std::chrono::high_resolution_clock::time_point startTime;
 	std::chrono::high_resolution_clock::time_point prevSecond;
 
@@ -75,8 +80,9 @@ private:
 	size_t mspfCount;
 	size_t prevMSPFCount;
 	
-	std::deque<double> prevMspf;
 	int fps;
 	int frameCount = 0;
+	int deltaTimeCount = 0;
+
 };
 

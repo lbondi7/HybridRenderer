@@ -3,6 +3,11 @@
 #include "ImGUI_.h"
 #include "DebugLogger.h"
 
+
+#include <iostream>
+#include <fstream>
+
+
 HybridEngine::~HybridEngine()
 {
 }
@@ -179,39 +184,22 @@ void HybridEngine::update()
     if (camera.adaptiveDistance)
     {
 
-        auto diff = timer.GetDifferenceWithBuffer_f(65, 3);
-        Log(diff);
-        if (std::abs(diff) > 0.5)
+        auto diff = timer.GetDifferenceWithBuffer_f(60, 0);
+        //Log(diff, "Difference");
+        if (auto diffAbs = std::abs(diff) > 0.5)
         {
             auto diffPow = diff > 0.0 ? std::powf(diff, 2.0f) : -std::powf(diff, 2.0f);
             //Log(diffPow, "Diff Squared");
-            auto targetDistance = camera.gpuData.rayCullDistance - (diffPow * timer.DeltaTime_f());
-            camera.gpuData.rayCullDistance = std::clamp(
-                std::lerp(camera.gpuData.rayCullDistance, targetDistance, 0.4f),
-                0.0f, 100.0f);
+            auto targetDistance = camera.gpuData.rayCullDistance + 1.5f * diffPow * timer.DeltaTime_f();
+            auto currentDistance = camera.gpuData.rayCullDistance;
+            camera.gpuData.rayCullDistance = std::clamp(targetDistance, 0.0f, 1000.0f);
+            //camera.gpuData.rayCullDistance = std::clamp(
+            //    std::lerp(camera.gpuData.rayCullDistance, targetDistance, timer.lerpAmount),
+            //    0.0f, 100.0f);
         }
-
-        //if (timer.MSPF_f() > timer.Threshold_f(65))
-        //{
-        //    //camera.SetCullDistance(camera.gpuData.rayCullDistance - (camera.multiplier *  timer.DeltaTime_f()));
-
-        //    auto diff = timer.MSPF_f() - timer.Threshold_f(65);
-        //    auto diffPow = std::powf(diff, 2);
-        //    //Log(diffPow, "Diff Squared");
-        //    auto targetDistance = camera.gpuData.rayCullDistance - (diffPow  * timer.SPF_f());
-        //    camera.gpuData.rayCullDistance = std::clamp(std::lerp(camera.gpuData.rayCullDistance, targetDistance, 0.5f), 0.0f, 100.0f);
-        //}
-        //else if (timer.MSPF_f() < timer.Threshold_f(75))
-        //{
-        //    auto diff = timer.Threshold_f(75) - timer.MSPF_f();
-        //    auto diffPow = std::powf(diff, 2);
-        //    //Log(diffPow, "Diff Squared");
-        //    auto targetDistance = camera.gpuData.rayCullDistance + (diffPow * timer.SPF_f());
-        //    camera.gpuData.rayCullDistance = std::clamp(std::lerp(camera.gpuData.rayCullDistance, targetDistance, 0.5f), 0.0f, 100.0f);
-        //}
     }
 
-    camera.update();
+    camera.update(timer.DeltaTime_f());
     camera.buffers[imageIndex].AllocatedMap(&camera.gpuData);
 
     scene.Update(imageIndex, timer.DeltaTime_f());
@@ -365,6 +353,31 @@ void HybridEngine::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 
         if (key == GLFW_KEY_ESCAPE)
             app->window->active = false;
+
+        if (key == GLFW_KEY_ENTER)
+        {
+            std::ofstream myfile;
+            myfile.open("MSPF OUTPUT.txt");
+            myfile << "########### MSPF ############" << std::endl;
+            for (auto mspf : app->timer.outputMSPF)
+            {
+                myfile << mspf << std::endl;
+            }
+
+            myfile << "########### AVERAGE MSPF ############\n";
+            for (auto mspf : app->timer.outputAverageMSPF)
+            {
+                myfile << mspf << std::endl;
+            }
+
+            myfile.close();
+        }
+
+        if (key == GLFW_KEY_SPACE)
+        {
+            app->timer.outputAverageMSPF.clear();
+            app->camera.ResetPan();
+        }
     }
 }
 

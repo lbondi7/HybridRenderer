@@ -7,7 +7,7 @@ layout (location = 0) in vec2 inUV;
 void main() 
 {	
 	float alpha = texture(meshTexture, inUV).a;
-	if (alpha < 0.9) {
+	if (alpha < 0.1) {
 		discard;
 	}
 }

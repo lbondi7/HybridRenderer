@@ -13,49 +13,88 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
 
     gameObjectCount = 1;
     gameObjects.reserve(10000);
-    gameObjects.resize(static_cast<uint32_t>(gameObjectCount));
 
-    float value = 0;
-    float dist = 10.0f;
-
-    for (size_t i = 0; i < gameObjectCount - 1; i++)
+    int treeCount = 100;
+    auto sr = std::sqrtf(treeCount);
+    float size = 8.0f;
+    float x = -size * (sr / 2.0) , z = -size * (sr / 2.0);
+    for(int i = 0; i < treeCount; ++i)
     {
-        if (i * i > gameObjectCount - 1)
+        auto go = CreateGameObject(resources->GetModel("tree2"));
+        go->name = "Tree Parent 0";
+        go->transform.position = glm::vec3(x, 0.0, z);
+        go->transform.scale = glm::vec3(1);
+        x += size;
+        if (x > size * (sr / 2.0))
         {
-            value = i - 1;
-            break;
+            x = -size * (sr / 2.0);
+            z += size;
         }
     }
 
-    float max = ((value * dist) / 2.0f);
+    //{
+    //    auto go = CreateGameObject(resources->GetModel("Dragon3"));
+    //    go->name = "Dragon";
+    //    go->transform.scale = glm::vec3(0.1);
+    //    go->transform.position.y = 6;
+    //    //go->shadowCaster = false;
+    //}
 
-    float x = gameObjectCount > 3 ? -max : 0;
-    float z = gameObjectCount > 5 ? -max : 0;
+    //{
+    //    auto go = CreateGameObject(resources->GetModel("Cat"));
+    //    go->transform.position = glm::vec3(0, 0, 1);
+    //    go->name = "Dragon";
+    //    go->transform.scale = glm::vec3(0.01);
+    //    go->transform.position.y = 0.0;
+    //    go->shadowCaster = false;
+    //}
 
-    for (size_t i = 0; i < gameObjectCount; i++)
+    //{
+    //    auto go = CreateGameObject(resources->GetModel("Cat0.05"));
+    //    go->transform.position = glm::vec3(0, 0, 1);
+    //    go->name = "Dragon";
+    //    go->transform.scale = glm::vec3(0.01);
+    //    go->transform.position.y = 0.0;
+    //    go->render = false;
+    //}
+
     {
-        CreateGameObject(&gameObjects[i], resources->GetModel("tree2"));
-        gameObjects[i].Init(deviceContext);
-        gameObjects[i].name = "Tree Parent " + i;
-        gameObjects[i].transform.position = glm::vec3(x, 0, z);
-
-        if (x >= max)
-        {
-            z += dist;
-            x = -max;
-        }
-        else {
-            x += dist;
-        }
+        auto go = CreateGameObject(resources->GetModel("plane"));
+        go->transform.scale = glm::vec3(100.0f);
+        go->name = "Floor ";
     }
 
-    {
-        auto& go = gameObjects.emplace_back();
-        CreateGameObject(&go, resources->GetModel("plane"));
-        go.transform.scale = glm::vec3(100.0f);
-        go.SetTexture(resources->GetTexture("white3.png"));
-        go.name = "Floor ";
-    }
+    //{
+    //    auto go = CreateGameObject(resources->GetModel("plane"));
+    //    go->transform.scale = glm::vec3(100.0f);
+    //    go->transform.position.z = -20;
+    //    go->transform.rotation.x = 90.0f;
+    //    go->name = "Floor ";
+    //}
+
+    //{
+    //    auto go = CreateGameObject(resources->GetModel("plane"));
+    //    go->transform.scale = glm::vec3(100.0f);
+    //    go->transform.position.x = -20;
+    //    go->transform.rotation.z = -90.0f;
+    //    go->name = "Floor ";
+    //}
+
+    //{
+    //    auto go = CreateGameObject(resources->GetModel("plane"));
+    //    go->transform.scale = glm::vec3(100.0f);
+    //    go->transform.position.x = 20;
+    //    go->transform.rotation.z = 90.0f;
+    //    go->name = "Floor ";
+    //}
+
+    //{
+    //    auto go = CreateGameObject(resources->GetModel("plane"));
+    //    go->transform.scale = glm::vec3(100.0f);
+    //    go->transform.position.z = 20;
+    //    go->transform.rotation.x = -90.0f;
+    //    go->name = "Floor ";
+    //}
 
     //{
     //    auto& go = gameObjects.emplace_back();
@@ -68,12 +107,11 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     //}
 
     {
-        auto& go = gameObjects.emplace_back();
-        CreateGameObject(&go, resources->GetModel("cube"));
-        go.name = "Amogus";
-        go.inBVH = false;
-        go.shadowCaster = false;
-        go.shadowReceiver = false;
+       // auto go =  CreateGameObject(resources->GetModel("cube"));
+       // go->name = "Amogus";
+       // go->inBVH = false;
+        //go->shadowCaster = false;
+       // go->shadowReceiver = false;
     }
 
     gameObjectCount = gameObjects.size();
@@ -146,7 +184,10 @@ void Scene::Initialise(DeviceContext* deviceContext, Resources* resources)
     deviceContext->GetDescriptors(asDescriptor, &accelerationStructureRequest);
 
     auto imageCount = 3;
-    lightPos = glm::vec3(0.0f, 50.0f, -0.0f);
+    lightUBO.position = glm::vec3(50.0f, 20.0f, -50.0f);
+    lightUBO.colour.w = 2.0f;
+    lightUBO.size_clippingPlanes.z = 1.1f;
+    lightUBO.size_clippingPlanes.w = 500.1f;
 
     lightBuffers.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++) {
@@ -169,18 +210,21 @@ void Scene::Update(uint32_t imageIndex, float dt)
     if (ImGUI::enabled && lightWidget.enabled) {
         if (lightWidget.NewWindow("Light")) {
 
-            lightWidget.Slider3("Position", lightUBO.position, -25.0f, 25.0f);
-            lightWidget.Slider("Size", &lightUBO.size_clippingPlanes.x, 0.0f, 5.0f);
+            lightWidget.Slider3("Position", lightUBO.position, -50.0f, 50.0f);
+            lightWidget.Slider("FOV", &lightFOV, 1.0f, 180.0f);
+            lightWidget.Slider("Size", &lightUBO.size_clippingPlanes.x, 0.0f, 1.0f);
             lightWidget.Slider("Fustrum Size", lightUBO.size_clippingPlanes.y, 0.0f, 10.0f);
-            lightWidget.Slider("Near", lightUBO.size_clippingPlanes.z, 0.0f, 2.0f);
-            lightWidget.Slider("Far", lightUBO.size_clippingPlanes.w, 5.0f, 100.0f);
+            lightWidget.Slider("Near", lightUBO.size_clippingPlanes.z, 0.0f, 5.0f);
+            lightWidget.Slider("Far", lightUBO.size_clippingPlanes.w, 5.0f, 500.0f);
+            lightWidget.ColourEdit3("Colour", lightUBO.colour);
+            lightWidget.Slider("Intensisty", lightUBO.colour.w, 0.0f, lightUBO.extra.x == 1 ? 10.0f : 10.0f);
             lightWidget.Slider("Ortho", &lightUBO.extra.x, 0, 1);
         }
         lightWidget.EndWindow();
     }
 
     //lightPos = glm::vec3(0.0f, 5.0f, -5.0f);
-    lightFOV = 90.0f; 
+   // lightFOV = 90.0f; 
     glm::vec3 lightLookAt = glm::vec3(0, 1, 0);
     // Matrix from light's point of views
     glm::mat4 depthProjectionMatrix = glm::mat4(1.0f);
@@ -224,6 +268,7 @@ void Scene::Update(uint32_t imageIndex, float dt)
 
         ModelUBO ubos;
         ubos.model = go.GetMatrix();
+        ubos.colour = glm::vec3(1.0);
         go.uniformBuffers[imageIndex].AllocatedMap(&ubos);
     }
 
@@ -299,23 +344,26 @@ void Scene::KeyCallback(int key, int scancode, int action, int mods)
     }
 }
 
-void Scene::CreateGameObject(GameObject* object, Model* model)
+GameObject* Scene::CreateGameObject(Model* model)
 {
+    auto& parent = gameObjects.emplace_back();
     if (model->meshes.size() > 1) {
+        parent.name = "Parent";
         for (auto& mesh : model->meshes)
         {
-            GameObject go;
+            auto& go = gameObjects.emplace_back();
             go.name = mesh->name;
-            go.parent = object;
+            go.parent = &parent;
             go.mesh = mesh.get();
             go.Init(deviceContext);
-            gameObjects.emplace_back(go);
-            object->children.emplace_back(&go);
+            parent.children.emplace_back(&go);
         }
+        parent.Init(deviceContext);
     }
     else {
-        object->name = model->meshes[0]->name;
-        object->mesh = model->meshes[0].get();
-        object->Init(deviceContext);
+        parent.name = model->meshes[0]->name;
+        parent.mesh = model->meshes[0].get();
+        parent.Init(deviceContext);
     }
+    return &parent;
 }

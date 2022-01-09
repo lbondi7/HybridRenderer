@@ -213,6 +213,9 @@
     <ClCompile Include="RayTracingPipeline.cpp">
       <Filter>Source Files\Vulkan\Pipeline</Filter>
     </ClCompile>
+    <ClCompile Include="SGSmooth.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vertex.h">
@@ -370,6 +373,9 @@
     </ClInclude>
     <ClInclude Include="RayTracingPipeline.h">
       <Filter>Header Files\Vulkan\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="SGSmooth.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

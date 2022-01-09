@@ -10,6 +10,8 @@ public:
 
 	void EndWindow();
 
+	bool Button(const char* text, const glm::vec2& size = {0.0, 0.0});
+
 	void Text(const char* text);
 
 	void TextColoured(const char* text, const glm::vec4& col);
@@ -46,11 +48,17 @@ public:
 
 	bool Slider4(const char* label, glm::vec4& vec, float min, float max);
 
+	bool Slider4(const char* label, glm::uvec4& vec, int min, int max);
+
 	bool ColourEdit(const char* label, glm::vec3& vec);
+
+	bool ColourEdit3(const char* label, glm::vec4& vec);
 
 	bool ColourEdit(const char* label, glm::vec4& vec);
 
 	bool ColourPicker(const char* label, glm::vec3& vec);
+
+	bool ColourPicker3(const char* label, glm::vec4& vec);
 
 	bool ColourPicker(const char* label, glm::vec4& vec);
 

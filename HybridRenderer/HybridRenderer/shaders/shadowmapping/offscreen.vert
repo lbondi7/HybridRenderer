@@ -19,12 +19,14 @@ layout (set = 0, binding = 0) uniform LightUBO
 	vec4 size_clippingPlanes;
 	vec3 pos;
 	vec3 direction;
+	vec4 colour;
 	ivec4 extra;
 } light;
 
 layout (set = 1, binding = 0) uniform ModelUBO
 {
 	mat4 matrix;
+	vec3 colour;
 } model;
 
 out gl_PerVertex 

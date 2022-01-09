@@ -18,17 +18,17 @@ layout (set = 3, binding = 1) uniform ShadowUBO
 {
 	ivec4 shadow;
 	vec4 blocker;
+	uvec4 extra;
 } shadowUBO;
 
 struct Vertex
 {
 	vec3 position;
 	vec2 uvCoord;
-	vec3 colour;
 	vec3 normal;
 };
 
-struct ObjDesc
+struct ObjectData
 {
 	int textureIndex;  // Address of the triangle material index buffer
 	uint64_t vertexAddress;
@@ -43,9 +43,9 @@ layout(buffer_reference, scalar) buffer Indices {
 }; // Triangle indices
 //layout(buffer_reference, scalar) buffer TexIndices {int i; }; // Material ID for each triangle
 layout (set = 4, binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout(set = 4, binding = 1, scalar) buffer ObjDesc_ { 
-	ObjDesc i[]; 
-} objDesc;
+layout(set = 4, binding = 1, scalar) buffer ObjectsBuffer { 
+	ObjectData data[]; 
+} objects;
 layout(set = 4, binding = 2) uniform sampler2D textureSamplers[];
 
 layout (location = 0) in vec3 inNormal;
@@ -59,7 +59,8 @@ layout (location = 7) in float inCull;
 layout (location = 8) in vec3 inLightDirection;
 layout (location = 9) in vec2 inLightClippingPlanes;
 layout (location = 10) in vec2 inLightSize;
-layout (location = 11) in flat int inLightType;
+layout (location = 11) in vec4 inLightColour;
+layout (location = 12) in flat int inLightType;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -148,74 +149,140 @@ float searchArea(float lightSize, float receiver)
 		(receiver - inLightClippingPlanes.x) / receiver;
 }
 
-float averageBlockerDepth(out int blockerCount, vec2 uv, vec3 shadowCoords, float lightSize, float bias)
+float averageBlockerDepth(out int blockerCount, vec3 shadowCoords, 
+float lightSize, float bias)
 {
-
 	blockerCount = 0;
 	float averageBlockerDepth = 0.0;
-	float searchArea = shadowUBO.blocker.x * (lightSize / shadowCoords.z) * (shadowCoords.z - inLightClippingPlanes.x);
-	float biasDepth = shadowCoords.z;
+	float searchArea =  shadowUBO.blocker.x * searchArea(lightSize, shadowCoords.z);
 
-	vec2 ran = vec2(random_p(gl_FragCoord.xy), random_p(gl_FragCoord.yx * shadowUBO.shadow.w));
-	vec2 offset = ran;
+	vec2 ran = vec2(random_p(gl_FragCoord.xy * shadowCoords.xy), 
+	random_p(gl_FragCoord.yx * shadowUBO.shadow.w));
 
     for (int i = 0; i < shadowUBO.shadow.z; ++i)
     {
 		vec2 offset = discSample(inLightSize.x, ran);
-        float sampledDepth = texture(shadowMap, uv + offset * searchArea).r;
-        sampledDepth = sampledDepth * 0.5 + 0.5;
-        if (sampledDepth + bias < biasDepth)
+
+        float z = texture(shadowMap, shadowCoords.xy + offset * searchArea).r;
+
+        //z = z * 0.5 + 0.5;
+        if (z + bias <= shadowCoords.z)
         {
-            averageBlockerDepth += sampledDepth;
+            averageBlockerDepth += z;
             blockerCount++;
         }
 
 		ran = vec2(random_p(ran.x), random_p(ran.y));
     }
-	if (blockerCount > 0)
-		return averageBlockerDepth / float(blockerCount);
 
-	return 1.0;
+	return averageBlockerDepth / float(blockerCount);
 }
 
-float penumbraSize(float averageBlockerDepth, float receiver, float lightSize, float bias)
+float averageBlockerDepth(out int blockerCount, vec2 uv, float depth, 
+float lightSize, float bias)
 {
-	return (lightSize * (receiver - averageBlockerDepth)) / averageBlockerDepth;
-}
+	blockerCount = 0;
+	float averageBlockerDepth = 0.0;
+	float searchArea =  shadowUBO.blocker.x * searchArea(lightSize, depth);
 
-float pcf(vec2 uv, float z0, float bias, float penumbraSize)
-{
-    float sum = 0.0;
-	vec2 ran = vec2(random_p(gl_FragCoord.xy * shadowUBO.shadow.w), random_p(gl_FragCoord.yx));	
-	vec2 offset = ran;
+	vec2 ran = vec2(random_p(gl_FragCoord.xy * uv), 
+	random_p(gl_FragCoord.yx * shadowUBO.shadow.w));
+
     for (int i = 0; i < shadowUBO.shadow.z; ++i)
     {
-		vec2 offset = discSample(penumbraSize, ran);
-		float z = texture(shadowMap, uv + offset).r;
-		z = z * 0.5 + 0.5;
-		sum += (z <= z0) ? 1 : 0;
+		vec2 offset = discSample(inLightSize.x, ran);
+
+        float z = texture(shadowMap, uv + offset * searchArea).r;
+        //z = z * 0.5 + 0.5;
+        if (z + bias <= depth)
+        {
+            averageBlockerDepth += z;
+            blockerCount++;
+        }
+
+		// if(i == 4 && averageBlockerDepth <= 0.0)
+		// {
+		// 	break;
+		// }
+
+		ran = vec2(random_p(ran.x), random_p(ran.y));
+    }
+
+	return averageBlockerDepth / float(blockerCount);
+}
+
+float penumbraSize(float averageBlockerDepth, float receiver, 
+float lightSize)
+{
+	return shadowUBO.blocker.x * ((lightSize) * (receiver - averageBlockerDepth)) / averageBlockerDepth;
+}
+
+float pcf(vec3 shadowCoords, float bias, float penumbraSize)
+{
+    float sum = 0.0;
+	vec2 ran = vec2(random_p(gl_FragCoord.xy * shadowUBO.shadow.w), 
+			random_p(gl_FragCoord.yx * shadowCoords.xy));	
+
+    for (int i = 0; i < shadowUBO.shadow.z; ++i)
+    {
+		vec2 offset = discSample(inLightSize.x, ran);
+		float z = texture(shadowMap, shadowCoords.xy + (offset * penumbraSize)).r;
+		//z = z * 0.5 + 0.5;
+		sum += (z+ bias <= shadowCoords.z) ? 0 : 1;
+
+		ran = vec2(random_p(ran.x), random_p(ran.y));
+
+		// if(i == 4 && sum <= 0.0)
+		// {
+		// 	break;
+		// }
+	}
+	return sum / (shadowUBO.shadow.z);
+}
+
+float pcf(vec2 uv, float avBlockerDepth, float bias, float penumbraSize)
+{
+    float sum = 0.0;
+	vec2 ran = vec2(random_p(gl_FragCoord.xy * shadowUBO.shadow.w), 
+			random_p(gl_FragCoord.yx * uv));	
+
+    for (int i = 0; i < shadowUBO.shadow.z; ++i)
+    {
+		vec2 offset = discSample(inLightSize.x, ran);
+		float z = texture(shadowMap, uv + (offset * penumbraSize)).r;
+		//z = z * 0.5 + 0.5;
+		sum += (z+ bias <= avBlockerDepth) ? 0 : 1;
 
 		ran = vec2(random_p(ran.x), random_p(ran.y));
 	}
-	return sum / shadowUBO.shadow.z;
+	return sum / (shadowUBO.shadow.z);
 }
 
-float pcss_f(vec3 shadowCoords, out float diff)
+float pcss_f(vec3 shadowCoords, out float diff, out int blockerCount)
 {
 	vec3 normalisedShadowCoords = shadowCoords * 0.5 + 0.5;
 
-	if (normalisedShadowCoords.x > 1.0 || normalisedShadowCoords.y > 1.0 || normalisedShadowCoords.z > 1.0 || 
-	normalisedShadowCoords.x < 0.0 || normalisedShadowCoords.y < 0.0 || normalisedShadowCoords.z < 0.0)
-		return 1.0;
+	if (normalisedShadowCoords.x > 1.0 || normalisedShadowCoords.y > 1.0 || 
+	normalisedShadowCoords.z > 1.0 || 
+	normalisedShadowCoords.x < 0.0 || normalisedShadowCoords.y < 0.0 || 
+	normalisedShadowCoords.z < 0.0)
+		return (diff = 1.0);
+	
+	blockerCount = 0;
+	vec2 uv = normalisedShadowCoords.xy;
+	float depth = shadowCoords.z;
+	float averageBlockerDepth = averageBlockerDepth(blockerCount, 
+		uv, depth, inLightSize.x, shadowUBO.blocker.w);
+	
+	if(blockerCount <= 0)
+		return (diff = 1.0);
 
-	int blockerCount;
-	float averageBlockerDepth = averageBlockerDepth(blockerCount, normalisedShadowCoords.xy, normalisedShadowCoords, inLightSize.x * 0.5, shadowUBO.blocker.w);
-	if(blockerCount <= 0) return 1.0;
-	float penumbraSize = penumbraSize(averageBlockerDepth, normalisedShadowCoords.z, inLightSize.x * 0.25, shadowUBO.blocker.w);
-	float uvRadius = penumbraSize;
+	diff = depth - averageBlockerDepth;
 
-	diff = penumbraSize;
-	return max(1.0 - pcf(normalisedShadowCoords.xy, normalisedShadowCoords.z, averageBlockerDepth, uvRadius), 0.0);
+	float penumbraSize = penumbraSize(averageBlockerDepth, 
+		depth, inLightSize.x);
+
+	return max(pcf(uv, depth, shadowUBO.blocker.z, penumbraSize), 0.0);
 }
 
 void main() {
@@ -226,57 +293,66 @@ void main() {
 		discard;
 
 	float shadow = 0.0, diff = 0.0;
-	int exit = 0;
-	shadow = pcss_f(inShadowCoord.xyz / inShadowCoord.w, diff);
+	int blockerCount = 0;
+	shadow = shadowUBO.shadow.x == 1 ? 1.0 : pcss_f(inShadowCoord.xyz/inShadowCoord.w, diff, blockerCount);
+	shadow = clamp(shadow, 0.0, 1.0);
+	
 	vec3 outColour;
 
 	//outColour = vec4(vec3(shadow), 1.0) * col;
 
-	vec3 normal = normalize(inNormal);
-	vec3 viewVec = inWorldPos - inCamPos;
-	vec3 viewDir = normalize(inWorldPos - inCamPos);
-	vec3 invViewDir = normalize(inCamPos - inWorldPos);
-
 	vec3 totalLight = vec3(0.0);
 	vec3 lightPos = inLightPos;
-
+	vec3 invViewDir = normalize(inCamPos - inWorldPos);
 	float threshold = 1.0;
-	float dist = distance(inCamPos, inWorldPos);
-	if(dist < inCull + (threshold) && shadow < 1.0)
+	//float lightDist = distance(inLightPos, inWorldPos);
+	float camDist = distance(inCamPos, inWorldPos);
+	float maxDist = 150.0;
+	float sampDist = max(((maxDist - camDist) - 0)/ (maxDist - 0.0), 0.0);
+	bool closeEnough = diff < 1 && blockerCount == shadowUBO.blocker.x * 0.2;
+	if(shadowUBO.shadow.x == 1 || (shadowUBO.shadow.x == 2 && camDist < inCull + camDist * 0.5 &&
+		((shadow < 1.0 || closeEnough))))
 	{
-		rayQueryEXT rayQuery;
 		int samples;
-		if(shadowUBO.shadow.y == 1)
-			samples = max(int(shadow *  float(shadowUBO.shadow.w)), 4);
+		if(shadowUBO.shadow.y == 1)  
+			samples = max(int(shadow *  float(shadowUBO.shadow.w)), 1);
+		else if(shadowUBO.shadow.y == 2)
+			samples = max(int(sampDist *  float(shadowUBO.shadow.w)), 1);
+		else if(shadowUBO.shadow.y == 3)
+			samples = max(int(sampDist * shadow *  float(shadowUBO.shadow.w)), 1);
 		else
 			samples = int(shadowUBO.shadow.w);
-		
-		//float shadow.z = float(shadowUBO.shadow.w);
-		vec2 ran = vec2(random_p(gl_FragCoord.xy), random_p(gl_FragCoord.xz * shadowUBO.shadow.w));
-	
-		//outColour = vec4(1.0 - shadow, 1.0 - shadow, 1.0 - shadow, 1.0);
 
-		float storedShadow = 0.0;
-		vec3 storedColour = vec3(0.0);
-		vec3 origin = inWorldPos;
-		int hitShit = 0;
+		vec2 ran = vec2(random_p(gl_FragCoord.xy * samples), 
+			random_p(gl_FragCoord.yx * shadowUBO.shadow.w));
+
+		float sampledShadow = 0.0;
+		//shadow = 1 - shadow;
+		vec3 sampledColour = vec3(0.0);
 		for (int i = 0; i < int(samples); i++)
 		{
 			// initialise the ray to query but doesn't start the traversal
 			vec2 offset = discSample(inLightSize.x, ran);
 			//vec2 offset = vec2(random(ran.y), random(ran.x)) * lightRadius;
-			vec3 target = (inLightType == 0 ? lightPos : -inLightDirection) + vec3(offset, 0.0) * shadowUBO.blocker.y;
+			vec3 lightSample = (inLightType == 0 ? lightPos : -inLightDirection) +
+				 vec3(offset, 0.0) * shadowUBO.blocker.y * inLightSize.x;
+			vec3 target = normalize(inLightType == 0 ? lightSample - inWorldPos : lightSample);
 			ran  = vec2(random_p(ran.x), random_p(ran.y));
+
+			float l = inLightType == 0 ? distance(lightSample, inWorldPos) : 1000.0;
+
+			rayQueryEXT rayQuery;
 			rayQueryInitializeEXT(rayQuery, 
 			topLevelAS, 
 			gl_RayFlagsNoOpaqueEXT, 
 			0xFF, 
-			origin, 
+			inWorldPos, 
 			0.01, 
-			inLightType == 0 ? normalize(target - origin) : normalize(target),
-			1000.0);
+			target,
+			l);
 
 			float hit = 1.0;
+			//vec3 colour = vec3(1.0);
 			// Start the ray traversal, rayQueryProceedEXT returns false if the traversal is complete
 			while (rayQueryProceedEXT(rayQuery)) 
 			{ 
@@ -284,12 +360,12 @@ void main() {
 
 				if (candidateType == gl_RayQueryCandidateIntersectionTriangleEXT) 
 				{	
-					if (rayQueryGetIntersectionFrontFaceEXT(rayQuery, true))
-					{	
-						int objIndex = rayQueryGetIntersectionInstanceIdEXT(rayQuery, false);
-						ObjDesc objResource = objDesc.i[objIndex];
-						Indices indices = Indices(objResource.indicesAddress);
-						Vertices vertices = Vertices(objResource.vertexAddress);
+					//if (rayQueryGetIntersectionFrontFaceEXT(rayQuery, true))
+					//{	
+						int instanceID = rayQueryGetIntersectionInstanceIdEXT(rayQuery, false);
+						ObjectData object = objects.data[instanceID];
+						Indices indices = Indices(object.indicesAddress);
+						Vertices vertices = Vertices(object.vertexAddress);
 						// Indices of the triangle
 						ivec3 ind = indices.i[rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false)];
 
@@ -297,51 +373,78 @@ void main() {
 						Vertex v0 = vertices.v[ind.y];
 						Vertex v1 = vertices.v[ind.z];
 						Vertex v2 = vertices.v[ind.x];
+
 						vec2 attribs = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);
 						vec3 barycentrics = vec3(attribs.x, attribs.y, 1.0 - attribs.y - attribs.x);
-						vec2 texCoord = v0.uvCoord * barycentrics.x + 
+						vec2 uv = v0.uvCoord * barycentrics.x + 
 										v1.uvCoord * barycentrics.y + 
 										v2.uvCoord * barycentrics.z;
-						float alpha = texture(textureSamplers[objResource.textureIndex], texCoord).a;
-						if(alpha >= 0.9){
+
+						vec4 texureColour = texture(textureSamplers[object.textureIndex], uv);
+						if(texureColour.w > 0){
 							hit = 0.0;
-							hitShit = 1;
-							//if(shadowUBO.shadow.y == 1)
-								rayQueryTerminateEXT(rayQuery);
+							rayQueryTerminateEXT(rayQuery);
 						}
-					}
+					//}
 				}
 			}
-			storedShadow += (shadowUBO.shadow.x == 1 ? hitShit == 0 ? (hit) : shadow : hit);
-			//storedShadow += hit;
-			vec3 invLightDir = (inLightType == 0 ? normalize(target - origin) : normalize(-inLightDirection));
-			totalLight += shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.8, 0.05);
+
+			sampledShadow += (hit);
+			//sampledShadow += hit;
+
+			// float geometryTerm = inLightType == 1 ? 1.0 : max(-dot(normalize(inLightDirection), target) * 
+			// 		dot(inNormal, target), 0.0) / 
+			// 		(pow(distance(lightSample, inWorldPos), 2.0));
+
+		vec3 invLightDir = -normalize(inWorldPos - inLightPos);
+			totalLight += shadingGGX(inNormal, -invViewDir, invLightDir,
+				 inLightColour.xyz * inLightColour.w, 0.8, 0.05);
 		}
 
 		totalLight /= samples;
-		//storedColour = col.xyz * (shadowUBO.shadow.x == 1 ? storedShadow : storedShadow);
-		//totalLight = vec3(clamp(totalLight.x, 0.0, 1.0), clamp(totalLight.y, 0.0, 1.0), clamp(totalLight.z, 0.0, 1.0));
-		storedColour = col.xyz * totalLight;
-		//outColour = storedColour * (hitShit == 1 ? min((storedShadow / samples), 1.0) : 1.0);
-		//outColour = storedColour * storedShadow;
-		//distance(storedShadow, shadow);
-		// float shadowProximity = 0.1;
-		if(dist > inCull - threshold)
+		sampledShadow /= samples;
+		sampledColour = col.xyz * totalLight;
+
+		if(camDist > inCull - camDist * 0.25)
 		{
 			// sigmoid function
-			float sigmoid = sigmoidFunction(dist - (inCull - threshold));
-			outColour = storedColour * (mix(shadow, (hitShit == 1 ? min((storedShadow / samples), 1.0) : 1.0), sigmoid));
+			float sigmoid = sigmoidFunction((camDist - inCull));
+			if(inLightSize.x == 0.0 && shadowUBO.shadow.x != 1)
+				outColour = mix(sampledColour * sampledShadow, sampledColour * shadow, sigmoid);
+			else
+				outColour = clamp(sampledColour * sampledShadow, 0.0, 1.0);
 		}
 		else
 		{
-			outColour = storedColour * (hitShit == 1 ? min((storedShadow / samples), 1.0) : 1.0);
+			outColour = clamp(sampledColour * sampledShadow, 0.0, 1.0);
+		}
+
+		if(shadowUBO.extra.x == 1){
+			if(shadowUBO.shadow.x == 2)
+			{
+				outColour = vec3((shadowUBO.extra.y == 1 ? float(samples) / float(shadowUBO.shadow.w) : 1.0), 0.0, 0.0);
+			}
+			else
+			{
+				outColour = (outColour + vec3(float(samples) / float(shadowUBO.shadow.w), 0.0, 0.0)) * 0.5;
+			}
 		}
 	}
 	else
 	{
-		vec3 invLightDir = (inLightType == 0 ? normalize(lightPos - inWorldPos) : normalize(-inLightDirection));
-		totalLight = shadingGGX(normal, invViewDir, invLightDir, vec3(0.5), 0.8, 0.05);
-		outColour = col.xyz * totalLight * shadow;
+		vec3 invLightDir = -normalize(inWorldPos - inLightPos);
+
+		totalLight = shadingGGX(inNormal, -invViewDir, invLightDir, 
+			inLightColour.xyz * inLightColour.w, 0.8, 0.05);
+
+		//vec3 dir = normalize(inWorldPos - inLightPos);
+		// float geometryTerm = inLightType == 1 ? 1.0 : max(-dot(inLightDirection, dir) * 
+		// 	dot(inNormal, dir), 0.0) / pow(distance(inLightPos, inWorldPos), 2.0);
+
+		outColour = col.xyz * totalLight * shadow; 
+
+		if(shadowUBO.extra.x == 1)
+			outColour = (outColour + vec3(0.0, 1.0, 0.0)) * 0.5;
 	}
 
 	outFragColor = vec4(outColour, 1.0);

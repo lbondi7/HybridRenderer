@@ -35,6 +35,7 @@ void GameObject::Init(DeviceContext* deviceContext)
 
 		deviceContext->GetDescriptors(descriptor, &request);
 	}
+	initialised = true;
 }
 
 void GameObject::Update()

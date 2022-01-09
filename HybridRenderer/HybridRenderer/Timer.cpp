@@ -1,15 +1,20 @@
 #include "Timer.h"
 #include "DebugLogger.h"
 #include "ImGUI_.h"
+#include "SGSmooth.hpp"
+
 
 Timer::Timer()
 {
-    prevTime = prevSecond = std::chrono::high_resolution_clock::now();
+    prevTime = prevFixedDeltaTime = prevSecond = std::chrono::high_resolution_clock::now();
     SetFrameRate(2000);
     average = true;
-    mspfCount = 10;
-    prevMSPFCount = 10;
+    mspfCount = 30;
+    prevMSPFCount = 30;
+    prevMspf.reserve(mspfCount);
     widget.enabled = true;
+    outputAverageMSPF.reserve(1000000);
+    //outputMSPF.reserve(1000000);
 }
 
 Timer::~Timer()
@@ -25,26 +30,35 @@ void Timer::Update()
     frameCount++;
     if (std::chrono::duration<double, std::chrono::seconds::period>(prevTime - prevSecond).count() >= 1.0) {
         fps = frameCount;
-        Log(frameCount);
+        outputAverageMSPF.emplace_back(mspf);
+        //Log(frameCount);
         prevSecond = std::chrono::high_resolution_clock::now();
         frameCount = 0;
     }
 
+    //time = std::chrono::high_resolution_clock::now();
+
+    if (auto diff = std::chrono::duration<double, std::chrono::milliseconds::period>(time - prevFixedDeltaTime).count() >= (1000/20.0)) {
+       // outputAverageMSPF.emplace_back(mspf);
+        prevFixedDeltaTime = std::chrono::high_resolution_clock::now();
+    }
+
     elapsed = std::chrono::duration<double, std::chrono::milliseconds::period>(time - startTime).count() / 1000.0;
 
-    prevMspf.emplace_front(deltaTime);
-    if (prevMspf.size() > prevMSPFCount)
-        prevMspf.pop_back();
-    
-    mspf = deltaTime;
+    prevMspf.emplace_back(deltaTime);
+    if (prevMspf.size() > mspfCount)
+        prevMspf.erase(prevMspf.begin(), prevMspf.end() - mspfCount);
 
+    auto smoothedBuffer = sg_smooth(prevMspf, 9, 3);
+
+    mspf = deltaTime;
+    //outputMSPF.emplace_back(mspf);
     if (average) {
         mspf = 0.0;
 
-        for (size_t i = 0; i < prevMspf.size(); i++)
+        for (size_t i = 0; i < smoothedBuffer.size(); i++)
         {
-            if(i < mspfCount)
-                mspf += prevMspf[i];
+            mspf += smoothedBuffer[i];
         }
 
         mspf /= static_cast<double>(mspfCount);
@@ -165,5 +179,5 @@ float Timer::GetDifferenceWithBuffer_f(int framerate, int buffer)
         return 0.0f;
 
     auto t = 1000.0f / static_cast<float>(framerate);
-    return static_cast<float>(mspf) - t;
+    return t - static_cast<float>(mspf);
 }

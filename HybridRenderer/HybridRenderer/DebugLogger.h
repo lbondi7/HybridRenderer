@@ -16,6 +16,7 @@ namespace DebugLogger
 	void Log(const glm::vec2& v, const char* name = "Vec2");
 	void Log(const glm::vec3& v, const char* name = "Vec3");
 	void Log(const glm::vec4& v, const char* name = "Vec3");
+	void Log(const std::vector<double>& v, const char* name = "STDVector", bool printElementNumber = false);
 	VkResult Log(VkResult result);
 	void Log(void* data, const char* name);
 };

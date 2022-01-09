@@ -197,8 +197,6 @@ void Resources::LoadMesh(const std::string& name)
                 attrib.normals[3 * index.normal_index + 2]
             };
 
-            vertex.color = { 1.0f, 1.0f, 1.0f };
-
             if (uniqueVertices.count(vertex) == 0) {
                 uniqueVertices[vertex] = static_cast<uint32_t>(mesh->vertices.size());
                 mesh->vertices.push_back(vertex);
@@ -259,18 +257,22 @@ void Resources::LoadModel(const std::string& name)
                 attrib.vertices[3 * index.vertex_index + 2]
             };
 
-            vertex.texCoord = {
-                attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-            };
+            if (!attrib.texcoords.empty())
+            {
+                vertex.texCoord = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                };
+            }
 
-            vertex.normal = {
-                attrib.normals[3 * index.normal_index + 0],
-                attrib.normals[3 * index.normal_index + 1],
-                attrib.normals[3 * index.normal_index + 2]
-            };
-
-            vertex.color = { 1.0f, 1.0f, 1.0f };
+            if (!attrib.normals.empty())
+            {
+                vertex.normal = {
+                    attrib.normals[3 * index.normal_index + 0],
+                    attrib.normals[3 * index.normal_index + 1],
+                    attrib.normals[3 * index.normal_index + 2]
+                };
+            }
 
             models[name]->meshes[id]->vertices.push_back(vertex);
             models[name]->meshes[id]->indices.push_back(static_cast<int>(models[name]->meshes[id]->indices.size()));

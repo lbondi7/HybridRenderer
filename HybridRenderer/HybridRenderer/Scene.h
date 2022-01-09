@@ -8,9 +8,10 @@
 struct LightUBO {
 	glm::mat4 proj;
 	glm::mat4 view;
-	alignas(16) glm::vec4 size_clippingPlanes{1.0f, 3.0f, 0.1f, 100.0f};
+	alignas(16) glm::vec4 size_clippingPlanes{1.0f, 3.0f, 0.25f, 100.0f};
 	alignas(16) glm::vec3 position{ 0.0f, 4.0f, -5.0f };
-	alignas(16) glm::vec3 direction{0.0f, 4.0f, -5.0f};
+	alignas(16) glm::vec3 direction{ 0.0f, 4.0f, -5.0f };
+	alignas(16) glm::vec4 colour{0.5f};
 	alignas(16) glm::ivec4 extra;
 };
 
@@ -55,7 +56,7 @@ public:
 private:
 
 	DeviceContext* deviceContext;
-	void CreateGameObject(GameObject* object, Model* model);
+	GameObject* CreateGameObject(Model* model);
 
 	DescriptorPool descriptorPool;
 

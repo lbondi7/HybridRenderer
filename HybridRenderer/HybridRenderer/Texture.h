@@ -32,7 +32,11 @@ public:
 
 	void DestroyImageViews();
 
-	void insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange);
+	void insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, 
+		VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, 
+		VkImageLayout oldImageLayout, VkImageLayout newImageLayout, 
+		VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, 
+		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
 	VkImage image;
 	VkFormat format;

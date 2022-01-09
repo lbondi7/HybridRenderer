@@ -10,6 +10,7 @@
 
 struct ModelUBO {
 	alignas(16) glm::mat4 model;
+	alignas(16) glm::vec3 colour = glm::vec3(1.0);
 };
 
 
@@ -38,6 +39,8 @@ public:
 	bool shadowReceiver = true;
 	bool shadowCaster = true;
 	bool inBVH = true;
+	bool render = true;
+	bool initialised = false;
 
 	Descriptor descriptor;
 	Descriptor offscreenDescriptor;

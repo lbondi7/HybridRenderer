@@ -86,20 +86,6 @@ void RayTracingRenderer::createStorageImage()
 	deviceContext->EndCommandBuffer(cmdBuffer);
 }
 
-/*
-	Create the Shader Binding Tables that binds the programs and top-level acceleration structure
-
-	SBT Layout used in this sample:
-
-		/-----------\
-		| raygen    |
-		|-----------|
-		| miss      |
-		|-----------|
-		| hit       |
-		\-----------/
-
-*/
 void RayTracingRenderer::CreateShaderBindingTable() {
 
 	const uint32_t handleSize = deviceContext->rayTracingPipelineProperties.shaderGroupHandleSize;

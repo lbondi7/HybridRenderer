@@ -58,6 +58,25 @@ void DebugLogger::Log(const glm::vec4& v, const char* name)
 	std::cout << name << ": x(" << v.x << "), y(" << v.y << "), z(" << v.z << "), w(" << v.w << ")" <<std::endl;
 }
 
+void DebugLogger::Log(const std::vector<double>& vec, const char* name, bool printElementNumber)
+{
+    std::cout << name << std::endl;
+    if (printElementNumber) {
+
+        for (size_t i = 0; i < vec.size(); ++i)
+        {
+            std::cout << std::to_string(i) + " : " << vec[i] << ", ";
+        }
+    }
+    else {
+        for (auto& v : vec)
+        {
+            std::cout << v << ", ";
+        }
+    }
+    std::cout << "" << std::endl;
+}
+
 VkResult DebugLogger::Log(VkResult result)
 {
 	switch (result)
