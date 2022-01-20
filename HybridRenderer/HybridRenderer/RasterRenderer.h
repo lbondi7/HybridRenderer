@@ -96,6 +96,6 @@ public:
 
     ImGUIWidget widget;
 
-    glm::vec3 depthBias = glm::vec3(0.0, 0.0, 5);
+    glm::vec3 depthBias = glm::vec3(0.0, 0.0, -0.075);
 
 };

@@ -8,7 +8,7 @@
 
 #include <array>
 
-bool ImGUI::enabled = false;
+bool ImGUI::enabled = true;
 bool ImGUI::firstFrame = true;
 
 ImGUI::~ImGUI()
@@ -203,6 +203,11 @@ void ImGUI::endFrame() {
 void ImGUI::deinit()
 {
 	frameBuffer.Destroy();
+}
+
+void ImGUI::Demo()
+{
+	ImGui::ShowDemoWindow();
 }
 
 void ImGUI::destroy(bool complete)

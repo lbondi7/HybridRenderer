@@ -53,15 +53,21 @@ public:
 
 	ImGUIWidget lightWidget;
 
+	bool ortho = false;
+
 private:
 
 	DeviceContext* deviceContext;
 	GameObject* CreateGameObject(Model* model);
 
+	void LoadScene(const std::string& scene);
+
 	DescriptorPool descriptorPool;
 
 	bool lookAtCentre = true;
 	Buffer objectBuffer;
+
+	Resources* resources;
 
 };
 

@@ -10,6 +10,11 @@ void Window::init(void* pointer)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(glfwWindow, pointer);
+    //int count = 0;
+    //auto monitors = glfwGetMonitors(&count);
+    //glfwSetWindowMonitor(glfwWindow, monitors[1], 0, 0, 1920, 1090, 60);
+    //glfwSetWindowSize(glfwWindow, 1920, 1080);
+    //glfwSetWindowPos(glfwWindow, 0, 0);
     glfwGetFramebufferSize(glfwWindow, &width, &height);
 }
 
@@ -51,6 +56,17 @@ void Window::resize()
         glfwGetFramebufferSize(glfwWindow, &width, &height);
         glfwWaitEvents();
     }
+}
+
+bool Window::isValidSize()
+{
+    glfwGetFramebufferSize(glfwWindow, &width, &height);
+    if(width == 0 || height == 0) {
+        glfwGetFramebufferSize(glfwWindow, &width, &height);
+        glfwWaitEvents();
+        return false;
+    }
+    return true;
 }
 
 bool Window::isActive()

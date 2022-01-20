@@ -13,8 +13,8 @@ Timer::Timer()
     prevMSPFCount = 30;
     prevMspf.reserve(mspfCount);
     widget.enabled = true;
-    outputAverageMSPF.reserve(1000000);
-    //outputMSPF.reserve(1000000);
+    //outputAverageMSPF.reserve(1000000);
+
 }
 
 Timer::~Timer()
@@ -31,15 +31,12 @@ void Timer::Update()
     if (std::chrono::duration<double, std::chrono::seconds::period>(prevTime - prevSecond).count() >= 1.0) {
         fps = frameCount;
         outputAverageMSPF.emplace_back(mspf);
-        //Log(frameCount);
         prevSecond = std::chrono::high_resolution_clock::now();
         frameCount = 0;
     }
 
-    //time = std::chrono::high_resolution_clock::now();
 
     if (auto diff = std::chrono::duration<double, std::chrono::milliseconds::period>(time - prevFixedDeltaTime).count() >= (1000/20.0)) {
-       // outputAverageMSPF.emplace_back(mspf);
         prevFixedDeltaTime = std::chrono::high_resolution_clock::now();
     }
 
@@ -52,7 +49,6 @@ void Timer::Update()
     auto smoothedBuffer = sg_smooth(prevMspf, 9, 3);
 
     mspf = deltaTime;
-    //outputMSPF.emplace_back(mspf);
     if (average) {
         mspf = 0.0;
 
@@ -69,13 +65,13 @@ void Timer::Update()
 
 void Timer::Render()
 {
-    if (ImGUI::enabled && widget.enabled)
-    {
-        if (widget.NewWindow("Timer")) {
-            widget.Slider("Number of Frames for Average", &mspfCount, 1, 100);
-            widget.CheckBox("Use Average", &average);
-        }
-        widget.EndWindow();
+    if (ImGUI::enabled) {
+        widget.Text("Performance");
+
+        std::string displayFPS = "FPS: " + std::to_string(fps);
+        widget.Text(displayFPS.c_str());
+        std::string displayMSPF = "MSPF (Average of previous 30 frames): " + std::to_string(mspf);
+        widget.Text(displayMSPF.c_str());
     }
 }
 

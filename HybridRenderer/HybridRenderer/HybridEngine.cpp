@@ -19,11 +19,12 @@ void HybridEngine::run()
 
 	while (window->isActive() && !quit) {
 
-        window->resize();
-        timer.Update();
-		prepare();
-		update();
-		render();
+        if (window->isValidSize()) {
+            timer.Update();
+            prepare();
+            update();
+            render();
+        }
 	}
 
 	vkDeviceWaitIdle(core->deviceContext->logicalDevice);
@@ -101,6 +102,13 @@ void HybridEngine::prepare()
         throw std::runtime_error("failed to acquire swap chain image!");
     }
     raster.Prepare();
+
+    if (ImGUI::enabled && widget.enabled) {
+
+        if (widget.NewWindow("Settings"))
+        {
+        }
+    }
 }
 
 void HybridEngine::update()
@@ -179,23 +187,16 @@ void HybridEngine::update()
         scene.lightPos.y += 10.0f * timer.DeltaTime_f();
     }
 
-    //Log(timer.MSPF_d(), "MSPF");
-
     if (camera.adaptiveDistance)
     {
 
         auto diff = timer.GetDifferenceWithBuffer_f(60, 0);
-        //Log(diff, "Difference");
         if (auto diffAbs = std::abs(diff) > 0.5)
         {
             auto diffPow = diff > 0.0 ? std::powf(diff, 2.0f) : -std::powf(diff, 2.0f);
-            //Log(diffPow, "Diff Squared");
             auto targetDistance = camera.gpuData.rayCullDistance + 1.5f * diffPow * timer.DeltaTime_f();
             auto currentDistance = camera.gpuData.rayCullDistance;
-            camera.gpuData.rayCullDistance = std::clamp(targetDistance, 0.0f, 1000.0f);
-            //camera.gpuData.rayCullDistance = std::clamp(
-            //    std::lerp(camera.gpuData.rayCullDistance, targetDistance, timer.lerpAmount),
-            //    0.0f, 100.0f);
+            camera.gpuData.rayCullDistance = std::clamp(targetDistance, 0.0f, 200.0f);
         }
     }
 
@@ -209,37 +210,9 @@ void HybridEngine::render()
 {
     timer.Render();
 
-    if (ImGUI::enabled && widget.enabled) {
-        if (widget.NewMainMenu())
-        {
-            if (widget.NewMenu("File")) {
-
-
-                widget.EndMenu();
-            }
-            if (widget.NewMenu("Renderers")) {
-                if (widget.MenuItem("Raster", &rasterEnabled)) {
-                    raster.commandBuffersReady = false;
-                }
-                if (widget.MenuItem("Ray Tracing", &raytraceEnabled)) {
-                    rayTracing.commandBuffersReady = false;
-                }
-                widget.EndMenu();
-            }
-
-            if (widget.NewMenu("Objects")) {
-
-                widget.MenuItem("Raster Renderer", &raster.widget.enabled);
-                widget.MenuItem("Camera", &camera.widget.enabled);
-                widget.MenuItem("ShadowMap", &raster.shadowMap.widget.enabled);
-                widget.MenuItem("Light", &scene.lightWidget.enabled);
-                widget.MenuItem("Timer", &timer.widget.enabled);
-                
-                widget.EndMenu();
-            }
-
-            widget.EndMainMenu();
-        }
+    if (ImGUI::enabled) {
+        std::string distance = "Ray Query Distance: " + std::to_string(camera.gpuData.rayCullDistance);
+        widget.Text(distance.c_str());
     }
 
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
@@ -256,6 +229,10 @@ void HybridEngine::render()
 
     if(rasterEnabled)
         raster.GetCommandBuffer(imageIndex, submitCommandBuffers, &camera, &scene);
+
+    if (ImGUI::enabled) {
+        widget.EndWindow();
+    }
 
     if (raytraceEnabled) 
     {
@@ -385,8 +362,12 @@ void HybridEngine::framebufferResizeCallback(GLFWwindow* window, int width, int 
     auto app = reinterpret_cast<HybridEngine*>(glfwGetWindowUserPointer(window));
     app->window->width = width;
     app->window->height = height;
-    app->camera.update({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
-    app->RecreateSwapChain();
+
+    if (width != 0 && height != 0)
+    {
+        app->camera.update({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
+        app->RecreateSwapChain();
+    }
 }
 
 void HybridEngine::mouseCallback(GLFWwindow* window, int button, int action, int mods) {

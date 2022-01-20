@@ -75,7 +75,5 @@ void main()
 	outLightType = light.extra.x;
 
 	outShadowCoord = (light.proj * light.view) * vec4(outWorldPos, 1.0);
-	//outShadowCoord = vec4(outShadowCoord.xyz / outShadowCoord.w, outShadowCoord.w);
-	//outShadowCoord = outShadowCoord * 0.5 + 0.5;
 }
 

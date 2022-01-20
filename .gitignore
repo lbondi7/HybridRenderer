@@ -69,7 +69,7 @@ StyleCopReport.xml
 *_h.h
 *.ilk
 *.meta
-*.obj
+#*.obj
 *.iobj
 *.pch
 *.pdb
@@ -349,3 +349,15 @@ healthchecksdb
 MigrationBackup/
 
 HybridRenderer/HybridRenderer/libs/
+/HybridRenderer/HybridRenderer/models/tree.obj
+/HybridRenderer/HybridRenderer/models/Dragon3.obj
+/HybridRenderer/HybridRenderer/models/Dragon2.obj
+/HybridRenderer/HybridRenderer/models/cube.obj
+/HybridRenderer/HybridRenderer/models/cone.obj
+/HybridRenderer/HybridRenderer/models/Cat0.5.obj
+/HybridRenderer/HybridRenderer/models/Cat0.1.obj
+/HybridRenderer/HybridRenderer/models/Cat0.05.obj
+/HybridRenderer/HybridRenderer/models/Cat.obj
+/HybridRenderer/HybridRenderer/models/Dragon
+/HybridRenderer/HybridRenderer/models/sphere/sphere.obj
+/HybridRenderer/HybridRenderer/models/tree2/tree3.obj

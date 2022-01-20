@@ -22,7 +22,7 @@ void Shader::Init(DeviceContext* _devices, const std::string& shaderName, VkShad
 
     createModule(readFile("shaders/" + shaderName + getShaderTypeExtention(stage) + ".spv"));
 
-    getDescriptors("shaders/" + shaderName + getShaderTypeExtention(stage) + ".json");
+    //getDescriptors("shaders/" + shaderName + getShaderTypeExtention(stage) + ".json");
 
     //shaderInfo = Initialisers::pipelineShaderStageCreateInfo(stage, shaderModule, entryPoint.c_str());
 }
@@ -63,55 +63,6 @@ void Shader::getDescriptors(const std::string& shaderName)
         descriptors.emplace_back(descriptorData);
     }
     file.close();
-
-    //std::ifstream file(shaderName);
-
-    //if (!file.is_open()) {
-    //    throw std::runtime_error("failed to open non-binary file!");
-    //}
-
-    //std::string line;
-    //while (getline(file, line))
-    //{
-    //    uint32_t set, binding;
-    //    if (line.find("binding") == std::string::npos && line.find("Binding") == std::string::npos)
-    //        continue;
-
-    //    if (line.find("set") == std::string::npos && line.find("Set") == std::string::npos)
-    //        set = 0;
-    //    
-
-    //    bool hasL = false;
-    //    for(auto c : line)
-    //    {
-    //        if (c == 'l')
-    //        {
-    //            hasL = true;
-    //            break;
-    //        }
-    //    }
-    //    if (!hasL)
-    //        continue;
-
-    //    std::string word = "";
-    //    bool isDigit = false;
-    //    for (auto c : line)
-    //    {
-    //        word += c;
-    //        if (!isDigit && std::isdigit(c))
-    //        {
-    //            isDigit = true;
-    //        }
-    //        if (c == ' ' || c == '=')
-    //        {
-    //            if (isDigit)
-    //            {
-
-    //            }
-    //            word.clear();
-    //        }
-    //    }
-    //}
 }
 
 void Shader::Destroy()

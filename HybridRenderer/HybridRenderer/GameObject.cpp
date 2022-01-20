@@ -27,7 +27,11 @@ void GameObject::Init(DeviceContext* deviceContext)
 		}
 
 		//DescriptorSetRequest request(2);
-		DescriptorSetRequest request({ {"scene", 1}, {"offscreen", 1} }, 2);
+
+		std::string offscreenShader = (deviceContext->validGPU == 2 ? "offscreenRQ" : "offscreen");
+		std::string sceneShader = (deviceContext->validGPU == 2 ? "sceneRQ" : "scene");
+
+		DescriptorSetRequest request({ {sceneShader, 1}, {offscreenShader, 1} }, 2);
 		request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
 		request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 		request.AddDescriptorBufferData(0, uniformBuffers.data());
@@ -79,7 +83,10 @@ void GameObject::SetTexture(TextureSampler* texture)
 	if (mesh) {
 		auto imageCount = deviceContext->imageCount;
 
-		DescriptorSetRequest request({ {"scene", 1}, {"offscreen", 1} }, 2);
+		std::string offscreenShader = (deviceContext->validGPU == 2 ? "offscreenRQ" : "offscreen");
+		std::string sceneShader = (deviceContext->validGPU == 2 ? "sceneRQ" : "scene");
+
+		DescriptorSetRequest request({ {sceneShader, 1}, {offscreenShader, 1} }, 2);
 		request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
 		request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 		request.AddDescriptorBufferData(0, uniformBuffers.data());

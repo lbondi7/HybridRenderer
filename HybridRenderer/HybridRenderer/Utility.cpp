@@ -141,13 +141,13 @@ SwapChainSupportDetails Utility::querySwapChainSupport(VkSurfaceKHR surface, VkP
     return details;
 }
 
-bool Utility::isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device) {
+int Utility::isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device) {
     QueueFamilyIndices indices = Utility::findQueueFamilies(device, surface);
 
-    bool extensionsSupported = checkDeviceExtensionSupport(device);
+    int extensionsSupported = checkDeviceExtensionSupportInt(device);
 
     bool swapChainAdequate = false;
-    if (extensionsSupported) {
+    if (extensionsSupported >= 1) {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(surface, device);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
@@ -155,7 +155,12 @@ bool Utility::isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device) {
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+    if (indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy)
+    {
+        return extensionsSupported;
+    }
+
+    return 0;
 }
 
 bool Utility::checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -172,6 +177,27 @@ bool Utility::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     }
 
     return requiredExtensions.empty();
+}
+
+int Utility::checkDeviceExtensionSupportInt(VkPhysicalDevice device) {
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    if (requiredExtensions.empty())
+        return 2;
+    if (!requiredExtensions.contains(deviceExtensions.at(0)))
+        return 1;
+
+    return 0;
 }
 
 uint32_t Utility::alignedSize(uint32_t value, uint32_t alignment)

@@ -99,7 +99,10 @@ void DeviceContext::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
     for (const auto& device : devices) {
-        if (Utility::isDeviceSuitable(surface, device)) {
+        auto isGPUValid = Utility::isDeviceSuitable(surface, device);
+        if (isGPUValid >= 1) {
+            validGPU = isGPUValid;
+            //validGPU = 1;
             physicalDevice = device;
             break;
         }
@@ -132,12 +135,15 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.fillModeNonSolid = VK_TRUE;
-    deviceFeatures.robustBufferAccess = VK_TRUE;
-    deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
-    deviceFeatures.shaderInt64 = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+    if (validGPU)
+    {
+        deviceFeatures.robustBufferAccess = VK_TRUE;
+        deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
+        deviceFeatures.shaderInt64 = VK_TRUE;
 
         // Enable features required for ray tracing using feature chaining via pNext		
         bufferDeviceAddresFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
@@ -182,7 +188,11 @@ void DeviceContext::createLogicalDevice(VkSurfaceKHR surface) {
         vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
 
         createInfo.pNext = &deviceFeatures2;
-
+    }
+    else {
+        Log("Your Graphics Card doesnt support Ray Query Functionality.");
+        Log("Shadow Mapping only enabled.");
+    }
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
 

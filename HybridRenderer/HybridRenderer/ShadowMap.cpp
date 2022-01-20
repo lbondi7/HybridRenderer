@@ -20,84 +20,75 @@ void ShadowMap::Create(DeviceContext* _devices, int descriptorSet, const std::st
 	this->windowName = windowName;
 }
 
-bool ShadowMap::Update(uint32_t imageIndex) 
+bool ShadowMap::Update(uint32_t imageIndex, bool lightOrtho)
 {
 
 	bool updated = false;
-	if (ImGUI::enabled && widget.enabled) {
-		if (widget.NewWindow(windowName.c_str())) {
 
-			if (widget.Slider4("Enable Debug View", shadowUBO.extra, 0, 1))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
+	if (prevOrtho != lightOrtho) 
+	{
+		prevOrtho = lightOrtho;
+		if (lightOrtho)
+		{
+			shadowUBO.blocker.x = 0.015f;
+			shadowUBO.blocker.y = 0.025f;
+		}
+		else 
+		{
+			shadowUBO.blocker.x = 0.5f;
+			shadowUBO.blocker.y = 0.5f;
+		}
+		updated = true;
+	}
 
-				}
-			}
+	if (ImGUI::enabled && widget.enabled) 
+	{
+		//if (widget.NewWindow(windowName.c_str())) {
 
-			if (widget.Slider("Estimation Enabled", &shadowUBO.shadow.x, 0, 2))
-			{
-				vkQueueWaitIdle(devices->presentQueue);
-				vkDeviceWaitIdle(devices->logicalDevice);
+
+		if (widget.CheckBox("Enable Debug View", &debugView))
+		{
+			updated = true;
+			shadowUBO.extra.x = debugView;
+		}
+
+		if (widget.Slider("Shadow Map/Ray Query/RRQSS", &shadowUBO.shadow.x, 0, 2))
+			updated = true;
+
+		if (shadowUBO.shadow.x != 1)
+		{
+			widget.Text("Shadow Map");
+
+			if (widget.Slider("Samples", &shadowUBO.shadow.z, 1, 64))
 				updated = true;
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-				}
-			}
-			if (widget.Slider("Sample Reduction", &shadowUBO.shadow.y, 0, 3))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-				}
-			}
-			if (widget.Slider("Samples", &shadowUBO.shadow.z, 1, 512))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-				}
-			}
-			if (widget.Slider("Ray Tracing Samples", &shadowUBO.shadow.w, 1, 64))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-				}
-			}
+
 			if (widget.Slider("Blocker Scale", &shadowUBO.blocker.x, 0.0, 1.0))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
+				updated = true;
 
-				}
-			}
+			//if (widget.Slider("PCF Bias", &shadowUBO.blocker.z, -0.1, 0.1))
+			//	updated = true;
+
+			//if (widget.Slider("Search Bias", &shadowUBO.blocker.w, -0.1, 0.1))
+			//	updated = true;
+		}
+
+		if (shadowUBO.shadow.x != 0)
+		{
+			widget.Text("Ray Tracing");
+
+			if (widget.Slider("Ray Tracing Samples", &shadowUBO.shadow.w, 1, 32))
+				updated = true;
+
 			if (widget.Slider("Ray Tracing Scale", &shadowUBO.blocker.y, 0.0, 1.0))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-				}
-			}
-			if (widget.Slider("PCF Bias", &shadowUBO.blocker.z, -0.1, 0.1))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-
-				}
-			}
-			if (widget.Slider("Search Bias", &shadowUBO.blocker.w, -0.1, 0.1))
-			{
-				for (auto& buffer : buffers)
-				{
-					buffer.AllocatedMap(&shadowUBO);
-				
-				}
-			}
+				updated = true;
+		}
+			//if (widget.Slider("Sample Reduction", &shadowUBO.shadow.y, 0, 3))
+			//{
+			//	for (auto& buffer : buffers)
+			//	{
+			//		buffer.AllocatedMap(&shadowUBO);
+			//	}
+			//}
 			//float dg = 0.0;
 			//if (widget.Slider("AlphaThreshold", &dg, 0.0, 1.0))
 			//{
@@ -106,26 +97,35 @@ bool ShadowMap::Update(uint32_t imageIndex)
 			//		buffer.AllocatedMap(&shadowUBO);
 			//	}
 			//}
-			if (widget.Button("Save")) {
+			//if (widget.Button("Save")) {
 				//saveScreenshot("Screenshot.ppm");
-			}
-			if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
-				vkQueueWaitIdle(devices->presentQueue);
-				vkDeviceWaitIdle(devices->logicalDevice);
-				Reinitialise();
-				updated = true;
-			}
-			if (widget.Slider("Resolution", &resolution, 1, 8000))
-			{
-				vkQueueWaitIdle(devices->presentQueue);
-				vkDeviceWaitIdle(devices->logicalDevice);
-				Reinitialise();
-				updated = true;
-			}
+			//}
+			//if (widget.CheckBox("Conservative Rasterisation", &pipeline.pipelineInfo.conservativeRasterisation)) {
+			//	vkQueueWaitIdle(devices->presentQueue);
+			//	vkDeviceWaitIdle(devices->logicalDevice);
+			//	Reinitialise();
+			//	updated = true;
+			//}
+			//if (widget.Slider("Resolution", &resolution, 1, 8000))
+			//{
+			//	vkQueueWaitIdle(devices->presentQueue);
+			//	vkDeviceWaitIdle(devices->logicalDevice);
+			//	Reinitialise();
+			//	updated = true;
+			//}
 
-			widget.Image(0, { 1000, 1000 });
+			//widget.Image(0, { 1000, 1000 });
+		//}
+		//widget.EndWindow();
+
+		if (updated)
+		{
+			for (auto& buffer : buffers)
+			{
+				buffer.AllocatedMap(&shadowUBO);
+
+			}
 		}
-		widget.EndWindow();
 	}
 
 	return updated;
@@ -156,8 +156,8 @@ void ShadowMap::Initialise()
 		std::vector<VkImageView> attachments{ depthTexture.imageView };
 		frameBuffer.createFramebuffer(attachments, extent);
 	}
-
-	DescriptorSetRequest request({ {"scene", descriptorSet} });
+	std::string sceneShader = (devices->validGPU == 2 ? "sceneRQ" : "scene");
+	DescriptorSetRequest request({ {sceneShader, descriptorSet} });
 	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 	request.AddDescriptorBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
 	request.AddDescriptorImageData(0, &depthTexture.descriptorInfo);
@@ -180,6 +180,7 @@ void ShadowMap::Initialise(const PipelineInfo& pipelineInfo)
 	shadowUBO.shadow.z = 32;
 	shadowUBO.shadow.w = 5;
 	resolution = 2048;
+	shadowUBO.extra.y = 1;
 	//render pass
 	RenderPassInfo info{};
 	info.attachments.push_back({ AttachmentType::DEPTH, devices->getDepthFormat(), VK_ATTACHMENT_LOAD_OP_CLEAR,

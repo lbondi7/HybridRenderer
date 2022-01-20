@@ -34,7 +34,9 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 		buffers[i].Allocate(deviceContext, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
 
-	DescriptorSetRequest request({ { "scene", 0 } });
+	std::string sceneShader = (deviceContext->validGPU == 2 ? "sceneRQ" : "scene");
+
+	DescriptorSetRequest request({ { sceneShader, 0 } });
 	request.AddDescriptorBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
 	request.AddDescriptorBufferData(0, buffers.data());
 	deviceContext->GetDescriptors(descriptor, &request);
@@ -42,7 +44,7 @@ void Camera::init(DeviceContext* deviceContext, const VkExtent2D& _extent)
 	adaptiveDistance = true;
 	transform.position.y = 4.0f;
 	widget.enabled = true;
-	//lookAtPlace = true;
+	lookAtPlace = true;
 	lookAt = glm::vec3(0.0f, 1.0f, 0.0f);
 	transform.position = glm::vec3(0.0f, 5.0f, 10.0f);
 	update(_extent.width, _extent.height);
@@ -104,25 +106,9 @@ void Camera::update(const VkExtent2D& _extent)
 
 void Camera::update(float dt)
 {
-	if (pan) {
+	angle += speed * dt;
+	transform.position = lookAt + glm::vec3(distance * std::sin(angle), distance * 0.65f, distance * std::cos(angle));
 
-		time += dt;
-
-		transform.position = glm::lerp(positions[currentIndex], positions[currentIndex + 1], time/timings[currentIndex]);
-
-		if (time / timings[currentIndex] >= 1.0) {
-			if (currentIndex == 2) {
-				currentIndex = 0;
-				pan = false;
-				time = 0.0f;
-			}
-			else {
-				currentIndex++;
-				time = 0.0f;
-			}
-		}
-
-	}
 
 	if (!valuesUpdated(extent))
 	{
@@ -130,9 +116,6 @@ void Camera::update(float dt)
 
 		auto view = glm::lookAt(transform.position, lookAtPlace ? lookAt : transform.position + transform.forward, worldUp);
 		auto projection = glm::perspective(glm::radians(FOV), vkViewport.width / vkViewport.height, nearPlane, farPlane);
-		//auto aspectRatio = vkViewport.width / vkViewport.height;
-		//auto projection = glm::ortho(-aspectRatio * zoom, aspectRatio * zoom, 
-		//	-1.0f * zoom, 1.0f * zoom, nearPlane, farPlane);
 		projection[1][1] *= -1;
 		gpuData.viewProjection = projection * view;
 		gpuData.position = transform.position;
@@ -140,30 +123,15 @@ void Camera::update(float dt)
 		updateValues(extent);
 	}
 
-	if (ImGUI::enabled && widget.enabled) {
-		if (widget.NewWindow("Camera"))
-		{
+	if (ImGUI::enabled) {
+		widget.Text("Camera");
 
-			widget.Vec3("Position", transform.position);
+		widget.Slider("Camera FOV", &FOV, 1.0f, 179.0f);
 
-			widget.Slider("FOV", &FOV, 1.0f, 179.0f);
+		widget.Slider("Distance", &distance, 1.0f, 100.0f);
 
-			widget.Slider("Ray Query Cull Distance", &gpuData.rayCullDistance, 0.0f, 100.0f);
-
-			widget.Slider("Zoom", &zoom, 0.0f, 100.0f);
-
-			widget.CheckBox("Adaptive Distance", &adaptiveDistance);
-
-			widget.CheckBox("Look At", &lookAtPlace);
-
-			//widget.Slider4("Viewport", viewport, 0.0f, 1.0f);
-
-			//widget.Slider4("Scissor Rect", scissor, 0.0f, 1.0f);
-
-		}
-		widget.EndWindow();
+		widget.Slider("Speed", &speed, 0.0f, 5.0f);
 	}
-	//distances.emplace_back(gpuData.rayCullDistance);
 }
 
 bool Camera::valuesUpdated(const VkExtent2D& _extent) {

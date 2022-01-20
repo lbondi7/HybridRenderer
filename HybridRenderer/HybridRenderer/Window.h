@@ -24,6 +24,8 @@ public:
 
 	void resize();
 
+	bool isValidSize();
+
 	bool isActive();
 
 	GLFWwindow* glfwWindow = nullptr;

@@ -38,7 +38,6 @@ public:
 
 	void GetDescriptors(Descriptor& descriptor, const DescriptorSetRequest* request = nullptr);
 
-
 	QueueFamilyIndices indices;
 
 	Allocator allocator;
@@ -55,6 +54,8 @@ public:
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties{};
 	VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
+
+	int validGPU = 0;
 
 private:
 	void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);

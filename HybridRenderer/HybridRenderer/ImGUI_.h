@@ -17,6 +17,7 @@ public:
 	static bool enabled;
 	static bool firstFrame;
 
+	static void Demo();
 
 	ImGUI() = default;
 	~ImGUI();
@@ -38,6 +39,7 @@ public:
 	void endFrame();
 
 	void deinit();
+
 
 	void destroy(bool complete = true);
 

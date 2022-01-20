@@ -24,9 +24,11 @@ namespace Utility
 
 	SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device);
 
-	bool isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device);
+	int isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device);
 
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+
+	int checkDeviceExtensionSupportInt(VkPhysicalDevice device);
 
 	uint32_t alignedSize(uint32_t value, uint32_t alignment);
 

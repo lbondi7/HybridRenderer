@@ -26,6 +26,9 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED });
 
 
+    std::string offscreenShader = (deviceContext->validGPU == 2 ? "offscreenRQ" : "offscreen");
+    std::string sceneShader = (deviceContext->validGPU == 2 ? "sceneRQ" : "scene");
+
     info.dependencies.emplace_back(Initialisers::subpassDependency(VK_SUBPASS_EXTERNAL, 0,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
@@ -36,8 +39,8 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
 
     PipelineInfo pipelineInfo{};
     shadowMap.Create(deviceContext, 3);
-    pipelineInfo.shaders = { resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_VERTEX_BIT) ,
-        resources->GetShader("shadowmapping/offscreen", VK_SHADER_STAGE_FRAGMENT_BIT) };
+    pipelineInfo.shaders = { resources->GetShader(offscreenShader, VK_SHADER_STAGE_VERTEX_BIT) ,
+        resources->GetShader(offscreenShader, VK_SHADER_STAGE_FRAGMENT_BIT) };
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION , VertexAttributes::UV_COORD});
     pipelineInfo.vertexInputBindings = { Vertex::getBindingDescription() };
     pipelineInfo.depthBiasEnable = VK_TRUE;
@@ -45,16 +48,16 @@ void RasterRenderer::Initialise(Window* window, VulkanCore* core, SwapChain* swa
     pipelineInfo.conservativeRasterisation = true;
     pipelineInfo.blendEnabled = true;
     pipelineInfo.colourAttachmentCount = 0;
-    pipelineInfo.layoutsName = "offscreen";
+    pipelineInfo.layoutsName = offscreenShader;
     pipelineInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
 
     shadowMap.Initialise(pipelineInfo);
 
     pipelineInfo.vertexInputAttributes = Vertex::getAttributeDescriptions({ VertexAttributes::POSITION, VertexAttributes::UV_COORD, VertexAttributes::NORMAL });
-    pipelineInfo.shaders = { resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_VERTEX_BIT) ,
-        resources->GetShader("shadowmapping/scene", VK_SHADER_STAGE_FRAGMENT_BIT) };
+    pipelineInfo.shaders = { resources->GetShader(sceneShader, VK_SHADER_STAGE_VERTEX_BIT) ,
+        resources->GetShader(sceneShader, VK_SHADER_STAGE_FRAGMENT_BIT) };
     pipelineInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    pipelineInfo.layoutsName = "scene";
+    pipelineInfo.layoutsName = sceneShader;
     pipelineInfo.colourAttachmentCount = 1;
     pipelineInfo.conservativeRasterisation = false;
     pipelineInfo.depthBiasEnable = VK_FALSE;
@@ -206,8 +209,14 @@ void RasterRenderer::rebuildCommandBuffer(uint32_t i, Camera* camera, Scene* sce
         camera->vkSetViewport(commandBuffers[i]);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline);
-        std::array<VkDescriptorSet, 5> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], scene->asDescriptor.sets[i]};
-        //std::array<VkDescriptorSet, 4> descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i] };
+        std::vector<VkDescriptorSet> descriptorSets;
+        descriptorSets.reserve(5);
+        
+        if (deviceContext->validGPU == 2)
+            descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i], scene->asDescriptor.sets[i] };
+        else
+            descriptorSets = { camera->descriptor.sets[i], VK_NULL_HANDLE, scene->lightDescriptor.sets[i], shadowMap.descriptor.sets[i]};
+
 
         for (auto& go : scene->gameObjects) {
             if (!go.mesh || !go.render)
@@ -239,25 +248,26 @@ void RasterRenderer::Prepare()
     {
         imgui.startFrame();
 
-        if (widget.enabled) {
 
-            if (widget.NewWindow("Raster Render")) {
+        //if (widget.enabled) {
 
-                if (widget.Slider3("Depth Bias", depthBias, -10.0, 10.0)) 
-                {
-                    commandBuffersReady = false;
-                }
+        //    if (widget.NewWindow("Raster Render")) {
 
-                //widget.Image(0, { swapChain->extent.width / storageImageSize, swapChain->extent.height / storageImageSize });
-            }
-            widget.EndWindow();
-        }
+                //if (widget.Slider3("Depth Bias", depthBias, -1.0, 1.0)) 
+                //{
+                //    commandBuffersReady = false;
+                //}
+
+        //        //widget.Image(0, { swapChain->extent.width / storageImageSize, swapChain->extent.height / storageImageSize });
+        //    }
+        //    widget.EndWindow();
+        //}
     }
 }
 
 void RasterRenderer::GetCommandBuffer(uint32_t imageIndex, std::vector<VkCommandBuffer>& submitCommandBuffers, Camera* camera, Scene* scene)
 {
-    if (shadowMap.Update(imageIndex) || !commandBuffersReady)
+    if (shadowMap.Update(imageIndex, scene->ortho) || !commandBuffersReady)
     {
         buildCommandBuffers(camera, scene);
     }

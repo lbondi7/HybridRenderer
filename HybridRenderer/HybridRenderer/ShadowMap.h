@@ -32,7 +32,7 @@ public:
 
 	void saveScreenshot(const char* filename);
 
-	bool Update(uint32_t imageIndex);
+	bool Update(uint32_t imageIndex, bool lightOrtho);
 
 	uint32_t width;
 	uint32_t height;
@@ -54,6 +54,8 @@ public:
 
 	std::vector<Buffer> buffers;
 	
+	bool debugView = false;
+
 private:
 
 	void Initialise();
@@ -62,6 +64,7 @@ private:
 
 	DeviceContext* devices = nullptr;
 	SwapChain* swapChain = nullptr;
+	bool prevOrtho = false;
 
 };
 

@@ -113,5 +113,8 @@ private:
 	float prevWindowHeight;
 
 	bool prevLookAtPlace;
+	float distance = 10.0f;
+	float angle = 0.0f;
+	float speed = 0.2f;
 
 };
